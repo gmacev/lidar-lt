@@ -42,12 +42,11 @@ bun run serve
 
 ```
 src/
-├── common/          # Shared components and utilities
+├── common/          # Shared components, utilities and types
 ├── features/        # Feature modules
 │   ├── GridMap/     # Sector selection map
 │   └── Viewer/      # Point cloud viewer
-├── routes/          # TanStack Router pages
-└── types/           # TypeScript definitions
+└── routes/          # TanStack Router pages
 ```
 
 ## Data Source

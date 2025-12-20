@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { PotreeViewer } from '@/types/potree';
+import type { PotreeViewer } from '@/common/types/potree';
 import { Z_SCALE_DEFAULTS } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 

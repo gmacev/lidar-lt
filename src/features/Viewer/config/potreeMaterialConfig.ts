@@ -3,7 +3,7 @@
  * Configures elevation-based Viridis gradient coloring
  */
 
-import type { PointCloud, Potree, GradientStop, PotreeGeometry } from '@/types/potree';
+import type { PointCloud, Potree, GradientStop, PotreeGeometry } from '@/common/types/potree';
 import { POINT_SIZE_DEFAULTS } from './viewerConfig';
 
 /**

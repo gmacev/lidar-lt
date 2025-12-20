@@ -9,7 +9,7 @@ import {
     CanvasTexture,
     RepeatWrapping,
 } from 'three';
-import type { PotreeViewer, PotreeMetadata } from '@/types/potree';
+import type { PotreeViewer, PotreeMetadata } from '@/common/types/potree';
 
 interface UseFloodSimulationOptions {
     viewerRef: RefObject<PotreeViewer | null>;

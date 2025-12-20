@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { PotreeViewer, Potree } from '@/types/potree';
+import type { PotreeViewer, Potree } from '@/common/types/potree';
 import {
     configureMaterialForElevation,
     configureMaterialForIntensity,

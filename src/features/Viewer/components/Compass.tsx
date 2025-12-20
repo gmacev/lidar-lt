@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { Vector3 } from 'three';
-import type { PotreeViewer } from '@/types/potree';
+import type { PotreeViewer } from '@/common/types/potree';
 
 interface CompassProps {
     viewerRef: RefObject<PotreeViewer | null>;

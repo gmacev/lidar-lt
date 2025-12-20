@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Switch } from '@/common/components/Switch';
 import { Icon } from '@/common/components';
-import type { PotreeViewer } from '@/types/potree';
+import type { PotreeViewer } from '@/common/types/potree';
 import { EDL_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 

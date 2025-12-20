@@ -1,5 +1,5 @@
 import { type RefObject, useEffect, useRef, useState } from 'react';
-import type { Measure, PotreeScene, PotreeViewer, Profile } from '@/types/potree';
+import type { Measure, PotreeScene, PotreeViewer, Profile } from '@/common/types/potree';
 
 interface UseProfileToolOptions {
     viewerRef: RefObject<PotreeViewer | null>;

@@ -1,5 +1,5 @@
 import { useState, useEffect, type RefObject } from 'react';
-import type { PotreeViewer } from '@/types/potree';
+import type { PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
 interface ClassificationControlProps {

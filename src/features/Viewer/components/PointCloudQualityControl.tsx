@@ -1,4 +1,4 @@
-import type { PotreeViewer } from '@/types/potree';
+import type { PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { PointSizeControl } from './PointSizeControl';
 import { NodeSizeControl } from './NodeSizeControl';

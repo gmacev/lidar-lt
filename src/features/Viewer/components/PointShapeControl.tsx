@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { PotreeViewer, Potree } from '@/types/potree';
+import type { PotreeViewer, Potree } from '@/common/types/potree';
 import { POINT_APPEARANCE_DEFAULTS, type PointShape } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';

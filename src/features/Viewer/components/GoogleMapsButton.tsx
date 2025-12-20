@@ -1,6 +1,6 @@
 import { useState, type RefObject } from 'react';
 import { Icon } from '@/common/components';
-import type { PotreeViewer } from '@/types/potree';
+import type { PotreeViewer } from '@/common/types/potree';
 
 // LKS94 projection definition (EPSG:3346)
 const LKS94_PROJ =

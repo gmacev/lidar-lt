@@ -1,5 +1,10 @@
 import { useState, useEffect, type RefObject, useRef } from 'react';
-import type { PotreeViewer, Profile, ProfileRequest, ProfileRequestEvent } from '@/types/potree';
+import type {
+    PotreeViewer,
+    Profile,
+    ProfileRequest,
+    ProfileRequestEvent,
+} from '@/common/types/potree';
 import { Vector3 } from 'three';
 import { throttle } from 'lodash';
 import { downloadCsv } from '@/common/utils/downloadCsv';

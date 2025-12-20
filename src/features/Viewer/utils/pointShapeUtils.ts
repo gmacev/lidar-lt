@@ -2,7 +2,7 @@
  * Utility functions for point cloud shape configuration
  */
 
-import type { Potree } from '@/types/potree';
+import type { Potree } from '@/common/types/potree';
 import type { PointShape } from '@/features/Viewer/config';
 
 /**

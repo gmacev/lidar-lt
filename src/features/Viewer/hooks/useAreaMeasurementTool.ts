@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, type RefObject } from 'react';
-import type { PotreeViewer, Measure } from '@/types/potree';
+import type { PotreeViewer, Measure } from '@/common/types/potree';
 
 interface UseAreaMeasurementToolOptions {
     viewerRef: RefObject<PotreeViewer | null>;

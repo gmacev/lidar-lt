@@ -8,7 +8,7 @@ import {
     POINT_APPEARANCE_DEFAULTS,
 } from '@/features/Viewer/config';
 import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';
-import type { Potree, PotreeViewer, LoadPointCloudResult } from '@/types/potree';
+import type { Potree, PotreeViewer, LoadPointCloudResult } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
 interface UsePotreeOptions {

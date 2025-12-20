@@ -1,6 +1,6 @@
 import { GlassPanel } from '@/common/components/GlassPanel';
 import type { RefObject } from 'react';
-import type { PotreeViewer } from '@/types/potree';
+import type { PotreeViewer } from '@/common/types/potree';
 import { useCoordinateSearch } from '@/features/Viewer/hooks/useCoordinateSearch';
 
 interface CoordinateSearchControlProps {
