@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import debounce from 'lodash/debounce';
 import {
     usePotree,
@@ -17,7 +18,7 @@ import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
 import { GoogleMapsButton } from './GoogleMapsButton';
 
-import { GlassPanel, NeonButton, DataLoader, Icon } from '@/common/components';
+import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { Route } from '@/routes/viewer.$cellId';
@@ -29,6 +30,7 @@ interface ViewerPageProps {
 }
 
 export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
+    const { t } = useTranslation();
     const navigate = useNavigate({ from: Route.fullPath });
     const eptBaseUrl = import.meta.env.VITE_EPT_BASE_URL;
     const dataUrl = `${eptBaseUrl}/${cellId}/potree_output/metadata.json`;
@@ -150,16 +152,18 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
             {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-void-black/80">
-                    <DataLoader message="Kraunami taškų debesys..." />
+                    <DataLoader message={t('viewer.loading')} />
                 </div>
             )}
 
             {error && (
                 <div className="absolute inset-0 flex items-center justify-center bg-void-black/80">
                     <GlassPanel className="max-w-md text-center">
-                        <p className="text-plasma-red mb-4">Klaida: {error}</p>
+                        <p className="text-plasma-red mb-4">
+                            {t('viewer.error')}: {error}
+                        </p>
                         <NeonButton variant="amber" onClick={onBack}>
-                            Grįžti
+                            {t('viewer.back')}
                         </NeonButton>
                     </GlassPanel>
                 </div>
@@ -181,18 +185,24 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
                     <div className="absolute left-4 top-4">
                         <NeonButton variant="amber" onClick={onBack}>
-                            ← Atgal
+                            {t('viewer.back')}
                         </NeonButton>
                     </div>
 
-                    <GlassPanel className="absolute right-4 top-4 w-64">
-                        <h3 className="mb-2 text-sm font-bold text-neon-amber">Valdymas</h3>
-                        <ul className="space-y-1 text-xs text-white/70">
-                            <li>🖱️ Kairysis: Slinkti</li>
-                            <li>🖱️ Dešinysis: Sukti</li>
-                            <li>🖲️ Ratukas: Artinti / Tolinti</li>
-                        </ul>
-                    </GlassPanel>
+                    {/* Language switcher - top right corner */}
+                    <div className="absolute right-4 top-4 flex items-start gap-4">
+                        <LanguageSwitcher />
+                        <GlassPanel className="w-64">
+                            <h3 className="mb-2 text-sm font-bold text-neon-amber">
+                                {t('viewer.controls')}
+                            </h3>
+                            <ul className="space-y-1 text-xs text-white/70">
+                                <li>{t('viewer.controlLeftClick')}</li>
+                                <li>{t('viewer.controlRightClick')}</li>
+                                <li>{t('viewer.controlScroll')}</li>
+                            </ul>
+                        </GlassPanel>
+                    </div>
 
                     {/* Measurement Tools - only visible when UI is visible */}
                     {!isLoading && !error && (
@@ -276,7 +286,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         ? 'bg-neon-cyan/30 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)]'
                         : 'bg-void-black/60 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10'
                 }`}
-                title={uiVisible ? 'Slėpti valdiklius' : 'Rodyti valdiklius'}
+                title={uiVisible ? t('viewer.hideControls') : t('viewer.showControls')}
             >
                 <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
             </button>

@@ -1,0 +1,100 @@
+{
+    "home": {
+        "title": "LITHUANIA LIDAR MAP",
+        "subtitle": "Select a sector to view",
+        "footer": "Data source: geoportal.lt"
+    },
+    "sidebar": {
+        "visualization": "Visualization",
+        "classifications": "Classifications",
+        "rendering": "Rendering"
+    },
+    "classification": {
+        "unclassified": "Unclassified",
+        "ground": "Ground",
+        "lowVegetation": "Low Vegetation",
+        "mediumVegetation": "Medium Vegetation",
+        "highVegetation": "High Vegetation",
+        "buildings": "Buildings",
+        "noise": "Noise",
+        "keyPoints": "Key Points",
+        "water": "Water",
+        "overlap": "Overlap",
+        "classLabel": "Class {{id}}",
+        "selectAll": "All Points"
+    },
+    "colorMode": {
+        "label": "Coloring",
+        "elevation": "Elevation",
+        "intensity": "Intensity",
+        "returnNumber": "Returns",
+        "returnNumberTooltip": "Shows laser returns: 1st = canopy top, last = ground",
+        "contrast": "Contrast",
+        "bright": "Bright",
+        "dark": "Dark"
+    },
+    "edl": {
+        "label": "EDL",
+        "strength": "Strength",
+        "radius": "Radius"
+    },
+    "flood": {
+        "waterLevel": "Water Level",
+        "waterLevelValue": "Water level: {{value}}",
+        "step": "Step",
+        "close": "Close",
+        "decreaseStep": "Decrease step",
+        "increaseStep": "Increase step",
+        "simulationActive": "Flood simulation active",
+        "simulation": "Flood Simulation"
+    },
+    "pointCloud": {
+        "pointSize": "Point Size",
+        "pointShape": "Point Shape",
+        "shapes": {
+            "square": "Squares",
+            "circle": "Circles",
+            "paraboloid": "Paraboloids"
+        },
+        "zScale": "Vertical Exaggeration",
+        "detailLevel": "Detail Level (Min Node)"
+    },
+    "viewer": {
+        "hideControls": "Hide controls",
+        "showControls": "Show controls",
+        "loading": "Loading point cloud...",
+        "error": "Error",
+        "back": "← Back",
+        "controls": "Controls",
+        "controlLeftClick": "🖱️ Left click: Pan",
+        "controlRightClick": "🖱️ Right click: Rotate",
+        "controlScroll": "🖲️ Scroll: Zoom in / out"
+    },
+    "measurement": {
+        "distance": "Measure Distance",
+        "area": "Measure Area",
+        "heightProfile": "Height Profile",
+        "deleteLast": "Delete last",
+        "deleteAll": "Delete all",
+        "exportCsv": "Export CSV"
+    },
+    "googleMaps": {
+        "copied": "Copied!",
+        "copyLink": "Copy Google Maps link"
+    },
+    "search": {
+        "coordinatePlaceholder": "54.687, 25.279",
+        "gridPlaceholder": "Search (ID, name, coords)...",
+        "go": "Go",
+        "found": "Found",
+        "example": "E.g: 35/71; Skuodas; 55.69, 26.43",
+        "clearSearch": "Clear search"
+    },
+    "grid": {
+        "sectorId": "SECTOR ID"
+    },
+    "language": {
+        "lt": "LT",
+        "en": "EN"
+    }
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer, Potree } from '@/common/types/potree';
 import { POINT_APPEARANCE_DEFAULTS, type PointShape } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -10,14 +11,17 @@ interface PointShapeControlProps {
     updateUrl: (state: Partial<ViewerState>) => void;
 }
 
-const SHAPE_OPTIONS: { value: PointShape; label: string }[] = [
-    { value: 'square', label: 'Kvadratai' },
-    { value: 'circle', label: 'Apskritimai' },
-    { value: 'paraboloid', label: 'Paraboloidai' },
+type ShapeOption = { value: PointShape; labelKey: string };
+
+const SHAPE_OPTIONS: ShapeOption[] = [
+    { value: 'square', labelKey: 'pointCloud.shapes.square' },
+    { value: 'circle', labelKey: 'pointCloud.shapes.circle' },
+    { value: 'paraboloid', labelKey: 'pointCloud.shapes.paraboloid' },
 ];
 
 /* eslint-disable react-compiler/react-compiler */
 export function PointShapeControl({ viewerRef, initialState, updateUrl }: PointShapeControlProps) {
+    const { t } = useTranslation();
     const [shape, setShape] = useState<PointShape>(
         initialState.psh ?? POINT_APPEARANCE_DEFAULTS.shape
     );
@@ -48,7 +52,7 @@ export function PointShapeControl({ viewerRef, initialState, updateUrl }: PointS
 
     return (
         <div className="flex flex-col gap-1">
-            <span className="text-xs text-white/70">Taškų forma</span>
+            <span className="text-xs text-white/70">{t('pointCloud.pointShape')}</span>
             <div className="flex gap-1">
                 {SHAPE_OPTIONS.map((option) => (
                     <button
@@ -56,7 +60,7 @@ export function PointShapeControl({ viewerRef, initialState, updateUrl }: PointS
                         className={buttonClass(shape === option.value)}
                         onClick={() => handleShapeChange(option.value)}
                     >
-                        {option.label}
+                        {t(option.labelKey)}
                     </button>
                 ))}
             </div>

@@ -1,18 +1,25 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { GridVisualizer } from '@/features/GridMap';
+import { LanguageSwitcher } from '@/common/components';
 
 export const Route = createFileRoute('/')({
     component: HomePage,
 });
 
 function HomePage() {
+    const { t } = useTranslation();
+
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-void-black">
             <header className="shrink-0 border-b border-glass-border p-4">
+                <div className="flex items-center justify-end mb-2">
+                    <LanguageSwitcher />
+                </div>
                 <h1 className="text-center text-2xl font-bold tracking-widest text-neon-amber">
-                    LIETUVOS LIDAR ŽEMĖLAPIS
+                    {t('home.title')}
                 </h1>
-                <p className="text-center text-sm text-white/40">Pasirinkite sektorių peržiūrai</p>
+                <p className="text-center text-sm text-white/40">{t('home.subtitle')}</p>
             </header>
 
             <main className="min-h-0 flex-1">
@@ -22,7 +29,7 @@ function HomePage() {
             </main>
 
             <footer className="shrink-0 border-t border-glass-border p-2 text-center text-xs text-white/30">
-                Duomenų šaltinis: geoportal.lt
+                {t('home.footer')}
             </footer>
         </div>
     );

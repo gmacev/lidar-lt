@@ -1,4 +1,5 @@
 import { useState, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 
@@ -11,6 +12,7 @@ interface GoogleMapsButtonProps {
 }
 
 export function GoogleMapsButton({ viewerRef }: GoogleMapsButtonProps) {
+    const { t } = useTranslation();
     const [copied, setCopied] = useState(false);
 
     const handleClick = async () => {
@@ -51,7 +53,7 @@ export function GoogleMapsButton({ viewerRef }: GoogleMapsButtonProps) {
                     ? 'bg-neon-green/30 border-neon-green text-neon-green shadow-[0_0_12px_rgba(0,255,0,0.3)]'
                     : 'bg-void-black/60 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10'
             }`}
-            title={copied ? 'Nukopijuota!' : 'Kopijuoti Google Maps nuorodą'}
+            title={copied ? t('googleMaps.copied') : t('googleMaps.copyLink')}
         >
             {copied ? (
                 <Icon name="check" size={18} />

@@ -1,4 +1,5 @@
 import type { RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { GlassPanel, Icon } from '@/common/components';
@@ -19,11 +20,16 @@ interface ViewerSidebarProps {
  * Positioned on the left side with collapsible sections.
  */
 export function ViewerSidebar({ viewerRef, initialState, updateUrl }: ViewerSidebarProps) {
+    const { t } = useTranslation();
+
     return (
         <GlassPanel className="w-72 max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
             <div className="flex flex-col">
                 {/* Visualization Section */}
-                <SidebarSection title="Vizualizacija" icon={<Icon name="palette" size={16} />}>
+                <SidebarSection
+                    title={t('sidebar.visualization')}
+                    icon={<Icon name="palette" size={16} />}
+                >
                     <ColorModeControl
                         viewerRef={viewerRef}
                         initialState={initialState}
@@ -32,7 +38,10 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl }: ViewerSide
                 </SidebarSection>
 
                 {/* Classifications Section */}
-                <SidebarSection title="Klasifikacijos" icon={<Icon name="tag" size={16} />}>
+                <SidebarSection
+                    title={t('sidebar.classifications')}
+                    icon={<Icon name="tag" size={16} />}
+                >
                     <ClassificationControl
                         viewerRef={viewerRef}
                         initialState={initialState}
@@ -41,7 +50,10 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl }: ViewerSide
                 </SidebarSection>
 
                 {/* Rendering Section */}
-                <SidebarSection title="Atvaizdavimas" icon={<Icon name="sparkles" size={16} />}>
+                <SidebarSection
+                    title={t('sidebar.rendering')}
+                    icon={<Icon name="sparkles" size={16} />}
+                >
                     <div className="flex flex-col gap-3">
                         <EDLControl
                             viewerRef={viewerRef}

@@ -1,4 +1,5 @@
 import { useState, useEffect, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
@@ -16,29 +17,15 @@ interface ClassificationItem {
     color: [number, number, number, number];
 }
 
-const LT_CLASSIFICATIONS: Record<number, string> = {
-    0: 'Neklasifikuoti',
-    1: 'Neklasifikuoti',
-    2: 'Žemė',
-    3: 'Žema augmenija',
-    4: 'Vidutinė augmenija',
-    5: 'Aukšta augmenija',
-    6: 'Pastatai',
-    7: 'Triukšmas',
-    8: 'Esminiai taškai',
-    9: 'Vanduo',
-    12: 'Persidengimas',
-};
-
 const DISPLAY_ORDER = [
-    2, // Žemė
-    3, // Žema augmenija
-    4, // Vidutinė augmenija
-    5, // Aukšta augmenija
-    6, // Pastatai
-    12, // Persidengimas
-    0, // Neklasifikuoti (Master for 0 & 1)
-    7, // Triukšmas
+    2, // Ground
+    3, // Low Vegetation
+    4, // Medium Vegetation
+    5, // High Vegetation
+    6, // Buildings
+    12, // Overlap
+    0, // Unclassified (Master for 0 & 1)
+    7, // Noise
 ];
 
 export function ClassificationControl({
@@ -46,14 +33,33 @@ export function ClassificationControl({
     initialState,
     updateUrl,
 }: ClassificationControlProps) {
+    const { t } = useTranslation();
     const [hiddenClasses, setHiddenClasses] = useState<Set<number>>(
         new Set(initialState.hiddenClasses ?? [])
     );
 
+    // Translation keys for classification names
+    const getClassificationName = (id: number): string => {
+        const classKeys: Record<number, string> = {
+            0: 'classification.unclassified',
+            1: 'classification.unclassified',
+            2: 'classification.ground',
+            3: 'classification.lowVegetation',
+            4: 'classification.mediumVegetation',
+            5: 'classification.highVegetation',
+            6: 'classification.buildings',
+            7: 'classification.noise',
+            8: 'classification.keyPoints',
+            9: 'classification.water',
+            12: 'classification.overlap',
+        };
+        return t(classKeys[id] || 'classification.classLabel', { id });
+    };
+
     // Initialize list immediately for UI - no layout shift!
     const classifications: ClassificationItem[] = DISPLAY_ORDER.map((id) => ({
         id,
-        name: LT_CLASSIFICATIONS[id] || `Klasė ${id}`,
+        name: getClassificationName(id),
         visible: !hiddenClasses.has(id),
         color: [0, 0, 0, 1], // Dummy color, UI doesn't use it yet
     }));
@@ -173,7 +179,7 @@ export function ClassificationControl({
                     onChange={toggleAll}
                     className="w-4 h-4 accent-cyan-400 cursor-pointer"
                 />
-                <span>Visi taškai</span>
+                <span>{t('classification.selectAll')}</span>
             </label>
         </div>
     );

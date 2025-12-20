@@ -1,11 +1,13 @@
 import Map, { Source, Layer, type LayerProps } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { useTranslation } from 'react-i18next';
 import { useLithuaniaGrid } from '@/features/GridMap/hooks';
 import { GridSearchControl } from './GridSearchControl';
 
 const GRID_SOURCE_ID = 'lidar-grid';
 
 export function GridVisualizer() {
+    const { t } = useTranslation();
     const { data, mapRef, tooltip, search, handlers } = useLithuaniaGrid();
 
     // Dynamic layer styles using feature state for hover
@@ -82,7 +84,9 @@ export function GridVisualizer() {
                     className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full rounded border border-neon-cyan bg-black/80 px-3 py-2 text-neon-cyan"
                     style={{ left: tooltip.x, top: tooltip.y - 10 }}
                 >
-                    <div className="font-mono text-xs text-gray-400">SECTOR ID: {tooltip.id}</div>
+                    <div className="font-mono text-xs text-gray-400">
+                        {t('grid.sectorId')}: {tooltip.id}
+                    </div>
                     <div className="text-sm font-bold">{tooltip.name}</div>
                 </div>
             )}

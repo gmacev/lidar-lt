@@ -1,5 +1,6 @@
 import { GlassPanel } from '@/common/components/GlassPanel';
 import type { RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { useCoordinateSearch } from '@/features/Viewer/hooks/useCoordinateSearch';
 
@@ -14,6 +15,7 @@ export function CoordinateSearchControl({
     sectorName,
     cellId,
 }: CoordinateSearchControlProps) {
+    const { t } = useTranslation();
     const { query, setQuery, isValid, coordinates, defaultHeight } = useCoordinateSearch();
 
     const handleGo = () => {
@@ -53,7 +55,7 @@ export function CoordinateSearchControl({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="54.687, 25.279"
+                    placeholder={t('search.coordinatePlaceholder')}
                     className={`w-48 rounded border bg-black/60 px-3 py-1.5 text-sm placeholder-gray-500 transition-colors focus:outline-none focus:ring-1 ${
                         query && !isValid
                             ? 'border-plasma-red/50 text-plasma-red focus:border-plasma-red focus:ring-plasma-red/30'
@@ -71,7 +73,7 @@ export function CoordinateSearchControl({
                             : 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
                     }`}
                 >
-                    Eiti
+                    {t('search.go')}
                 </button>
             </div>
         </GlassPanel>

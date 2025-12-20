@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Switch } from '@/common/components/Switch';
 import { Icon } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
@@ -12,6 +13,7 @@ interface EDLControlProps {
 }
 
 export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlProps) {
+    const { t } = useTranslation();
     const [edlEnabled, setEdlEnabled] = useState(initialState.edlEnabled ?? EDL_DEFAULTS.enabled);
     const [edlStrength, setEdlStrength] = useState(
         initialState.edlStrength ?? EDL_DEFAULTS.strength
@@ -41,7 +43,7 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white/90">EDL</span>
+                <span className="text-sm font-bold text-white/90">{t('edl.label')}</span>
                 <Switch
                     checked={edlEnabled}
                     onChange={(checked) => {
@@ -58,7 +60,8 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
 
             <div className={`flex flex-col gap-1 ${!edlEnabled ? 'opacity-40' : ''}`}>
                 <label className="text-xs text-white/70">
-                    Stiprumas: <span className="text-laser-green">{edlStrength.toFixed(1)}</span>
+                    {t('edl.strength')}:{' '}
+                    <span className="text-laser-green">{edlStrength.toFixed(1)}</span>
                 </label>
                 <input
                     type="range"
@@ -73,7 +76,8 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
             </div>
             <div className={`flex flex-col gap-1 ${!edlEnabled ? 'opacity-40' : ''}`}>
                 <label className="text-xs text-white/70">
-                    Spindulys: <span className="text-laser-green">{edlRadius.toFixed(1)}</span>
+                    {t('edl.radius')}:{' '}
+                    <span className="text-laser-green">{edlRadius.toFixed(1)}</span>
                 </label>
                 <input
                     type="range"

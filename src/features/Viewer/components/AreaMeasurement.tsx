@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/common/components';
 
 interface AreaMeasurementProps {
@@ -24,6 +25,8 @@ function formatArea(sqMeters: number): string {
  * Shows active state when measurement is in progress.
  */
 export function AreaMeasurement({ onClick, isActive, totalArea }: AreaMeasurementProps) {
+    const { t } = useTranslation();
+
     return (
         <div className="flex items-center gap-1">
             {/* Total area display - only show when there are measurements */}
@@ -41,7 +44,7 @@ export function AreaMeasurement({ onClick, isActive, totalArea }: AreaMeasuremen
                         ? 'bg-neon-cyan/30 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)]'
                         : 'bg-void-black/60 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10'
                 }`}
-                title="Matuoti plotą"
+                title={t('measurement.area')}
             >
                 <Icon name="map" size={20} />
             </button>
