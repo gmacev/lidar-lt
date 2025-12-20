@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/common/components';
 
 interface FloodSimulationToolProps {
@@ -38,6 +39,8 @@ export function FloodSimulationTool({
     onPrecisionChange,
     onReset,
 }: FloodSimulationToolProps) {
+    const { t } = useTranslation();
+
     // Calculate percentage for slider gradient
     const range = maxLevel - minLevel;
     const percentage = range > 0 ? ((waterLevel - minLevel) / range) * 100 : 0;
@@ -77,12 +80,12 @@ export function FloodSimulationTool({
                     {/* Header row */}
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-white/60 uppercase tracking-wide">
-                            Vandens lygis
+                            {t('flood.waterLevel')}
                         </span>
                         <button
                             onClick={onReset}
                             className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-plasma-red hover:bg-plasma-red/10 transition-all"
-                            title="Uždaryti"
+                            title={t('flood.close')}
                         >
                             <Icon name="close" size={12} strokeWidth={2.5} />
                         </button>
@@ -109,7 +112,9 @@ export function FloodSimulationTool({
                             style={{
                                 background: `linear-gradient(to right, #3b82f6 ${percentage}%, rgba(255,255,255,0.15) ${percentage}%)`,
                             }}
-                            title={`Vandens lygis: ${formatElevation(waterLevel)}`}
+                            title={t('flood.waterLevelValue', {
+                                value: formatElevation(waterLevel),
+                            })}
                         />
                         <div className="flex justify-between">
                             <span className="text-[10px] text-white/30">
@@ -124,13 +129,13 @@ export function FloodSimulationTool({
                     {/* Step control with custom +/- buttons */}
                     <div className="flex items-center justify-between pt-2 border-t border-white/5">
                         <span className="text-[10px] text-white/40 uppercase tracking-wide">
-                            Žingsnis
+                            {t('flood.step')}
                         </span>
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={() => onPrecisionChange(Math.max(0.01, precision / 2))}
                                 className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-all"
-                                title="Sumažinti žingsnį"
+                                title={t('flood.decreaseStep')}
                             >
                                 <Icon name="minus" size={10} strokeWidth={3} />
                             </button>
@@ -145,7 +150,7 @@ export function FloodSimulationTool({
                             <button
                                 onClick={() => onPrecisionChange(Math.min(100, precision * 2))}
                                 className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-all"
-                                title="Padidinti žingsnį"
+                                title={t('flood.increaseStep')}
                             >
                                 <Icon name="plus" size={10} strokeWidth={3} />
                             </button>
@@ -162,7 +167,7 @@ export function FloodSimulationTool({
                         ? 'bg-blue-500/30 border-blue-400 text-blue-300 shadow-[0_0_12px_rgba(0,136,255,0.3)]'
                         : 'bg-void-black/60 border-white/10 text-white/70 hover:text-blue-300 hover:border-blue-400/50 hover:bg-white/10'
                 }`}
-                title={isActive ? 'Potvynio simuliacija aktyvi' : 'Potvynio simuliacija'}
+                title={isActive ? t('flood.simulationActive') : t('flood.simulation')}
             >
                 <Icon name="waves" size={20} />
             </button>

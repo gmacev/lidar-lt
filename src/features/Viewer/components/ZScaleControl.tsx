@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { Z_SCALE_DEFAULTS } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -10,6 +11,7 @@ interface ZScaleControlProps {
 }
 
 export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleControlProps) {
+    const { t } = useTranslation();
     const [zScale, setZScale] = useState(initialState.zScale ?? Z_SCALE_DEFAULTS.scale);
 
     const handleZScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,7 +33,7 @@ export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleCont
     return (
         <div className="flex flex-col gap-2">
             <label className="text-xs text-white/70 flex justify-between">
-                Z Skalė
+                {t('pointCloud.zScale')}
                 <span className="text-laser-green">{zScale.toFixed(1)}</span>
             </label>
             <input

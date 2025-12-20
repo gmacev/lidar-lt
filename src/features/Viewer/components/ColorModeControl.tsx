@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer, Potree } from '@/common/types/potree';
 import {
     configureMaterialForElevation,
@@ -16,6 +17,7 @@ interface ColorModeControlProps {
 
 /* eslint-disable react-compiler/react-compiler */
 export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorModeControlProps) {
+    const { t } = useTranslation();
     const [colorMode, setColorMode] = useState<ColorMode>(initialState.colorMode ?? 'elevation');
     const [intensityMax, setIntensityMax] = useState(initialState.intensityMax ?? 10000);
 
@@ -64,26 +66,26 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
 
     return (
         <div className="flex flex-col gap-2">
-            <span className="text-xs text-white/70">Spalvinimas</span>
+            <span className="text-xs text-white/70">{t('colorMode.label')}</span>
             <div className="flex gap-1">
                 <button
                     className={buttonClass('elevation')}
                     onClick={() => handleModeChange('elevation')}
                 >
-                    Aukštis
+                    {t('colorMode.elevation')}
                 </button>
                 <button
                     className={buttonClass('intensity')}
                     onClick={() => handleModeChange('intensity')}
                 >
-                    Intensyvumas
+                    {t('colorMode.intensity')}
                 </button>
                 <button
                     className={buttonClass('return-number')}
                     onClick={() => handleModeChange('return-number')}
-                    title="Rodo lazerio grįžimus: 1-as = viršūnė, paskutinis = žemė"
+                    title={t('colorMode.returnNumberTooltip')}
                 >
-                    Grįžimai
+                    {t('colorMode.returnNumber')}
                 </button>
             </div>
 
@@ -91,7 +93,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
             {colorMode === 'intensity' && (
                 <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-white/10">
                     <label className="text-xs text-white/70 flex justify-between">
-                        Kontrastas
+                        {t('colorMode.contrast')}
                         <span className="text-laser-green">{intensityMax.toLocaleString()}</span>
                     </label>
                     <input
@@ -104,8 +106,8 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         className="w-full accent-laser-green"
                     />
                     <div className="flex justify-between text-[10px] text-white/40">
-                        <span>Ryškus</span>
-                        <span>Tamsus</span>
+                        <span>{t('colorMode.bright')}</span>
+                        <span>{t('colorMode.dark')}</span>
                     </div>
                 </div>
             )}

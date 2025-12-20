@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { PERFORMANCE_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -10,6 +11,7 @@ interface NodeSizeControlProps {
 }
 
 export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSizeControlProps) {
+    const { t } = useTranslation();
     const [minNodeSize, setMinNodeSize] = useState<number>(
         initialState.mns ?? PERFORMANCE_DEFAULTS.minNodeSize
     );
@@ -29,7 +31,7 @@ export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSize
     return (
         <div className="flex flex-col gap-2">
             <label className="text-xs text-white/70 flex justify-between">
-                Detalumas (Min Node)
+                {t('pointCloud.detailLevel')}
                 <span className="text-laser-green">{minNodeSize}</span>
             </label>
             <input

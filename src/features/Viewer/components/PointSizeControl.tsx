@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { POINT_SIZE_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -10,6 +11,7 @@ interface PointSizeControlProps {
 }
 
 export function PointSizeControl({ viewerRef, initialState, updateUrl }: PointSizeControlProps) {
+    const { t } = useTranslation();
     const [pointSize, setPointSize] = useState(initialState.ps ?? POINT_SIZE_DEFAULTS.size);
 
     const handlePointSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,7 +33,7 @@ export function PointSizeControl({ viewerRef, initialState, updateUrl }: PointSi
     return (
         <div className="flex flex-col gap-2">
             <label className="text-xs text-white/70 flex justify-between">
-                Taškų dydis
+                {t('pointCloud.pointSize')}
                 <span className="text-laser-green">{pointSize.toFixed(1)}</span>
             </label>
             <input

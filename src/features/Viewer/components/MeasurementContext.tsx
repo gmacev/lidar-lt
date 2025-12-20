@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GlassPanel } from '@/common/components';
 
 interface MeasurementContextProps {
@@ -18,6 +19,7 @@ export function MeasurementContext({
     onDeleteAll,
     onExportCsv,
 }: MeasurementContextProps) {
+    const { t } = useTranslation();
     const menuRef = useRef<HTMLDivElement>(null);
 
     // Close on click outside
@@ -43,7 +45,7 @@ export function MeasurementContext({
                     }}
                     className="w-full text-left px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors flex items-center gap-2"
                 >
-                    <span className="text-neon-cyan">↩️</span> Ištrinti paskutinį
+                    <span className="text-neon-cyan">↩️</span> {t('measurement.deleteLast')}
                 </button>
                 <div className="h-[1px] bg-white/10 my-1" />
                 <button
@@ -53,7 +55,7 @@ export function MeasurementContext({
                     }}
                     className="w-full text-left px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors flex items-center gap-2"
                 >
-                    <span className="text-plasma-red">🗑️</span> Ištrinti viską
+                    <span className="text-plasma-red">🗑️</span> {t('measurement.deleteAll')}
                 </button>
                 <div className="h-[1px] bg-white/10 my-1" />
                 <button
@@ -63,7 +65,7 @@ export function MeasurementContext({
                     }}
                     className="w-full text-left px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors flex items-center gap-2"
                 >
-                    <span>📊</span> Eksportuoti CSV
+                    <span>📊</span> {t('measurement.exportCsv')}
                 </button>
             </GlassPanel>
         </div>
