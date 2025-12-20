@@ -1,0 +1,100 @@
+{
+    "home": {
+        "title": "LIETUVOS LIDAR ŽEMĖLAPIS",
+        "subtitle": "Pasirinkite sektorių peržiūrai",
+        "footer": "Duomenų šaltinis: geoportal.lt"
+    },
+    "sidebar": {
+        "visualization": "Vizualizacija",
+        "classifications": "Klasifikacijos",
+        "rendering": "Atvaizdavimas"
+    },
+    "classification": {
+        "unclassified": "Neklasifikuoti",
+        "ground": "Žemė",
+        "lowVegetation": "Žema augmenija",
+        "mediumVegetation": "Vidutinė augmenija",
+        "highVegetation": "Aukšta augmenija",
+        "buildings": "Pastatai",
+        "noise": "Triukšmas",
+        "keyPoints": "Esminiai taškai",
+        "water": "Vanduo",
+        "overlap": "Persidengimas",
+        "classLabel": "Klasė {{id}}",
+        "selectAll": "Visi taškai"
+    },
+    "colorMode": {
+        "label": "Spalvinimas",
+        "elevation": "Aukštis",
+        "intensity": "Intensyvumas",
+        "returnNumber": "Grįžimai",
+        "returnNumberTooltip": "Rodo lazerio grįžimus: 1-as = viršūnė, paskutinis = žemė",
+        "contrast": "Kontrastas",
+        "bright": "Ryškus",
+        "dark": "Tamsus"
+    },
+    "edl": {
+        "label": "EDL",
+        "strength": "Stiprumas",
+        "radius": "Spindulys"
+    },
+    "flood": {
+        "waterLevel": "Vandens lygis",
+        "waterLevelValue": "Vandens lygis: {{value}}",
+        "step": "Žingsnis",
+        "close": "Uždaryti",
+        "decreaseStep": "Sumažinti žingsnį",
+        "increaseStep": "Padidinti žingsnį",
+        "simulationActive": "Potvynio simuliacija aktyvi",
+        "simulation": "Potvynio simuliacija"
+    },
+    "pointCloud": {
+        "pointSize": "Taškų dydis",
+        "pointShape": "Taškų forma",
+        "shapes": {
+            "square": "Kvadratai",
+            "circle": "Apskritimai",
+            "paraboloid": "Paraboloidai"
+        },
+        "zScale": "Z Skalė",
+        "detailLevel": "Detalumas (Min Node)"
+    },
+    "viewer": {
+        "hideControls": "Slėpti valdiklius",
+        "showControls": "Rodyti valdiklius",
+        "loading": "Kraunami taškų debesys...",
+        "error": "Klaida",
+        "back": "← Atgal",
+        "controls": "Valdymas",
+        "controlLeftClick": "🖱️ Kairysis: Slinkti",
+        "controlRightClick": "🖱️ Dešinysis: Sukti",
+        "controlScroll": "🖲️ Ratukas: Artinti / Tolinti"
+    },
+    "measurement": {
+        "distance": "Matuoti atstumą",
+        "area": "Matuoti plotą",
+        "heightProfile": "Aukščių profilis",
+        "deleteLast": "Ištrinti paskutinį",
+        "deleteAll": "Ištrinti viską",
+        "exportCsv": "Eksportuoti CSV"
+    },
+    "googleMaps": {
+        "copied": "Nukopijuota!",
+        "copyLink": "Kopijuoti Google Maps nuorodą"
+    },
+    "search": {
+        "coordinatePlaceholder": "54.687, 25.279",
+        "gridPlaceholder": "Ieškoti (ID, pavadinimas, coords)...",
+        "go": "Eiti",
+        "found": "Rasta",
+        "example": "Pvz: 35/71; Skuodas; 55.69, 26.43",
+        "clearSearch": "Išvalyti paiešką"
+    },
+    "grid": {
+        "sectorId": "SEKTORIAUS ID"
+    },
+    "language": {
+        "lt": "LT",
+        "en": "EN"
+    }
+}
