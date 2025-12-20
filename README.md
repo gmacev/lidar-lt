@@ -51,7 +51,7 @@ src/
 
 ## Data Source
 
-Point cloud data is sourced from the Lithuanian Spatial Information Portal ([geoportal.lt](https://www.geoportal.lt/)). Raw LAZ files are processed with PDAL and converted to Potree format for web visualization.
+Point cloud data is sourced from the Lithuanian Spatial Information Portal ([geoportal.lt](https://www.geoportal.lt/)). Raw LAZ files are processed with PDAL and converted with Potree Converter to a format for web visualization.
 
 ## License
 
