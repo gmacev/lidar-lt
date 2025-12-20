@@ -1,0 +1,47 @@
+# dependencies
+node_modules/
+
+# production builds
+dist/
+build/
+
+# local env files
+.env
+.env.*
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# editor / OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# cache
+.eslintcache
+.cache/
+.parcel-cache/
+
+# testing
+coverage/
+
+# vite
+.vite

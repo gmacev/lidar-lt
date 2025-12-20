@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="lt">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Lietuvos LiDAR duomenų interaktyvus žemėlapis" />
+  <title>LiDAR Lithuania</title>
+
+  <!-- Potree CSS -->
+  <link rel="stylesheet" href="/potree/potree.css">
+</head>
+
+<body>
+  <!-- Potree Dependencies -->
+  <script src="/libs/three.js/build/three.min.js"></script>
+  <script src="/libs/jquery/jquery-3.1.1.min.js"></script>
+  <script src="/libs/proj4/proj4.js"></script>
+  <script src="/libs/other/BinaryHeap.js"></script>
+  <script src="/libs/tween/tween.min.js"></script>
+
+  <!-- Potree 2.0 -->
+  <script src="/potree/potree.js"></script>
+
+  <!-- React App -->
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

@@ -1,0 +1,66 @@
+/**
+ * Shared configuration for the Potree viewer
+ * Single source of truth for default values
+ */
+
+export const EDL_DEFAULTS: { enabled: boolean; strength: number; radius: number } = {
+    enabled: true,
+    strength: 1.0,
+    radius: 0.5,
+};
+
+export const PERFORMANCE_DEFAULTS = {
+    pointBudget: 8_000_000,
+    minNodeSize: 15,
+    useHighQuality: true,
+    fov: 60,
+} as const;
+
+export const POINT_SIZE_DEFAULTS: { size: number } = {
+    size: 0.5,
+};
+
+export const Z_SCALE_DEFAULTS: { scale: number } = {
+    scale: 1.0,
+};
+
+import { z } from 'zod';
+
+export const ColorModeSchema = z.enum(['elevation', 'intensity', 'return-number']);
+export type ColorMode = z.infer<typeof ColorModeSchema>;
+
+export const PointShapeSchema = z.enum(['square', 'circle', 'paraboloid']);
+export type PointShape = z.infer<typeof PointShapeSchema>;
+
+export const POINT_APPEARANCE_DEFAULTS = {
+    shape: 'circle' as PointShape,
+} as const;
+
+export const ViewerStateSchema = z.object({
+    // Camera position
+    x: z.number().optional(),
+    y: z.number().optional(),
+    z: z.number().optional(),
+    // Camera orientation (direct values, more stable than target position)
+    yaw: z.number().optional(),
+    pitch: z.number().optional(),
+    radius: z.number().optional(),
+    // Color mode
+    colorMode: ColorModeSchema.optional(),
+    intensityMax: z.number().optional(),
+    // EDL settings
+    edlEnabled: z.boolean().optional(),
+    edlStrength: z.number().optional(),
+    edlRadius: z.number().optional(),
+    // Rendering settings (short names to avoid Potree URL conflicts)
+    ps: z.number().optional(), // point size
+    mns: z.number().optional(), // min node size
+    psh: PointShapeSchema.optional(), // point shape
+    zScale: z.number().optional(), // vertical exaggeration
+    // Classifications (array of hidden class IDs)
+    hiddenClasses: z.array(z.number()).optional(),
+    // Sector metadata
+    sectorName: z.string().optional(),
+});
+
+export type ViewerState = z.infer<typeof ViewerStateSchema>;

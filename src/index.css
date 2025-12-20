@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+@theme {
+    --color-void-black: #000000;
+    --color-deep-space: #0a0a0f;
+    --color-neon-amber: #ffb800;
+    --color-laser-green: #00ff88;
+    --color-plasma-red: #ff3366;
+    --color-glass-border: rgba(255, 255, 255, 0.1);
+    --color-glass-bg: rgba(255, 255, 255, 0.05);
+}
+
+html,
+body,
+#root {
+    min-height: 100vh;
+    background-color: var(--color-void-black);
+    color: white;
+    font-family:
+        system-ui,
+        -apple-system,
+        sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.grid-tooltip {
+    background: rgba(10, 10, 15, 0.95);
+    border: 1px solid rgba(255, 184, 0, 0.5);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #ffb800;
+    font-family:
+        system-ui,
+        -apple-system,
+        sans-serif;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.grid-tooltip::before {
+    border-top-color: rgba(255, 184, 0, 0.5) !important;
+}
