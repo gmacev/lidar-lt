@@ -8,9 +8,10 @@ interface FOVControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
     initialState: ViewerState;
     updateUrl: (state: Partial<ViewerState>) => void;
+    disabled?: boolean;
 }
 
-export function FOVControl({ viewerRef, initialState, updateUrl }: FOVControlProps) {
+export function FOVControl({ viewerRef, initialState, updateUrl, disabled }: FOVControlProps) {
     const { t } = useTranslation();
     const [fov, setFov] = useState<number>(initialState.fov ?? PERFORMANCE_DEFAULTS.fov);
 
@@ -26,7 +27,9 @@ export function FOVControl({ viewerRef, initialState, updateUrl }: FOVControlPro
     };
 
     return (
-        <div className="flex flex-col gap-1">
+        <div
+            className={`flex flex-col gap-1 transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+        >
             <label className="text-xs text-white/70 flex justify-between">
                 {t('pointCloud.fov')}
                 <span className="text-laser-green">{fov}°</span>
@@ -38,6 +41,7 @@ export function FOVControl({ viewerRef, initialState, updateUrl }: FOVControlPro
                 step="5"
                 value={fov}
                 onChange={handleChange}
+                disabled={disabled}
                 className="w-full accent-laser-green"
             />
         </div>

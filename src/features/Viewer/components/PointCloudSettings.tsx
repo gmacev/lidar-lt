@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type { PotreeViewer } from '@/common/types/potree';
-import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import type { ViewerState, Projection } from '@/features/Viewer/config/viewerConfig';
 import { PointSizeControl } from './PointSizeControl';
 import { PointBudgetControl } from './PointBudgetControl';
 import { FOVControl } from './FOVControl';
@@ -8,17 +9,22 @@ import { PointShapeControl } from './PointShapeControl';
 import { ZScaleControl } from './ZScaleControl';
 import { CameraProjectionControl } from './CameraProjectionControl';
 
-interface PointCloudQualityControlProps {
+interface PointCloudSettingsProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
     initialState: ViewerState;
     updateUrl: (state: Partial<ViewerState>) => void;
 }
 
-export function PointCloudQualityControl({
+export function PointCloudSettings({
     viewerRef,
     initialState,
     updateUrl,
-}: PointCloudQualityControlProps) {
+}: PointCloudSettingsProps) {
+    // Lift projection state to control FOV availability
+    const [projection, setProjection] = useState<Projection>(
+        initialState.projection ?? 'PERSPECTIVE'
+    );
+
     return (
         <div className="flex flex-col gap-3">
             <PointShapeControl
@@ -36,8 +42,17 @@ export function PointCloudQualityControl({
                 initialState={initialState}
                 updateUrl={updateUrl}
             />
-            <CameraProjectionControl viewerRef={viewerRef} initialState={initialState} />
-            <FOVControl viewerRef={viewerRef} initialState={initialState} updateUrl={updateUrl} />
+            <CameraProjectionControl
+                viewerRef={viewerRef}
+                initialState={initialState}
+                onProjectionChange={setProjection}
+            />
+            <FOVControl
+                viewerRef={viewerRef}
+                initialState={initialState}
+                updateUrl={updateUrl}
+                disabled={projection === 'ORTHOGRAPHIC'}
+            />
             <ZScaleControl
                 viewerRef={viewerRef}
                 initialState={initialState}

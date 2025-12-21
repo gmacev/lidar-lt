@@ -1,5 +1,5 @@
 export { ViewerPage } from './ViewerPage';
-export { PointCloudQualityControl } from './PointCloudQualityControl';
+export { PointCloudSettings } from './PointCloudSettings';
 export { PointSizeControl } from './PointSizeControl';
 export { PointBudgetControl } from './PointBudgetControl';
 export { FOVControl } from './FOVControl';

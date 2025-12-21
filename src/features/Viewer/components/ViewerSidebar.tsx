@@ -7,7 +7,7 @@ import { SidebarSection } from './SidebarSection';
 import { ColorModeControl } from './ColorModeControl';
 import { ClassificationControl } from './ClassificationControl';
 import { EDLControl } from './EDLControl';
-import { PointCloudQualityControl } from './PointCloudQualityControl';
+import { PointCloudSettings } from './PointCloudSettings';
 
 interface ViewerSidebarProps {
     viewerRef: RefObject<PotreeViewer | null>;
@@ -61,7 +61,7 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl }: ViewerSide
                             updateUrl={updateUrl}
                         />
                         <div className="border-t border-white/10 pt-3">
-                            <PointCloudQualityControl
+                            <PointCloudSettings
                                 viewerRef={viewerRef}
                                 initialState={initialState}
                                 updateUrl={updateUrl}
