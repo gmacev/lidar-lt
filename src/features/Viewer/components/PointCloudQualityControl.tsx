@@ -36,11 +36,7 @@ export function PointCloudQualityControl({
                 initialState={initialState}
                 updateUrl={updateUrl}
             />
-            <CameraProjectionControl
-                viewerRef={viewerRef}
-                initialState={initialState}
-                updateUrl={updateUrl}
-            />
+            <CameraProjectionControl viewerRef={viewerRef} initialState={initialState} />
             <FOVControl viewerRef={viewerRef} initialState={initialState} updateUrl={updateUrl} />
             <ZScaleControl
                 viewerRef={viewerRef}

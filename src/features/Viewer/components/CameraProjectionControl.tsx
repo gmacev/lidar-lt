@@ -6,7 +6,6 @@ import type { Projection, ViewerState } from '@/features/Viewer/config/viewerCon
 interface CameraProjectionControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
     initialState: ViewerState;
-    updateUrl: (state: Partial<ViewerState>) => void;
 }
 
 type ProjectionOption = { value: Projection; labelKey: string };
@@ -16,11 +15,7 @@ const PROJECTION_OPTIONS: ProjectionOption[] = [
     { value: 'ORTHOGRAPHIC', labelKey: 'pointCloud.projections.orthographic' },
 ];
 
-export function CameraProjectionControl({
-    viewerRef,
-    initialState,
-    updateUrl,
-}: CameraProjectionControlProps) {
+export function CameraProjectionControl({ viewerRef, initialState }: CameraProjectionControlProps) {
     const { t } = useTranslation();
     const [projection, setProjection] = useState<Projection>(
         initialState.projection ?? 'PERSPECTIVE'
@@ -39,7 +34,8 @@ export function CameraProjectionControl({
         }
 
         setProjection(newProjection);
-        updateUrl({ projection: newProjection });
+        // We do not update the URL for projection anymore to avoid weird bug
+        // where it doesn't render point cloud data to finer detail when page loads with Orthographic projection
     };
 
     const buttonClass = (isActive: boolean) =>
