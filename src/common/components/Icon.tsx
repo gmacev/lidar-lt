@@ -51,6 +51,13 @@ const icons = {
     ),
     map: () => <path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z" />,
     activity: () => <path d="M22 12h-4l-3 9L9 3l-3 9H2" />,
+    angle: () => (
+        <>
+            <path d="M5 19h14" />
+            <path d="M5 19V5" />
+            <path d="M5 12a7 7 0 0 1 7 0" />
+        </>
+    ),
 
     // Weather & Environment
     sun: () => (

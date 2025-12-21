@@ -157,10 +157,17 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
 
     // Delete last point functionality
     const deleteLastPoint = () => {
+        const viewer = viewerRef.current;
         const profile = activeProfileRef.current;
         if (profile && profile.points && profile.points.length > 0) {
             // Use Potree's removeMarker to ensure visual elements and internal state are updated
             profile.removeMarker(profile.points.length - 1);
+
+            // If all points deleted, restart the measurement
+            if (profile.points.length === 0 && viewer) {
+                removeActiveProfile(viewer);
+                startInsertion();
+            }
         }
     };
 

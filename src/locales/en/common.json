@@ -57,7 +57,9 @@
             "paraboloid": "Paraboloids"
         },
         "zScale": "Vertical Exaggeration",
-        "detailLevel": "Detail Level (Min Node)"
+        "detailLevel": "Detail Level (Min Node)",
+        "pointBudget": "Point Budget",
+        "fov": "Field of View"
     },
     "viewer": {
         "hideControls": "Hide controls",
@@ -73,6 +75,9 @@
     "measurement": {
         "distance": "Measure Distance",
         "area": "Measure Area",
+        "angle": "Measure Angle",
+        "angleTriangle": "Triangle (all interior angles)",
+        "angleCorner": "Corner (single vertex angle)",
         "heightProfile": "Height Profile",
         "deleteLast": "Delete last",
         "deleteAll": "Delete all",

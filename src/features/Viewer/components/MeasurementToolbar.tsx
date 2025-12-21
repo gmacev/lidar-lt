@@ -1,5 +1,6 @@
 import { DistanceMeasurement } from './DistanceMeasurement';
 import { AreaMeasurement } from './AreaMeasurement';
+import { AngleMeasurement } from './AngleMeasurement';
 import { HeightProfileMeasurement } from './HeightProfileMeasurement';
 import { FloodSimulationTool } from './FloodSimulationTool';
 
@@ -17,6 +18,10 @@ interface MeasurementToolbarProps {
     isAreaMeasuring: boolean;
     onToggleArea: () => void;
     totalArea: number;
+
+    // Angle Tool
+    isAngleMeasuring: boolean;
+    onToggleAngle: () => void;
 
     // Flood Simulation Tool (simplified)
     isFloodActive: boolean;
@@ -39,6 +44,8 @@ export function MeasurementToolbar({
     isAreaMeasuring,
     onToggleArea,
     totalArea,
+    isAngleMeasuring,
+    onToggleAngle,
     isFloodActive,
     floodWaterLevel,
     floodMinLevel,
@@ -62,6 +69,8 @@ export function MeasurementToolbar({
                 isActive={isAreaMeasuring}
                 totalArea={totalArea}
             />
+
+            <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />
 
             <HeightProfileMeasurement onClick={onToggleProfile} isActive={isProfileMeasuring} />
 

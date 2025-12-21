@@ -8,7 +8,8 @@ interface MeasurementContextProps {
     onClose: () => void;
     onDeleteLast: () => void;
     onDeleteAll: () => void;
-    onExportCsv: () => void;
+    onExportCsv?: () => void;
+    disableExport?: boolean;
 }
 
 export function MeasurementContext({
@@ -18,6 +19,7 @@ export function MeasurementContext({
     onDeleteLast,
     onDeleteAll,
     onExportCsv,
+    disableExport,
 }: MeasurementContextProps) {
     const { t } = useTranslation();
     const menuRef = useRef<HTMLDivElement>(null);
@@ -57,16 +59,27 @@ export function MeasurementContext({
                 >
                     <span className="text-plasma-red">🗑️</span> {t('measurement.deleteAll')}
                 </button>
-                <div className="h-[1px] bg-white/10 my-1" />
-                <button
-                    onClick={() => {
-                        onExportCsv();
-                        onClose();
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors flex items-center gap-2"
-                >
-                    <span>📊</span> {t('measurement.exportCsv')}
-                </button>
+                {onExportCsv && (
+                    <>
+                        <div className="h-[1px] bg-white/10 my-1" />
+                        <button
+                            onClick={() => {
+                                if (!disableExport) {
+                                    onExportCsv();
+                                    onClose();
+                                }
+                            }}
+                            disabled={disableExport}
+                            className={`w-full text-left px-3 py-2 text-sm rounded transition-colors flex items-center gap-2 ${
+                                disableExport
+                                    ? 'text-white/30 cursor-not-allowed'
+                                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                            }`}
+                        >
+                            <span>📊</span> {t('measurement.exportCsv')}
+                        </button>
+                    </>
+                )}
             </GlassPanel>
         </div>
     );

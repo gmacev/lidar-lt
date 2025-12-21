@@ -2,44 +2,31 @@ import { useEffect, useState, useRef, type RefObject } from 'react';
 import type { PotreeViewer, Measure } from '@/common/types/potree';
 import { useMeasurementInteraction, hookMeasurementEvents } from './useMeasurementInteraction';
 
-interface UseAreaMeasurementToolOptions {
+interface UseAngleMeasurementToolOptions {
     viewerRef: RefObject<PotreeViewer | null>;
 }
 
-interface UseAreaMeasurementToolReturn {
-    /** Whether a measurement is currently being inserted */
+interface UseAngleMeasurementToolReturn {
     isMeasuring: boolean;
-    /** Total area of all measurements in square meters */
-    totalArea: number;
-    /** Toggle area measurement - starts if not active, cancels if active */
-    toggleAreaMeasurement: () => void;
-    /** Context menu position */
+    pointCount: number;
+    toggleAngleMeasurement: () => void;
     menuPosition: { x: number; y: number } | null;
-    /** Set context menu position */
     setMenuPosition: (pos: { x: number; y: number } | null) => void;
-    /** Delete the last added point */
     deleteLastPoint: () => void;
-    /** Delete all active measurements */
     deleteAll: () => void;
 }
 
 /**
- * Hook for area measurement tool functionality.
- * - Tracks whether user is actively measuring area
- * - Calculates total area across all measurements
- * - Enables right-click to delete measurements
- * - Provides functions to start measurements
+ * Hook for angle measurement tool functionality.
+ * Creates a closed triangle with 3 points, showing angles at each vertex.
  */
-export function useAreaMeasurementTool({
+export function useAngleMeasurementTool({
     viewerRef,
-}: UseAreaMeasurementToolOptions): UseAreaMeasurementToolReturn {
+}: UseAngleMeasurementToolOptions): UseAngleMeasurementToolReturn {
     const [isMeasuring, setIsMeasuring] = useState(false);
-    const [totalArea, setTotalArea] = useState(0);
+    const [pointCount, setPointCount] = useState(0);
 
-    // Track current active measurement to remove it on cancel
     const activeMeasurementRef = useRef<Measure | null>(null);
-
-    // Track active timers for cleanup
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const { menuPosition, setMenuPosition } = useMeasurementInteraction({
@@ -47,7 +34,6 @@ export function useAreaMeasurementTool({
         isMeasuring,
     });
 
-    // Cleanup timers helper
     const clearTimers = () => {
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
@@ -55,88 +41,61 @@ export function useAreaMeasurementTool({
         }
     };
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             clearTimers();
         };
     }, []);
 
-    const updateTotalArea = () => {
-        const viewer = viewerRef.current;
-        if (!viewer?.scene?.measurements) {
-            setTotalArea(0);
-            return;
+    const updatePointCount = () => {
+        if (activeMeasurementRef.current) {
+            setPointCount(activeMeasurementRef.current.points.length);
+        } else {
+            setPointCount(0);
         }
-
-        // Sum up areas of all measurements that are "Area" (closed polygons)
-        const total = viewer.scene.measurements.reduce((sum, measurement) => {
-            // Only count measurements that have area enabled or are closed
-            // Check if getArea exists (it should per type definition, but good to be safe at runtime)
-            if (measurement.showArea && typeof measurement.getArea === 'function') {
-                return sum + measurement.getArea();
-            }
-            return sum;
-        }, 0);
-
-        setTotalArea(total);
     };
 
-    // Initial update
-    useEffect(() => {
-        const t = setTimeout(() => {
-            updateTotalArea();
-        }, 0);
-        return () => clearTimeout(t);
-    }, [updateTotalArea]);
-
-    // Toggle area measurement (start or cancel)
-    const toggleAreaMeasurement = () => {
+    const toggleAngleMeasurement = () => {
         const viewer = viewerRef.current;
         if (!viewer?.measuringTool) {
             console.warn('MeasuringTool not available');
             return;
         }
 
-        // If already measuring, cancel it
         if (isMeasuring) {
-            // Dispatch cancel_insertions to stop the tool
             (
                 viewer as unknown as { dispatchEvent: (event: { type: string }) => void }
             ).dispatchEvent({ type: 'cancel_insertions' });
 
-            // Remove the incomplete measurement if it exists
             if (activeMeasurementRef.current) {
                 viewer.scene.removeMeasurement(activeMeasurementRef.current);
                 activeMeasurementRef.current = null;
             }
 
             setIsMeasuring(false);
+            setPointCount(0);
             clearTimers();
-            updateTotalArea();
             return;
         }
 
-        // Clear any existing timers from previous measurement
         clearTimers();
-
         setIsMeasuring(true);
 
-        // Start area measurement with Potree's built-in tool
         const measurement = viewer.measuringTool.startInsertion({
             showDistances: false,
-            showArea: true,
-            showAngles: false,
-            closed: true, // Auto-close polygon
-            name: 'Plotas',
+            showArea: false,
+            showAngles: true,
+            closed: true,
+            name: 'Angle',
         });
 
         activeMeasurementRef.current = measurement;
         // Hook events for immediate updates
-        hookMeasurementEvents(measurement, updateTotalArea);
+        hookMeasurementEvents(measurement, updatePointCount);
+        // Initialize count
+        updatePointCount();
     };
 
-    // Delete last point
     const deleteLastPoint = () => {
         const viewer = viewerRef.current;
         if (!activeMeasurementRef.current || !viewer) return;
@@ -150,44 +109,45 @@ export function useAreaMeasurementTool({
                     viewer.scene.removeMeasurement(measurement);
                     const newMeasurement = viewer.measuringTool.startInsertion({
                         showDistances: false,
-                        showArea: true,
-                        showAngles: false,
+                        showArea: false,
+                        showAngles: true,
                         closed: true,
-                        name: 'Plotas',
+                        name: 'Angle',
                     });
                     activeMeasurementRef.current = newMeasurement;
-                    hookMeasurementEvents(newMeasurement, updateTotalArea);
+                    hookMeasurementEvents(newMeasurement, updatePointCount);
+                    updatePointCount();
                 }, 0);
             }
         }
     };
 
-    // Delete all measurements
     const deleteAll = () => {
         const viewer = viewerRef.current;
         if (!viewer) return;
 
         activeMeasurementRef.current = null;
         viewer.scene.removeAllMeasurements();
-        updateTotalArea();
+        setPointCount(0);
 
         if (isMeasuring) {
             const measurement = viewer.measuringTool.startInsertion({
                 showDistances: false,
-                showArea: true,
-                showAngles: false,
+                showArea: false,
+                showAngles: true,
                 closed: true,
-                name: 'Plotas',
+                name: 'Angle',
             });
             activeMeasurementRef.current = measurement;
-            hookMeasurementEvents(measurement, updateTotalArea);
+            hookMeasurementEvents(measurement, updatePointCount);
+            updatePointCount();
         }
     };
 
     return {
         isMeasuring,
-        totalArea,
-        toggleAreaMeasurement,
+        pointCount,
+        toggleAngleMeasurement,
         menuPosition,
         setMenuPosition,
         deleteLastPoint,

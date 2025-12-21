@@ -1,6 +1,8 @@
 import type { PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { PointSizeControl } from './PointSizeControl';
+import { PointBudgetControl } from './PointBudgetControl';
+import { FOVControl } from './FOVControl';
 import { NodeSizeControl } from './NodeSizeControl';
 import { PointShapeControl } from './PointShapeControl';
 import { ZScaleControl } from './ZScaleControl';
@@ -28,6 +30,12 @@ export function PointCloudQualityControl({
                 initialState={initialState}
                 updateUrl={updateUrl}
             />
+            <PointBudgetControl
+                viewerRef={viewerRef}
+                initialState={initialState}
+                updateUrl={updateUrl}
+            />
+            <FOVControl viewerRef={viewerRef} initialState={initialState} updateUrl={updateUrl} />
             <ZScaleControl
                 viewerRef={viewerRef}
                 initialState={initialState}

@@ -100,7 +100,7 @@ export function usePotree(options: UsePotreeOptions) {
             }
 
             // Apply URL state overrides for rendering settings
-            const { ps, mns, edlEnabled, edlStrength, edlRadius, psh, zScale } =
+            const { ps, mns, pb, fov, edlEnabled, edlStrength, edlRadius, psh, zScale } =
                 initialStateRef.current;
 
             // Point size from URL overrides the default
@@ -111,6 +111,16 @@ export function usePotree(options: UsePotreeOptions) {
             // Min node size from URL
             if (typeof mns === 'number') {
                 viewer.setMinNodeSize(mns);
+            }
+
+            // Point budget from URL
+            if (typeof pb === 'number') {
+                viewer.setPointBudget(pb);
+            }
+
+            // Field of view from URL
+            if (typeof fov === 'number') {
+                viewer.setFOV(fov);
             }
 
             // Vertical Exaggeration from URL

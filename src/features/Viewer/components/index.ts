@@ -1,6 +1,8 @@
 export { ViewerPage } from './ViewerPage';
 export { PointCloudQualityControl } from './PointCloudQualityControl';
 export { PointSizeControl } from './PointSizeControl';
+export { PointBudgetControl } from './PointBudgetControl';
+export { FOVControl } from './FOVControl';
 export { NodeSizeControl } from './NodeSizeControl';
 export { EDLControl } from './EDLControl';
 export { ClassificationControl } from './ClassificationControl';
@@ -9,6 +11,7 @@ export { PointShapeControl } from './PointShapeControl';
 export { MeasurementToolbar } from './MeasurementToolbar';
 export { DistanceMeasurement } from './DistanceMeasurement';
 export { AreaMeasurement } from './AreaMeasurement';
+export { AngleMeasurement } from './AngleMeasurement';
 export { HeightProfileMeasurement } from './HeightProfileMeasurement';
 export { Compass } from './Compass';
 export { FloodSimulationTool } from './FloodSimulationTool';

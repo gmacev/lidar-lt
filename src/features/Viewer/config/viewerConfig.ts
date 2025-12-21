@@ -57,6 +57,8 @@ export const ViewerStateSchema = z.object({
     mns: z.number().optional(), // min node size
     psh: PointShapeSchema.optional(), // point shape
     zScale: z.number().optional(), // vertical exaggeration
+    pb: z.number().optional(), // point budget
+    fov: z.number().optional(), // field of view
     // Classifications (array of hidden class IDs)
     hiddenClasses: z.array(z.number()).optional(),
     // Sector metadata

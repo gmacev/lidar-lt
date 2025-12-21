@@ -6,12 +6,14 @@ import {
     usePotree,
     useProfileData,
     useProfileTool,
-    useMeasurementTool,
+    useDistanceMeasurementTool,
     useAreaMeasurementTool,
+    useAngleMeasurementTool,
     useFloodSimulation,
 } from '@/features/Viewer/hooks';
 import { useDistanceMeasurementData } from '@/features/Viewer/hooks/useDistanceMeasurementData';
 import { useAreaMeasurementData } from '@/features/Viewer/hooks/useAreaMeasurementData';
+import { useAngleMeasurementData } from '@/features/Viewer/hooks/useAngleMeasurementData';
 import { MeasurementToolbar } from './MeasurementToolbar';
 import { ViewerSidebar } from './ViewerSidebar';
 import { Compass } from './Compass';
@@ -77,7 +79,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         deleteLastPoint: deleteLastDistancePoint,
         deleteAll: deleteAllDistances,
         totalDistance,
-    } = useMeasurementTool({ viewerRef });
+    } = useDistanceMeasurementTool({ viewerRef });
 
     const { exportToCsv: exportDistanceCsv } = useDistanceMeasurementData({ viewerRef });
 
@@ -93,6 +95,19 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     } = useAreaMeasurementTool({ viewerRef });
 
     const { exportToCsv: exportAreaCsv } = useAreaMeasurementData({ viewerRef });
+
+    const { exportToCsv: exportAngleCsv } = useAngleMeasurementData({ viewerRef });
+
+    // Angle Measurement Tool State
+    const {
+        isMeasuring: isAngleMeasuring,
+        pointCount: anglePointCount,
+        toggleAngleMeasurement: _toggleAngleMeasurement,
+        menuPosition: angleMenuPosition,
+        setMenuPosition: setAngleMenuPosition,
+        deleteLastPoint: deleteLastAnglePoint,
+        deleteAll: deleteAllAngles,
+    } = useAngleMeasurementTool({ viewerRef });
 
     // Profile Tool State (Lifted from MeasurementToolbar)
     const {
@@ -120,6 +135,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     // Mutual exclusivity handlers - cancel other tools when starting a new one
     const handleToggleDistance = () => {
         if (isAreaMeasuring) _toggleAreaMeasurement();
+        if (isAngleMeasuring) _toggleAngleMeasurement();
         if (isProfileMeasuring) _toggleProfileMeasurement();
         if (isFloodActive) resetFlood();
         _toggleDistanceMeasurement();
@@ -127,6 +143,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
     const handleToggleArea = () => {
         if (isDistanceMeasuring) _toggleDistanceMeasurement();
+        if (isAngleMeasuring) _toggleAngleMeasurement();
         if (isProfileMeasuring) _toggleProfileMeasurement();
         if (isFloodActive) resetFlood();
         _toggleAreaMeasurement();
@@ -135,6 +152,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleProfile = () => {
         if (isDistanceMeasuring) _toggleDistanceMeasurement();
         if (isAreaMeasuring) _toggleAreaMeasurement();
+        if (isAngleMeasuring) _toggleAngleMeasurement();
         if (isFloodActive) resetFlood();
         _toggleProfileMeasurement();
     };
@@ -142,8 +160,17 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleStartFlood = () => {
         if (isDistanceMeasuring) _toggleDistanceMeasurement();
         if (isAreaMeasuring) _toggleAreaMeasurement();
+        if (isAngleMeasuring) _toggleAngleMeasurement();
         if (isProfileMeasuring) _toggleProfileMeasurement();
         _startFlood();
+    };
+
+    const handleToggleAngle = () => {
+        if (isDistanceMeasuring) _toggleDistanceMeasurement();
+        if (isAreaMeasuring) _toggleAreaMeasurement();
+        if (isProfileMeasuring) _toggleProfileMeasurement();
+        if (isFloodActive) resetFlood();
+        _toggleAngleMeasurement();
     };
 
     return (
@@ -216,6 +243,8 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                 isAreaMeasuring={isAreaMeasuring}
                                 onToggleArea={handleToggleArea}
                                 totalArea={totalArea}
+                                isAngleMeasuring={isAngleMeasuring}
+                                onToggleAngle={handleToggleAngle}
                                 isFloodActive={isFloodActive}
                                 floodWaterLevel={floodWaterLevel}
                                 floodMinLevel={floodMinLevel}
@@ -262,6 +291,19 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                             onDeleteLast={deleteLastAreaPoint}
                             onDeleteAll={deleteAllAreas}
                             onExportCsv={() => exportAreaCsv(cellId)}
+                        />
+                    )}
+
+                    {/* Angle Context Menu */}
+                    {angleMenuPosition && (
+                        <MeasurementContext
+                            x={angleMenuPosition.x}
+                            y={angleMenuPosition.y}
+                            onClose={() => setAngleMenuPosition(null)}
+                            onDeleteLast={deleteLastAnglePoint}
+                            onDeleteAll={deleteAllAngles}
+                            onExportCsv={() => exportAngleCsv(cellId)}
+                            disableExport={anglePointCount < 3}
                         />
                     )}
 

@@ -17,12 +17,6 @@ export function useDistanceMeasurementData({
         const viewer = viewerRef.current;
         if (!viewer || !viewer.scene || !viewer.scene.measurements) return;
 
-        // Find the active distance measurement (assuming only one is "active" or we take the last one added)
-        // For simplicity and to match user expectation of "exporting what I just drew",
-        // we'll look for a measurement that has points.
-        // If there are multiple, we might need a better selection logic, but typically users clear or just want the last one.
-        // Let's grab the last measurement that is NOT an area (area measurements have .showArea = true)
-
         const measurements = viewer.scene.measurements.filter(
             (m) => !m.showArea && m.points.length > 0
         );

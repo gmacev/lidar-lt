@@ -31,10 +31,6 @@ export function useAreaMeasurementData({
         const totalArea =
             typeof measurement.getArea === 'function' ? measurement.getArea().toFixed(2) : 'N/A';
 
-        // CSV Structure:
-        // Metadata headers first
-        // Then vertex list
-
         const header = `Total_Area_m2,${totalArea}\n\nVertex_Index,X,Y,Z\n`;
 
         const rows = measurement.points
