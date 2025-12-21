@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { Z_SCALE_DEFAULTS } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { updateElevationRangeForZScale } from '@/features/Viewer/config/potreeMaterialConfig';
 
 interface ZScaleControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -25,6 +26,9 @@ export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleCont
                 const currentX = pointcloud.scale.x;
                 // eslint-disable-next-line react-hooks/immutability, react-compiler/react-compiler
                 pointcloud.scale.z = currentX * scale;
+
+                // Recalculate elevation range to maintain full gradient
+                updateElevationRangeForZScale(pointcloud, scale);
             }
         }
         updateUrl({ zScale: scale });

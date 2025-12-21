@@ -11,3 +11,4 @@ export {
     configureMaterialForIntensity,
     configureMaterialForReturnNumber,
 } from './potreeMaterialConfig';
+export { VIRIDIS_LUT, createViridisGradient } from './viridisPalette';
