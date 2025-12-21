@@ -210,12 +210,6 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         </div>
                     )}
 
-                    <div className="absolute left-4 top-4">
-                        <NeonButton variant="amber" onClick={onBack}>
-                            {t('viewer.back')}
-                        </NeonButton>
-                    </div>
-
                     {/* Language switcher - top right corner */}
                     <div className="absolute right-4 top-4 flex items-start gap-4">
                         <LanguageSwitcher />
@@ -307,15 +301,14 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         />
                     )}
 
-                    {/* Unified Sidebar - left side, vertically centered */}
+                    {/* Unified Sidebar - handles its own positioning */}
                     {!isLoading && !error && (
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
-                            <ViewerSidebar
-                                viewerRef={viewerRef}
-                                initialState={initialState}
-                                updateUrl={updateUrl}
-                            />
-                        </div>
+                        <ViewerSidebar
+                            viewerRef={viewerRef}
+                            initialState={initialState}
+                            updateUrl={updateUrl}
+                            onBack={onBack}
+                        />
                     )}
                 </>
             )}

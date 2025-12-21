@@ -10,6 +10,7 @@ const icons = {
     chevronUp: () => <path d="M18 15l-6-6-6 6" />,
     chevronRight: () => <path d="M9 18l6-6-6-6" />,
     chevronLeft: () => <path d="M15 18l-6-6 6-6" />,
+    arrowLeft: () => <path d="M19 12H5m7 7-7-7 7-7" />,
     close: () => (
         <>
             <line x1="18" y1="6" x2="6" y2="18" />
