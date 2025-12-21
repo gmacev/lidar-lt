@@ -24,6 +24,9 @@ i18n.use(LanguageDetector)
             order: ['localStorage', 'navigator'],
             caches: ['localStorage'],
         },
+    })
+    .catch((err) => {
+        console.error('i18n init error:', err);
     });
 
 export default i18n;
