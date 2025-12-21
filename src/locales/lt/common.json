@@ -75,7 +75,14 @@
         "controls": "Valdymas",
         "controlLeftClick": "🖱️ Kairysis: Slinkti",
         "controlRightClick": "🖱️ Dešinysis: Sukti",
-        "controlScroll": "🖲️ Ratukas: Artinti / Tolinti"
+        "controlScroll": "🖲️ Ratukas: Artinti / Tolinti",
+        "background": "Fonas",
+        "bg": {
+            "skybox": "Dangus",
+            "gradient": "Gradientas",
+            "black": "Juodas"
+        },
+        "variant": "Variantas"
     },
     "measurement": {
         "distance": "Matuoti atstumą",

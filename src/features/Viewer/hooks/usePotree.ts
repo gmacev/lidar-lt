@@ -8,7 +8,7 @@ import {
     POINT_APPEARANCE_DEFAULTS,
 } from '@/features/Viewer/config';
 import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';
-import type { Potree, PotreeViewer, LoadPointCloudResult } from '@/common/types/potree';
+import type { LoadPointCloudResult, Potree, PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
 interface UsePotreeOptions {
@@ -205,8 +205,9 @@ export function usePotree(options: UsePotreeOptions) {
         viewer.setEDLStrength(EDL_DEFAULTS.strength);
         viewer.setEDLRadius(EDL_DEFAULTS.radius);
 
-        // Background
-        viewer.setBackground('gradient');
+        // Background (handled by separate effect)
+        // viewer.setBackground('gradient'); // Default will be set by the other effect
+
         viewer.setDescription('');
 
         // Control
@@ -223,11 +224,6 @@ export function usePotree(options: UsePotreeOptions) {
         const container = containerRef.current;
         container.addEventListener('mousedown', markUserInteracted);
         container.addEventListener('wheel', markUserInteracted);
-
-        // Attach loop for syncing (Potree loop runs continuously)
-        // Using 'update' event if available, or just hook into standard loop?
-        // Potree doesn't emit 'change' events easily. We can override the loop or use an interval.
-        // A simple interval is safest for "idling" checks without hacking Potree core.
         const intervalId = setInterval(syncCamera, 200);
 
         return () => {
@@ -238,6 +234,31 @@ export function usePotree(options: UsePotreeOptions) {
             viewerRef.current = null;
         };
     }, [dataUrl]);
+
+    // Watch for background/skybox changes in URL state and update viewer
+    useEffect(() => {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+
+        const bg = initialState.bg ?? 'gradient';
+        const sb = initialState.sb ?? '1';
+
+        if (bg === 'skybox') {
+            const sbUrl = sb === '2' ? 'skybox2' : 'skybox';
+            const path = `${window.location.origin}/potree/resources/textures/${sbUrl}/`;
+
+            if (typeof Potree !== 'undefined' && Potree.Utils) {
+                viewer.skybox = Potree.Utils.loadSkybox(path);
+                viewer.background = 'skybox';
+            } else {
+                console.warn('Potree.Utils not found, cannot load skybox natively.');
+            }
+        } else if (bg === 'black') {
+            viewer.setBackground('black');
+        } else {
+            viewer.setBackground('gradient');
+        }
+    }, [initialState.bg, initialState.sb]);
 
     // Expose viewer for external controls
     return { containerRef, viewerRef, ...state };

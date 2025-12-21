@@ -1,13 +1,16 @@
-import type { RefObject } from 'react';
+import { useState, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
-import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import type { ViewerState, Projection } from '@/features/Viewer/config/viewerConfig';
 import { GlassPanel, Icon } from '@/common/components';
 import { SidebarSection } from './SidebarSection';
 import { ColorModeControl } from './ColorModeControl';
+import { BackgroundControl } from './BackgroundControl';
 import { ClassificationControl } from './ClassificationControl';
 import { EDLControl } from './EDLControl';
 import { PointCloudSettings } from './PointCloudSettings';
+import { CameraProjectionControl } from './CameraProjectionControl';
+import { FOVControl } from './FOVControl';
 
 interface ViewerSidebarProps {
     viewerRef: RefObject<PotreeViewer | null>;
@@ -21,6 +24,9 @@ interface ViewerSidebarProps {
  */
 export function ViewerSidebar({ viewerRef, initialState, updateUrl }: ViewerSidebarProps) {
     const { t } = useTranslation();
+    const [projection, setProjection] = useState<Projection>(
+        initialState.projection ?? 'PERSPECTIVE'
+    );
 
     return (
         <GlassPanel className="w-72 max-h-[calc(100vh-8rem)] overflow-y-auto">
@@ -30,11 +36,34 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl }: ViewerSide
                     title={t('sidebar.visualization')}
                     icon={<Icon name="palette" size={16} />}
                 >
-                    <ColorModeControl
-                        viewerRef={viewerRef}
-                        initialState={initialState}
-                        updateUrl={updateUrl}
-                    />
+                    <div className="flex flex-col gap-3">
+                        <ColorModeControl
+                            viewerRef={viewerRef}
+                            initialState={initialState}
+                            updateUrl={updateUrl}
+                        />
+
+                        <BackgroundControl
+                            viewerRef={viewerRef}
+                            initialState={initialState}
+                            updateUrl={updateUrl}
+                        />
+
+                        <div className="h-px bg-white/10 my-1" />
+
+                        <CameraProjectionControl
+                            viewerRef={viewerRef}
+                            projection={projection}
+                            onChange={setProjection}
+                        />
+
+                        <FOVControl
+                            viewerRef={viewerRef}
+                            initialState={initialState}
+                            updateUrl={updateUrl}
+                            disabled={projection === 'ORTHOGRAPHIC'}
+                        />
+                    </div>
                 </SidebarSection>
 
                 {/* Classifications Section */}

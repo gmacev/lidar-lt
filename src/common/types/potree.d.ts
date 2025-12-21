@@ -197,7 +197,16 @@ export interface PotreeViewer {
     setFOV(fov: number): void;
     setPointBudget(budget: number): void;
     setBackground(type: string): void;
+    loadSkybox(path: string): void;
     setDescription(desc: string): void;
+
+    background: string | null;
+    skybox: {
+        camera: THREE.Camera;
+        scene: THREE.Scene;
+        parent: THREE.Object3D;
+    } | null;
+
     setMinNodeSize(size: number): void;
     setControls(controls: PotreeControls): void;
     loadSettingsFromURL(): void;
@@ -209,6 +218,7 @@ export interface PotreeViewer {
     setLeftView(): void;
     setRightView(): void;
     setCameraMode(mode: CameraMode): void;
+    cameraMode: CameraMode;
 }
 
 // ============================================================================
@@ -284,6 +294,13 @@ export interface Potree {
     loadPointCloud(url: string, name: string, callback: LoadPointCloudCallback): void;
     ProfileRequest: typeof ProfileRequest;
     CameraMode: typeof CameraMode;
+    Utils: {
+        loadSkybox(path: string): {
+            camera: THREE.Camera;
+            scene: THREE.Scene;
+            parent: THREE.Object3D;
+        };
+    };
 }
 
 // ============================================================================
@@ -396,4 +413,8 @@ export class ProfileRequest {
     );
     cancel(): void;
     update(): void;
+}
+
+declare global {
+    var Potree: import('./potree').Potree;
 }

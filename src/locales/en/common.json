@@ -75,7 +75,14 @@
         "controls": "Controls",
         "controlLeftClick": "🖱️ Left click: Pan",
         "controlRightClick": "🖱️ Right click: Rotate",
-        "controlScroll": "🖲️ Scroll: Zoom in / out"
+        "controlScroll": "🖲️ Scroll: Zoom in / out",
+        "background": "Background",
+        "bg": {
+            "skybox": "Skybox",
+            "gradient": "Gradient",
+            "black": "Black"
+        },
+        "variant": "Variant"
     },
     "measurement": {
         "distance": "Measure Distance",

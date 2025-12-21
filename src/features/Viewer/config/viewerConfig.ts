@@ -39,6 +39,11 @@ export const POINT_APPEARANCE_DEFAULTS = {
     shape: 'circle' as PointShape,
 } as const;
 
+export const BackgroundSchema = z.enum(['skybox', 'gradient', 'black']);
+export type Background = z.infer<typeof BackgroundSchema>;
+export const SkyboxVariantSchema = z.enum(['1', '2']);
+export type SkyboxVariant = z.infer<typeof SkyboxVariantSchema>;
+
 export const ViewerStateSchema = z.object({
     // Camera position
     x: z.number().optional(),
@@ -68,6 +73,9 @@ export const ViewerStateSchema = z.object({
     sectorName: z.string().optional(),
     // Camera Projection
     projection: ProjectionSchema.optional(),
+    // Background
+    bg: BackgroundSchema.optional(),
+    sb: SkyboxVariantSchema.optional(),
 });
 
 export type ViewerState = z.infer<typeof ViewerStateSchema>;

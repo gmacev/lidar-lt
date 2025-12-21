@@ -1,12 +1,11 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer, Potree } from '@/common/types/potree';
-import type { Projection, ViewerState } from '@/features/Viewer/config/viewerConfig';
+import type { Projection } from '@/features/Viewer/config/viewerConfig';
 
 interface CameraProjectionControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
-    initialState: ViewerState;
-    onProjectionChange?: (mode: Projection) => void;
+    projection: Projection;
+    onChange: (mode: Projection) => void;
 }
 
 type ProjectionOption = { value: Projection; labelKey: string };
@@ -18,13 +17,10 @@ const PROJECTION_OPTIONS: ProjectionOption[] = [
 
 export function CameraProjectionControl({
     viewerRef,
-    initialState,
-    onProjectionChange,
+    projection,
+    onChange,
 }: CameraProjectionControlProps) {
     const { t } = useTranslation();
-    const [projection, setProjection] = useState<Projection>(
-        initialState.projection ?? 'PERSPECTIVE'
-    );
 
     const handleProjectionChange = (newProjection: Projection) => {
         const viewer = viewerRef.current;
@@ -38,8 +34,7 @@ export function CameraProjectionControl({
             viewer.setCameraMode(PotreeLib.CameraMode.PERSPECTIVE);
         }
 
-        setProjection(newProjection);
-        onProjectionChange?.(newProjection);
+        onChange(newProjection);
         // We do not update the URL for projection anymore to avoid weird bug
         // where it doesn't render point cloud data to finer detail when page loads with Orthographic projection
     };
