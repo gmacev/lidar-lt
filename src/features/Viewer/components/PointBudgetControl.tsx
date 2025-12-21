@@ -37,7 +37,7 @@ export function PointBudgetControl({
     };
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
                 {t('pointCloud.pointBudget')}
                 <span className="text-laser-green">{formatBudget(pointBudget)}</span>

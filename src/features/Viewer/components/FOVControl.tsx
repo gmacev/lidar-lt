@@ -26,7 +26,7 @@ export function FOVControl({ viewerRef, initialState, updateUrl }: FOVControlPro
     };
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
                 {t('pointCloud.fov')}
                 <span className="text-laser-green">{fov}°</span>

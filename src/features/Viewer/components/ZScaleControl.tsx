@@ -35,7 +35,7 @@ export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleCont
     };
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
                 {t('pointCloud.zScale')}
                 <span className="text-laser-green">{zScale.toFixed(1)}</span>
