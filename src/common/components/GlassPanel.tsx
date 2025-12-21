@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 
-interface GlassPanelProps {
+interface GlassPanelProps extends React.HTMLAttributes<HTMLDivElement> {
     children: ReactNode;
     className?: string;
 }
 
-export function GlassPanel({ children, className = '' }: GlassPanelProps) {
+export function GlassPanel({ children, className = '', ...props }: GlassPanelProps) {
     return (
         <div
             className={`
@@ -16,6 +16,7 @@ export function GlassPanel({ children, className = '' }: GlassPanelProps) {
         p-2
         ${className}
       `}
+            {...props}
         >
             {children}
         </div>

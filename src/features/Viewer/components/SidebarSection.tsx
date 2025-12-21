@@ -39,7 +39,7 @@ export function SidebarSection({ title, icon, defaultOpen = true, children }: Si
 
             <div
                 className={`overflow-hidden transition-all duration-200 ease-in-out ${
-                    isOpen ? 'max-h-[500px] opacity-100 pb-2.5' : 'max-h-0 opacity-0'
+                    isOpen ? 'max-h-[1200px] opacity-100 pb-2.5' : 'max-h-0 opacity-0'
                 }`}
             >
                 {children}

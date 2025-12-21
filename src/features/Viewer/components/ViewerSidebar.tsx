@@ -23,7 +23,7 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl }: ViewerSide
     const { t } = useTranslation();
 
     return (
-        <GlassPanel className="w-72 max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
+        <GlassPanel className="w-72 max-h-[calc(100vh-8rem)] overflow-y-auto">
             <div className="flex flex-col">
                 {/* Visualization Section */}
                 <SidebarSection
