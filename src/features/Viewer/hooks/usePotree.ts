@@ -144,6 +144,16 @@ export function usePotree(options: UsePotreeOptions) {
                 viewer.setEDLRadius(edlRadius);
             }
 
+            // Camera Projection
+            const projection = initialStateRef.current.projection;
+            if (PotreeLib?.CameraMode) {
+                if (projection === 'ORTHOGRAPHIC') {
+                    viewer.setCameraMode(PotreeLib.CameraMode.ORTHOGRAPHIC);
+                } else if (projection === 'PERSPECTIVE') {
+                    viewer.setCameraMode(PotreeLib.CameraMode.PERSPECTIVE);
+                }
+            }
+
             // Point Shape - default to circle (better visuals than square)
             const shapeValue = getShapeEnumValue(psh ?? POINT_APPEARANCE_DEFAULTS.shape, PotreeLib);
             pointcloud.material.shape = shapeValue;

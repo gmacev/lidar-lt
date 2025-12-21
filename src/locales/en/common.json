@@ -59,7 +59,12 @@
         "zScale": "Vertical Exaggeration",
         "detailLevel": "Detail Level (Min Node)",
         "pointBudget": "Point Budget",
-        "fov": "Field of View"
+        "fov": "Field of View",
+        "projection": "Camera Projection",
+        "projections": {
+            "perspective": "Perspective",
+            "orthographic": "Orthographic"
+        }
     },
     "viewer": {
         "hideControls": "Hide controls",

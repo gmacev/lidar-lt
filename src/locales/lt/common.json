@@ -59,7 +59,12 @@
         "zScale": "Z Skalė",
         "detailLevel": "Detalumas (Min Node)",
         "pointBudget": "Taškų biudžetas",
-        "fov": "Matymo laukas"
+        "fov": "Matymo laukas",
+        "projection": "Kameros Projekcija",
+        "projections": {
+            "perspective": "Perspektyva",
+            "orthographic": "Ortografinė"
+        }
     },
     "viewer": {
         "hideControls": "Slėpti valdiklius",

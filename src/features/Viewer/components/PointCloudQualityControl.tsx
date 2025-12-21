@@ -6,6 +6,7 @@ import { FOVControl } from './FOVControl';
 import { NodeSizeControl } from './NodeSizeControl';
 import { PointShapeControl } from './PointShapeControl';
 import { ZScaleControl } from './ZScaleControl';
+import { CameraProjectionControl } from './CameraProjectionControl';
 
 interface PointCloudQualityControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -31,6 +32,11 @@ export function PointCloudQualityControl({
                 updateUrl={updateUrl}
             />
             <PointBudgetControl
+                viewerRef={viewerRef}
+                initialState={initialState}
+                updateUrl={updateUrl}
+            />
+            <CameraProjectionControl
                 viewerRef={viewerRef}
                 initialState={initialState}
                 updateUrl={updateUrl}

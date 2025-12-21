@@ -32,6 +32,9 @@ export type ColorMode = z.infer<typeof ColorModeSchema>;
 export const PointShapeSchema = z.enum(['square', 'circle', 'paraboloid']);
 export type PointShape = z.infer<typeof PointShapeSchema>;
 
+export const ProjectionSchema = z.enum(['PERSPECTIVE', 'ORTHOGRAPHIC']);
+export type Projection = z.infer<typeof ProjectionSchema>;
+
 export const POINT_APPEARANCE_DEFAULTS = {
     shape: 'circle' as PointShape,
 } as const;
@@ -63,6 +66,8 @@ export const ViewerStateSchema = z.object({
     hiddenClasses: z.array(z.number()).optional(),
     // Sector metadata
     sectorName: z.string().optional(),
+    // Camera Projection
+    projection: ProjectionSchema.optional(),
 });
 
 export type ViewerState = z.infer<typeof ViewerStateSchema>;

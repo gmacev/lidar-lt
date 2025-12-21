@@ -21,6 +21,12 @@ export enum PointShape {
     PARABOLOID = 2,
 }
 
+export enum CameraMode {
+    ORTHOGRAPHIC = 0,
+    PERSPECTIVE = 1,
+    VR = 2,
+}
+
 // ============================================================================
 // Point Attributes
 // ============================================================================
@@ -202,6 +208,7 @@ export interface PotreeViewer {
     setFrontView(): void;
     setLeftView(): void;
     setRightView(): void;
+    setCameraMode(mode: CameraMode): void;
 }
 
 // ============================================================================
@@ -276,6 +283,7 @@ export interface Potree {
     PointShape: typeof PointShape;
     loadPointCloud(url: string, name: string, callback: LoadPointCloudCallback): void;
     ProfileRequest: typeof ProfileRequest;
+    CameraMode: typeof CameraMode;
 }
 
 // ============================================================================
