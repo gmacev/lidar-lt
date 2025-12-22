@@ -297,8 +297,76 @@ export function useFloodSimulation({
         return combinedBounds;
     };
 
+    // LiDAR classification codes
+    const GROUND_CLASSIFICATION = 2;
+
+    /**
+     * Scan loaded point cloud nodes for ground-classified points (class 2)
+     * to determine accurate min/max elevation without noise/outlier points.
+     * Returns null if no ground points are found or data is unavailable.
+     */
+    const getGroundElevationFromLoadedPoints = (): { minZ: number; maxZ: number } | null => {
+        const viewer = viewerRef.current;
+        if (!viewer?.scene?.pointclouds?.length) return null;
+
+        let globalMinZ = Infinity;
+        let globalMaxZ = -Infinity;
+        let groundPointsFound = 0;
+
+        for (const pointcloud of viewer.scene.pointclouds) {
+            const visibleNodes = pointcloud.visibleNodes;
+            if (!visibleNodes?.length) continue;
+
+            // Get the point cloud's world transform for accurate Z values
+            const matrixWorld = pointcloud.matrixWorld;
+
+            for (const node of visibleNodes) {
+                const geometry = node.geometryNode?.geometry;
+                if (!geometry?.attributes) continue;
+
+                const positionAttr = geometry.attributes['position'];
+                const classificationAttr = geometry.attributes['classification'];
+
+                // Need both position and classification data
+                if (!positionAttr?.array || !classificationAttr?.array) continue;
+
+                const positions = positionAttr.array;
+                const classifications = classificationAttr.array;
+
+                // Positions are stored as [x, y, z, x, y, z, ...]
+                const pointCount = Math.min(
+                    Math.floor(positions.length / 3),
+                    classifications.length
+                );
+
+                for (let i = 0; i < pointCount; i++) {
+                    // Check if this point is classified as ground
+                    if (classifications[i] === GROUND_CLASSIFICATION) {
+                        // Get the Z value (local coordinates)
+                        const localZ = positions[i * 3 + 2];
+
+                        // Transform to world space
+                        // For simplicity, we just apply the Z scale and offset
+                        // since we only care about elevation
+                        const worldZ = localZ * matrixWorld.elements[10] + matrixWorld.elements[14];
+
+                        globalMinZ = Math.min(globalMinZ, worldZ);
+                        globalMaxZ = Math.max(globalMaxZ, worldZ);
+                        groundPointsFound++;
+                    }
+                }
+            }
+        }
+
+        if (groundPointsFound === 0) {
+            return null;
+        }
+
+        return { minZ: globalMinZ, maxZ: globalMaxZ };
+    };
+
     const startAsync = async () => {
-        // Try to get accurate bounds from metadata first
+        // Try to get accurate bounds from metadata first (for XY bounds and max Z)
         let bounds = await fetchActualBounds();
 
         // Fallback to viewer bounds
@@ -312,11 +380,19 @@ export function useFloodSimulation({
         }
 
         boundsRef.current = bounds;
-        globalMinZRef.current = bounds.min.z;
 
-        setMinElevation(bounds.min.z);
-        setMaxElevation(bounds.max.z);
-        setWaterLevelState(bounds.min.z);
+        // Try to get more accurate elevation from ground-classified points
+        const groundElevation = getGroundElevationFromLoadedPoints();
+
+        // Use ground elevation if available, otherwise fall back to bounds
+        const effectiveMinZ = groundElevation?.minZ ?? bounds.min.z;
+        const effectiveMaxZ = bounds.max.z; // Keep max from bounds (includes buildings, trees)
+
+        globalMinZRef.current = effectiveMinZ;
+
+        setMinElevation(effectiveMinZ);
+        setMaxElevation(effectiveMaxZ);
+        setWaterLevelState(effectiveMinZ);
         setIsActive(true);
     };
 
