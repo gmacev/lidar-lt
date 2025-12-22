@@ -65,7 +65,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         } border rounded`;
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
             <span className="text-xs text-white/70">{t('colorMode.label')}</span>
             <div className="flex gap-1">
                 <button
