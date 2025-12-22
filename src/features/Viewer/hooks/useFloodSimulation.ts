@@ -167,6 +167,9 @@ export function useFloodSimulation({
     const waterMeshRef = useRef<Mesh | null>(null);
     const boundsRef = useRef<Box3 | null>(null);
     const globalMinZRef = useRef<number>(0);
+    // Cache ground elevation to avoid recalculating on each activation
+    // (visibleNodes depend on camera position, so we need consistent values)
+    const cachedGroundElevationRef = useRef<{ minZ: number; maxZ: number } | null>(null);
 
     // Define removeWaterMesh before useEffect to avoid accessing before declaration
     const removeWaterMesh = () => {
@@ -362,6 +365,13 @@ export function useFloodSimulation({
             return null;
         }
 
+        // Require minimum number of ground points to trust the result
+        // This helps avoid bad values from weird camera positions
+        const MIN_GROUND_POINTS_THRESHOLD = 100;
+        if (groundPointsFound < MIN_GROUND_POINTS_THRESHOLD) {
+            return null;
+        }
+
         return { minZ: globalMinZ, maxZ: globalMaxZ };
     };
 
@@ -381,11 +391,46 @@ export function useFloodSimulation({
 
         boundsRef.current = bounds;
 
-        // Try to get more accurate elevation from ground-classified points
-        const groundElevation = getGroundElevationFromLoadedPoints();
+        // Only reset camera on the first activation (when cache is empty)
+        // to ensure we can capture the initial ground points accurately.
+        if (viewerRef.current && !cachedGroundElevationRef.current) {
+            viewerRef.current.setTopView();
+            viewerRef.current.fitToScreen();
 
-        // Use ground elevation if available, otherwise fall back to bounds
-        const effectiveMinZ = groundElevation?.minZ ?? bounds.min.z;
+            // Wait a moment for the camera to move and nodes to update visibility
+            await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        // Try to get elevation from currently loaded ground points for better accuracy
+        const scannedElevation = getGroundElevationFromLoadedPoints();
+
+        // Update cache if we found a valid lower ground point, or if we had no cache
+        if (scannedElevation && scannedElevation.minZ >= 0) {
+            if (
+                !cachedGroundElevationRef.current ||
+                scannedElevation.minZ < cachedGroundElevationRef.current.minZ
+            ) {
+                cachedGroundElevationRef.current = scannedElevation;
+            }
+        }
+
+        const groundElevation = cachedGroundElevationRef.current;
+
+        // Determine effective min elevation with fallbacks
+        let effectiveMinZ: number;
+
+        if (groundElevation && groundElevation.minZ >= 0) {
+            // Use validated ground elevation
+            effectiveMinZ = groundElevation.minZ;
+        } else if (bounds.min.z < 0 && bounds.max.z > 50) {
+            // Heuristic: if metadata shows negative min but positive max,
+            // the negative values are likely noise - use 0 (sea level) as floor
+            effectiveMinZ = 0;
+        } else {
+            // Fallback to metadata bounds
+            effectiveMinZ = bounds.min.z;
+        }
+
         const effectiveMaxZ = bounds.max.z; // Keep max from bounds (includes buildings, trees)
 
         globalMinZRef.current = effectiveMinZ;
