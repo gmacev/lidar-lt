@@ -239,6 +239,10 @@ export interface MeasureInsertionOptions {
     name?: string;
 }
 
+export interface MeasureEdgeLabel {
+    setText(text: string): void;
+}
+
 export interface Measure {
     uuid: string;
     name: string;
@@ -246,10 +250,14 @@ export interface Measure {
     showDistances: boolean;
     showArea: boolean;
     showAngles: boolean;
+    showCircle: boolean;
     closed: boolean;
     addMarker(position: Vector3): void;
     removeMarker(index: number): void;
     getArea(): number;
+    update(): void;
+    /** Edge labels shown on measurement lines (e.g., distance labels) */
+    edgeLabels?: MeasureEdgeLabel[];
 }
 
 export interface MeasuringTool {

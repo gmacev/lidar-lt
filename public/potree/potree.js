@@ -54387,6 +54387,15 @@
 					const center = Potree.Utils.computeCircleCenter(A, B, C);
 					const radius = center.distanceTo(A);
 
+					// Guard against NaN values from degenerate point configurations
+					// (collinear points, coincident points, or points at origin during drag)
+					if (isNaN(radius) || !isFinite(radius) || isNaN(center.x) || isNaN(center.y) || isNaN(center.z)) {
+						circleRadiusLabel.visible = false;
+						circleRadiusLine.visible = false;
+						circleLine.visible = false;
+						circleCenter.visible = false;
+						return;
+					}
 
 					const scale = radius / 20;
 					circleCenter.position.copy(center);
@@ -54412,7 +54421,15 @@
 
 					circleRadiusLabel.visible = true;
 					circleRadiusLabel.position.copy(center.clone().add(B).multiplyScalar(0.5));
-					circleRadiusLabel.setText(`${radius.toFixed(3)}`);
+
+					// Show radius with unit suffix, same as edge labels
+					let displayRadius = radius;
+					let suffix = "";
+					if (this.lengthUnit != null && this.lengthUnitDisplay != null) {
+						displayRadius = radius / this.lengthUnit.unitspermeter * this.lengthUnitDisplay.unitspermeter;
+						suffix = this.lengthUnitDisplay.code;
+					}
+					circleRadiusLabel.setText(`${displayRadius.toFixed(2)} ${suffix}`);
 
 				}
 			}

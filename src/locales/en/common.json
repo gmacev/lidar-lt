@@ -88,6 +88,8 @@
         "distance": "Measure Distance",
         "area": "Measure Area",
         "angle": "Measure Angle",
+        "azimuth": "Measure Azimuth (Compass Bearing)",
+        "circle": "Measure Circle",
         "angleTriangle": "Triangle (all interior angles)",
         "angleCorner": "Corner (single vertex angle)",
         "heightProfile": "Height Profile",

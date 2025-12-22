@@ -88,6 +88,8 @@
         "distance": "Matuoti atstumą",
         "area": "Matuoti plotą",
         "angle": "Matuoti kampą",
+        "azimuth": "Matuoti azimutą (kompaso kryptis)",
+        "circle": "Matuoti apskritimą",
         "angleTriangle": "Trikampis (visi vidiniai kampai)",
         "angleCorner": "Kampas (vienas taškas)",
         "heightProfile": "Aukščių profilis",

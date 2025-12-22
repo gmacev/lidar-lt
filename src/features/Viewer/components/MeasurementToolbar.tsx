@@ -1,6 +1,8 @@
 import { DistanceMeasurement } from './DistanceMeasurement';
 import { AreaMeasurement } from './AreaMeasurement';
+import { CircleMeasurement } from './CircleMeasurement';
 import { AngleMeasurement } from './AngleMeasurement';
+import { AzimuthMeasurement } from './AzimuthMeasurement';
 import { HeightProfileMeasurement } from './HeightProfileMeasurement';
 import { FloodSimulationTool } from './FloodSimulationTool';
 
@@ -19,9 +21,17 @@ interface MeasurementToolbarProps {
     onToggleArea: () => void;
     totalArea: number;
 
+    // Circle Tool
+    isCircleMeasuring: boolean;
+    onToggleCircle: () => void;
+
     // Angle Tool
     isAngleMeasuring: boolean;
     onToggleAngle: () => void;
+
+    // Azimuth Tool
+    isAzimuthMeasuring: boolean;
+    onToggleAzimuth: () => void;
 
     // Flood Simulation Tool (simplified)
     isFloodActive: boolean;
@@ -44,8 +54,12 @@ export function MeasurementToolbar({
     isAreaMeasuring,
     onToggleArea,
     totalArea,
+    isCircleMeasuring,
+    onToggleCircle,
     isAngleMeasuring,
     onToggleAngle,
+    isAzimuthMeasuring,
+    onToggleAzimuth,
     isFloodActive,
     floodWaterLevel,
     floodMinLevel,
@@ -63,15 +77,14 @@ export function MeasurementToolbar({
                 isActive={isDistanceMeasuring}
                 totalDistance={totalDistance}
             />
-
             <AreaMeasurement
                 onClick={onToggleArea}
                 isActive={isAreaMeasuring}
                 totalArea={totalArea}
             />
-
+            <CircleMeasurement onClick={onToggleCircle} isActive={isCircleMeasuring} />
             <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />
-
+            <AzimuthMeasurement onClick={onToggleAzimuth} isActive={isAzimuthMeasuring} />
             <HeightProfileMeasurement onClick={onToggleProfile} isActive={isProfileMeasuring} />
 
             <FloodSimulationTool

@@ -37,7 +37,7 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl, onBack }: Vi
             }`}
         >
             <div className="flex w-80 flex-col border-r border-white/10 bg-glass-bg backdrop-blur-xl">
-                <div className="flex border-b border-white/10 px-4 py-3 bg-white/[0.02]">
+                <div className="flex border-b border-white/10 px-4 py-2 bg-white/[0.02]">
                     <button
                         onClick={onBack}
                         className="group flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-white/40 transition-all hover:text-neon-amber"
@@ -46,7 +46,7 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl, onBack }: Vi
                             <Icon
                                 name="arrowLeft"
                                 size={14}
-                                className="transition-transform group-hover:-translate-x-0.5"
+                                className="transition-transform group-hover:scale-110"
                             />
                         </div>
                         {t('viewer.back')}

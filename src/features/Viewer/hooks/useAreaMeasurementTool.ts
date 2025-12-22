@@ -124,7 +124,7 @@ export function useAreaMeasurementTool({
 
         // Start area measurement with Potree's built-in tool
         const measurement = viewer.measuringTool.startInsertion({
-            showDistances: false,
+            showDistances: true,
             showArea: true,
             showAngles: false,
             closed: true, // Auto-close polygon

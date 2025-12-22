@@ -9,12 +9,17 @@ import {
     useDistanceMeasurementTool,
     useAreaMeasurementTool,
     useAngleMeasurementTool,
+    useAzimuthMeasurementTool,
+    useCircleMeasurementTool,
     useFloodSimulation,
 } from '@/features/Viewer/hooks';
 import { useDistanceMeasurementData } from '@/features/Viewer/hooks/useDistanceMeasurementData';
 import { useAreaMeasurementData } from '@/features/Viewer/hooks/useAreaMeasurementData';
 import { useAngleMeasurementData } from '@/features/Viewer/hooks/useAngleMeasurementData';
+import { useAzimuthMeasurementData } from '@/features/Viewer/hooks/useAzimuthMeasurementData';
+import { useCircleMeasurementData } from '@/features/Viewer/hooks/useCircleMeasurementData';
 import { MeasurementToolbar } from './MeasurementToolbar';
+import type { MeasurementType } from '@/features/Viewer/types/measurement';
 import { ViewerSidebar } from './ViewerSidebar';
 import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
@@ -82,6 +87,10 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     } = useDistanceMeasurementTool({ viewerRef });
 
     const { exportToCsv: exportDistanceCsv } = useDistanceMeasurementData({ viewerRef });
+    const { exportToCsv: exportAreaCsv } = useAreaMeasurementData({ viewerRef });
+    const { exportToCsv: exportAngleCsv } = useAngleMeasurementData({ viewerRef });
+    const { exportToCsv: exportAzimuthCsv } = useAzimuthMeasurementData({ viewerRef });
+    const { exportToCsv: exportCircleCsv } = useCircleMeasurementData({ viewerRef });
 
     // Area Measurement Tool State
     const {
@@ -94,10 +103,6 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         totalArea,
     } = useAreaMeasurementTool({ viewerRef });
 
-    const { exportToCsv: exportAreaCsv } = useAreaMeasurementData({ viewerRef });
-
-    const { exportToCsv: exportAngleCsv } = useAngleMeasurementData({ viewerRef });
-
     // Angle Measurement Tool State
     const {
         isMeasuring: isAngleMeasuring,
@@ -109,7 +114,29 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         deleteAll: deleteAllAngles,
     } = useAngleMeasurementTool({ viewerRef });
 
-    // Profile Tool State (Lifted from MeasurementToolbar)
+    // Azimuth Measurement Tool State
+    const {
+        isMeasuring: isAzimuthMeasuring,
+        pointCount: azimuthPointCount,
+        toggleAzimuthMeasurement: _toggleAzimuthMeasurement,
+        menuPosition: azimuthMenuPosition,
+        setMenuPosition: setAzimuthMenuPosition,
+        deleteLastPoint: deleteLastAzimuthPoint,
+        deleteAll: deleteAllAzimuths,
+    } = useAzimuthMeasurementTool({ viewerRef });
+
+    // Circle Measurement Tool State
+    const {
+        isMeasuring: isCircleMeasuring,
+        pointCount: circlePointCount,
+        toggleCircleMeasurement: _toggleCircleMeasurement,
+        menuPosition: circleMenuPosition,
+        setMenuPosition: setCircleMenuPosition,
+        deleteLastPoint: deleteLastCirclePoint,
+        deleteAll: deleteAllCircles,
+    } = useCircleMeasurementTool({ viewerRef });
+
+    // Profile Tool State
     const {
         isMeasuring: isProfileMeasuring,
         toggleProfileMeasurement: _toggleProfileMeasurement,
@@ -119,7 +146,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         deleteLastPoint,
     } = useProfileTool({ viewerRef });
 
-    // Flood Simulation Tool State (simplified - no drawing)
+    // Flood Simulation Tool State
     const {
         isActive: isFloodActive,
         waterLevel: floodWaterLevel,
@@ -133,45 +160,30 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     } = useFloodSimulation({ viewerRef, metadataUrl: dataUrl });
 
     // Mutual exclusivity handlers - cancel other tools when starting a new one
-    const handleToggleDistance = () => {
-        if (isAreaMeasuring) _toggleAreaMeasurement();
-        if (isAngleMeasuring) _toggleAngleMeasurement();
-        if (isProfileMeasuring) _toggleProfileMeasurement();
-        if (isFloodActive) resetFlood();
-        _toggleDistanceMeasurement();
+    const measurements: Record<MeasurementType, { isActive: boolean; deactivate: () => void }> = {
+        distance: { isActive: isDistanceMeasuring, deactivate: _toggleDistanceMeasurement },
+        area: { isActive: isAreaMeasuring, deactivate: _toggleAreaMeasurement },
+        profile: { isActive: isProfileMeasuring, deactivate: _toggleProfileMeasurement },
+        flood: { isActive: isFloodActive, deactivate: resetFlood },
+        angle: { isActive: isAngleMeasuring, deactivate: _toggleAngleMeasurement },
+        azimuth: { isActive: isAzimuthMeasuring, deactivate: _toggleAzimuthMeasurement },
+        circle: { isActive: isCircleMeasuring, deactivate: _toggleCircleMeasurement },
     };
 
-    const handleToggleArea = () => {
-        if (isDistanceMeasuring) _toggleDistanceMeasurement();
-        if (isAngleMeasuring) _toggleAngleMeasurement();
-        if (isProfileMeasuring) _toggleProfileMeasurement();
-        if (isFloodActive) resetFlood();
-        _toggleAreaMeasurement();
+    const createHandler = (type: MeasurementType, action: () => void) => () => {
+        Object.entries(measurements).forEach(([key, { isActive, deactivate }]) => {
+            if (key !== type && isActive) deactivate();
+        });
+        action();
     };
 
-    const handleToggleProfile = () => {
-        if (isDistanceMeasuring) _toggleDistanceMeasurement();
-        if (isAreaMeasuring) _toggleAreaMeasurement();
-        if (isAngleMeasuring) _toggleAngleMeasurement();
-        if (isFloodActive) resetFlood();
-        _toggleProfileMeasurement();
-    };
-
-    const handleStartFlood = () => {
-        if (isDistanceMeasuring) _toggleDistanceMeasurement();
-        if (isAreaMeasuring) _toggleAreaMeasurement();
-        if (isAngleMeasuring) _toggleAngleMeasurement();
-        if (isProfileMeasuring) _toggleProfileMeasurement();
-        _startFlood();
-    };
-
-    const handleToggleAngle = () => {
-        if (isDistanceMeasuring) _toggleDistanceMeasurement();
-        if (isAreaMeasuring) _toggleAreaMeasurement();
-        if (isProfileMeasuring) _toggleProfileMeasurement();
-        if (isFloodActive) resetFlood();
-        _toggleAngleMeasurement();
-    };
+    const handleToggleDistance = createHandler('distance', _toggleDistanceMeasurement);
+    const handleToggleArea = createHandler('area', _toggleAreaMeasurement);
+    const handleToggleProfile = createHandler('profile', _toggleProfileMeasurement);
+    const handleStartFlood = createHandler('flood', _startFlood);
+    const handleToggleAngle = createHandler('angle', _toggleAngleMeasurement);
+    const handleToggleAzimuth = createHandler('azimuth', _toggleAzimuthMeasurement);
+    const handleToggleCircle = createHandler('circle', _toggleCircleMeasurement);
 
     return (
         <div className="relative h-screen w-screen bg-void-black">
@@ -210,9 +222,16 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         </div>
                     )}
 
-                    {/* Language switcher - top right corner */}
-                    <div className="absolute right-4 top-4 flex items-start gap-4">
+                    {/* Language switcher, UI toggle, and Controls - top right corner */}
+                    <div className="absolute right-4 top-4 flex items-start gap-2">
                         <LanguageSwitcher />
+                        <button
+                            onClick={() => setUiVisible(!uiVisible)}
+                            className="flex h-10 w-10 items-center justify-center rounded-lg backdrop-blur-md border transition-all bg-void-black/60 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10"
+                            title={uiVisible ? t('viewer.hideControls') : t('viewer.showControls')}
+                        >
+                            <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
+                        </button>
                         <GlassPanel className="w-64">
                             <h3 className="mb-2 text-sm font-bold text-neon-amber">
                                 {t('viewer.controls')}
@@ -237,8 +256,12 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                 isAreaMeasuring={isAreaMeasuring}
                                 onToggleArea={handleToggleArea}
                                 totalArea={totalArea}
+                                isCircleMeasuring={isCircleMeasuring}
+                                onToggleCircle={handleToggleCircle}
                                 isAngleMeasuring={isAngleMeasuring}
                                 onToggleAngle={handleToggleAngle}
+                                isAzimuthMeasuring={isAzimuthMeasuring}
+                                onToggleAzimuth={handleToggleAzimuth}
                                 isFloodActive={isFloodActive}
                                 floodWaterLevel={floodWaterLevel}
                                 floodMinLevel={floodMinLevel}
@@ -288,6 +311,19 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         />
                     )}
 
+                    {/* Circle Context Menu */}
+                    {circleMenuPosition && (
+                        <MeasurementContext
+                            x={circleMenuPosition.x}
+                            y={circleMenuPosition.y}
+                            onClose={() => setCircleMenuPosition(null)}
+                            onDeleteLast={deleteLastCirclePoint}
+                            onDeleteAll={deleteAllCircles}
+                            onExportCsv={() => exportCircleCsv(cellId)}
+                            disableExport={circlePointCount < 3}
+                        />
+                    )}
+
                     {/* Angle Context Menu */}
                     {angleMenuPosition && (
                         <MeasurementContext
@@ -298,6 +334,19 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                             onDeleteAll={deleteAllAngles}
                             onExportCsv={() => exportAngleCsv(cellId)}
                             disableExport={anglePointCount < 3}
+                        />
+                    )}
+
+                    {/* Azimuth Context Menu */}
+                    {azimuthMenuPosition && (
+                        <MeasurementContext
+                            x={azimuthMenuPosition.x}
+                            y={azimuthMenuPosition.y}
+                            onClose={() => setAzimuthMenuPosition(null)}
+                            onDeleteLast={deleteLastAzimuthPoint}
+                            onDeleteAll={deleteAllAzimuths}
+                            onExportCsv={() => exportAzimuthCsv(cellId)}
+                            disableExport={azimuthPointCount < 2}
                         />
                     )}
 
@@ -313,18 +362,16 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 </>
             )}
 
-            {/* UI Toggle button - ALWAYS visible, vertically centered on right */}
-            <button
-                onClick={() => setUiVisible(!uiVisible)}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-lg backdrop-blur-md border transition-all z-20 ${
-                    !uiVisible
-                        ? 'bg-neon-cyan/30 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)]'
-                        : 'bg-void-black/60 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10'
-                }`}
-                title={uiVisible ? t('viewer.hideControls') : t('viewer.showControls')}
-            >
-                <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
-            </button>
+            {/* UI Toggle button - ALWAYS visible, top right next to language switcher */}
+            {!uiVisible && (
+                <button
+                    onClick={() => setUiVisible(!uiVisible)}
+                    className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-lg backdrop-blur-md border transition-all z-20 bg-neon-cyan/30 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)]"
+                    title={t('viewer.showControls')}
+                >
+                    <Icon name="eye" size={20} />
+                </button>
+            )}
 
             {/* Compass + Google Maps button - bottom right, only visible when UI is visible */}
             {uiVisible && (

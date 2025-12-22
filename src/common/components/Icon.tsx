@@ -54,9 +54,25 @@ const icons = {
     activity: () => <path d="M22 12h-4l-3 9L9 3l-3 9H2" />,
     angle: () => (
         <>
-            <path d="M5 19h14" />
-            <path d="M5 19V5" />
-            <path d="M5 12a7 7 0 0 1 7 0" />
+            <path d="M4 4L4 20L20 20" />
+            <path d="M4 10 A 10 10 0 0 1 14 20" />
+        </>
+    ),
+    azimuth: () => (
+        <>
+            {/* North indicator */}
+            <path d="M12 2v6" />
+            <path d="M10 5l2-3 2 3" />
+            {/* Direction line from center */}
+            <circle cx="12" cy="12" r="8" strokeDasharray="2 2" />
+            <path d="M12 12l5 5" />
+            <circle cx="17" cy="17" r="2" />
+        </>
+    ),
+    circle: () => (
+        <>
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
         </>
     ),
 
