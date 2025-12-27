@@ -21,6 +21,8 @@ jobs:
 
             - name: Build
               run: bun run build
+              env:
+                  VITE_EPT_BASE_URL: ${{ secrets.VITE_EPT_BASE_URL }}
 
             - name: Deploy to Cloudflare Pages
               uses: cloudflare/wrangler-action@v3
