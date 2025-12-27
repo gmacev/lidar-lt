@@ -108,7 +108,7 @@ function computeMatchedIds(searchQuery: string, data: FeatureCollection | undefi
         });
     } else {
         // Text Search
-        const lowerQuery = query.toLowerCase();
+        const lowerQuery = query.toLowerCase().replace(/_/g, '/');
         data.features.forEach((feature) => {
             const props = feature.properties as { id: string; name: string | null };
             if (
