@@ -1,5 +1,6 @@
 import { DistanceMeasurement } from './DistanceMeasurement';
 import { AreaMeasurement } from './AreaMeasurement';
+import { VolumeMeasurement } from './VolumeMeasurement';
 import { CircleMeasurement } from './CircleMeasurement';
 import { AngleMeasurement } from './AngleMeasurement';
 import { AzimuthMeasurement } from './AzimuthMeasurement';
@@ -20,6 +21,11 @@ interface MeasurementToolbarProps {
     isAreaMeasuring: boolean;
     onToggleArea: () => void;
     totalArea: number;
+
+    // Volume Tool
+    isVolumeMeasuring: boolean;
+    onToggleVolume: () => void;
+    totalVolume: number;
 
     // Circle Tool
     isCircleMeasuring: boolean;
@@ -54,6 +60,9 @@ export function MeasurementToolbar({
     isAreaMeasuring,
     onToggleArea,
     totalArea,
+    isVolumeMeasuring,
+    onToggleVolume,
+    totalVolume,
     isCircleMeasuring,
     onToggleCircle,
     isAngleMeasuring,
@@ -81,6 +90,11 @@ export function MeasurementToolbar({
                 onClick={onToggleArea}
                 isActive={isAreaMeasuring}
                 totalArea={totalArea}
+            />
+            <VolumeMeasurement
+                onClick={onToggleVolume}
+                isActive={isVolumeMeasuring}
+                totalVolume={totalVolume}
             />
             <CircleMeasurement onClick={onToggleCircle} isActive={isCircleMeasuring} />
             <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />

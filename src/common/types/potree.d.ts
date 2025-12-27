@@ -157,6 +157,10 @@ export interface PotreeScene {
     measurements: Measure[];
     removeMeasurement(measurement: Measure): void;
     removeAllMeasurements(): void;
+    // Volumes
+    volumes: BoxVolume[];
+    addVolume(volume: BoxVolume): void;
+    removeVolume(volume: BoxVolume): void;
     // Underlying Three.js scene for adding custom objects
     scene: import('three').Scene;
     profiles: Profile[];
@@ -189,6 +193,7 @@ export interface PotreeViewer {
     useHighQuality: boolean;
     measuringTool: MeasuringTool;
     profileTool: ProfileTool;
+    volumeTool: VolumeTool;
 
     // Setup methods
     setEDLEnabled(enabled: boolean): void;
@@ -279,6 +284,32 @@ export interface Profile {
 export interface ProfileTool {
     profiles: Profile[];
     startInsertion(options?: { width?: number; name?: string }): Profile;
+}
+
+// ============================================================================
+// Volume Types
+// ============================================================================
+
+export interface BoxVolume {
+    uuid: string;
+    name: string;
+    position: Vector3;
+    scale: Vector3;
+    clip: boolean;
+    visible: boolean;
+    showVolumeLabel: boolean;
+    getVolume(): number;
+    update(): void;
+}
+
+export interface VolumeInsertionOptions {
+    type?: unknown;
+    clip?: boolean;
+    name?: string;
+}
+
+export interface VolumeTool {
+    startInsertion(options?: VolumeInsertionOptions): BoxVolume;
 }
 
 // ============================================================================

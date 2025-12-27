@@ -2,6 +2,7 @@
 export const MEASUREMENT_TYPES = [
     'distance',
     'area',
+    'volume',
     'profile',
     'flood',
     'angle',

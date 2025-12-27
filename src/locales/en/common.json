@@ -87,6 +87,7 @@
     "measurement": {
         "distance": "Measure Distance",
         "area": "Measure Area",
+        "volume": "Measure Volume",
         "angle": "Measure Angle",
         "azimuth": "Measure Azimuth (Compass Bearing)",
         "circle": "Measure Circle",
