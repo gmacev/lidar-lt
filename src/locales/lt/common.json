@@ -87,6 +87,7 @@
     "measurement": {
         "distance": "Matuoti atstumą",
         "area": "Matuoti plotą",
+        "volume": "Matuoti tūrį",
         "angle": "Matuoti kampą",
         "azimuth": "Matuoti azimutą (kompaso kryptis)",
         "circle": "Matuoti apskritimą",

@@ -4,6 +4,15 @@ import type { Measure, PotreeViewer } from '@/common/types/potree';
 interface UseMeasurementInteractionOptions {
     viewerRef: RefObject<PotreeViewer | null>;
     isMeasuring: boolean;
+    /**
+     * Whether to block right-click events to prevent Potree's default behavior
+     * (removing points/canceling measurement).
+     *
+     * - true (default): Block right-click, no rotation during measurement
+     * - false: Allow right-click through, enables rotation but may affect
+     *          some tools (use for volume tool which needs drag interaction)
+     */
+    blockRightClick?: boolean;
 }
 
 interface UseMeasurementInteractionReturn {
@@ -28,19 +37,20 @@ export function hookMeasurementEvents(measurement: Measure, onChange: () => void
 
 /**
  * Hook to handle common measurement tool interactions:
- * - Preventing Potree's default right-click cancel behavior
+ * - Optionally preventing Potree's default right-click behavior
  * - Managing custom context menu position
  */
 export function useMeasurementInteraction({
     viewerRef,
     isMeasuring,
+    blockRightClick = true,
 }: UseMeasurementInteractionOptions): UseMeasurementInteractionReturn {
     const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
-    // Prevent Potree's default right-click behavior (cancel measurement)
+    // Optionally block right-click to prevent Potree's default behavior
     useEffect(() => {
         const viewer = viewerRef.current;
-        if (!viewer || !isMeasuring) return;
+        if (!viewer || !isMeasuring || !blockRightClick) return;
 
         const preventPotreeRightClick = (e: MouseEvent) => {
             if (e.button === 2) {
@@ -56,7 +66,7 @@ export function useMeasurementInteraction({
             element.removeEventListener('mousedown', preventPotreeRightClick, true);
             element.removeEventListener('mouseup', preventPotreeRightClick, true);
         };
-    }, [viewerRef, isMeasuring]);
+    }, [viewerRef, isMeasuring, blockRightClick]);
 
     // Handle context menu
     useEffect(() => {

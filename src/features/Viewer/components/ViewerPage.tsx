@@ -13,6 +13,8 @@ import {
     useCircleMeasurementTool,
     useFloodSimulation,
 } from '@/features/Viewer/hooks';
+import { useVolumeMeasurementTool } from '@/features/Viewer/hooks/useVolumeMeasurementTool';
+import { useVolumeMeasurementData } from '@/features/Viewer/hooks/useVolumeMeasurementData';
 import { useDistanceMeasurementData } from '@/features/Viewer/hooks/useDistanceMeasurementData';
 import { useAreaMeasurementData } from '@/features/Viewer/hooks/useAreaMeasurementData';
 import { useAngleMeasurementData } from '@/features/Viewer/hooks/useAngleMeasurementData';
@@ -136,6 +138,18 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         deleteAll: deleteAllCircles,
     } = useCircleMeasurementTool({ viewerRef });
 
+    // Volume Measurement Tool State
+    const {
+        isMeasuring: isVolumeMeasuring,
+        totalVolume,
+        toggleVolumeMeasurement: _toggleVolumeMeasurement,
+        menuPosition: volumeMenuPosition,
+        setMenuPosition: setVolumeMenuPosition,
+        deleteAll: deleteAllVolumes,
+    } = useVolumeMeasurementTool({ viewerRef });
+
+    const { exportToCsv: exportVolumeCsv } = useVolumeMeasurementData({ viewerRef });
+
     // Profile Tool State
     const {
         isMeasuring: isProfileMeasuring,
@@ -163,6 +177,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const measurements: Record<MeasurementType, { isActive: boolean; deactivate: () => void }> = {
         distance: { isActive: isDistanceMeasuring, deactivate: _toggleDistanceMeasurement },
         area: { isActive: isAreaMeasuring, deactivate: _toggleAreaMeasurement },
+        volume: { isActive: isVolumeMeasuring, deactivate: _toggleVolumeMeasurement },
         profile: { isActive: isProfileMeasuring, deactivate: _toggleProfileMeasurement },
         flood: { isActive: isFloodActive, deactivate: resetFlood },
         angle: { isActive: isAngleMeasuring, deactivate: _toggleAngleMeasurement },
@@ -179,6 +194,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
     const handleToggleDistance = createHandler('distance', _toggleDistanceMeasurement);
     const handleToggleArea = createHandler('area', _toggleAreaMeasurement);
+    const handleToggleVolume = createHandler('volume', _toggleVolumeMeasurement);
     const handleToggleProfile = createHandler('profile', _toggleProfileMeasurement);
     const handleStartFlood = createHandler('flood', _startFlood);
     const handleToggleAngle = createHandler('angle', _toggleAngleMeasurement);
@@ -256,6 +272,9 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                 isAreaMeasuring={isAreaMeasuring}
                                 onToggleArea={handleToggleArea}
                                 totalArea={totalArea}
+                                isVolumeMeasuring={isVolumeMeasuring}
+                                onToggleVolume={handleToggleVolume}
+                                totalVolume={totalVolume}
                                 isCircleMeasuring={isCircleMeasuring}
                                 onToggleCircle={handleToggleCircle}
                                 isAngleMeasuring={isAngleMeasuring}
@@ -347,6 +366,18 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                             onDeleteAll={deleteAllAzimuths}
                             onExportCsv={() => exportAzimuthCsv(cellId)}
                             disableExport={azimuthPointCount < 2}
+                        />
+                    )}
+
+                    {/* Volume Context Menu */}
+                    {volumeMenuPosition && (
+                        <MeasurementContext
+                            x={volumeMenuPosition.x}
+                            y={volumeMenuPosition.y}
+                            onClose={() => setVolumeMenuPosition(null)}
+                            onDeleteAll={deleteAllVolumes}
+                            onExportCsv={() => exportVolumeCsv(cellId)}
+                            disableExport={totalVolume === 0}
                         />
                     )}
 
