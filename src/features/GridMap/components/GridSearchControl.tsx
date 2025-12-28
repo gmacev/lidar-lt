@@ -17,7 +17,7 @@ export function GridSearchControl({
     const { t } = useTranslation();
 
     return (
-        <div className="absolute left-4 top-4 z-10 w-80">
+        <div className="absolute left-2 right-20 top-2 z-10 sm:left-4 sm:right-auto sm:top-4 sm:w-80">
             <GlassPanel className="flex flex-col gap-2">
                 <div className="relative">
                     <input
@@ -25,7 +25,7 @@ export function GridSearchControl({
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={t('search.gridPlaceholder')}
-                        className="w-full rounded border border-neon-cyan/30 bg-black/60 px-4 py-2 text-sm text-neon-cyan placeholder-gray-500 transition-colors focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan"
+                        className="w-full rounded border border-neon-cyan/30 bg-black/60 px-3 py-1.5 text-sm text-neon-cyan placeholder-gray-500 transition-colors focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan"
                     />
                     {value && (
                         <button

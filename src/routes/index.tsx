@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { GridVisualizer } from '@/features/GridMap';
-import { LanguageSwitcher } from '@/common/components';
 
 export const Route = createFileRoute('/')({
     component: HomePage,
@@ -13,9 +12,6 @@ function HomePage() {
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-void-black">
             <header className="shrink-0 border-b border-glass-border p-4">
-                <div className="flex items-center justify-end mb-2">
-                    <LanguageSwitcher />
-                </div>
                 <h1 className="text-center text-2xl font-bold tracking-widest text-neon-amber">
                     {t('home.title')}
                 </h1>

@@ -227,9 +227,9 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             {/* UI elements that can be toggled */}
             {uiVisible && (
                 <>
-                    {/* Sector info + Coordinate Search - top center */}
+                    {/* Sector info + Coordinate Search - bottom center, always */}
                     {!isLoading && !error && (
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2">
+                        <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
                             <CoordinateSearchControl
                                 viewerRef={viewerRef}
                                 sectorName={initialState.sectorName}
@@ -239,7 +239,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                     )}
 
                     {/* Language switcher, UI toggle, and Controls - top right corner */}
-                    <div className="absolute right-4 top-4 flex items-start gap-2">
+                    <div className="absolute right-2 top-2 flex items-start gap-2 xl:right-4 xl:top-4">
                         <LanguageSwitcher />
                         <button
                             onClick={() => setUiVisible(!uiVisible)}
@@ -248,7 +248,8 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         >
                             <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
                         </button>
-                        <GlassPanel className="w-64">
+                        {/* Controls panel - hidden on small screens */}
+                        <GlassPanel className="hidden w-64 md:block">
                             <h3 className="mb-2 text-sm font-bold text-neon-amber">
                                 {t('viewer.controls')}
                             </h3>
@@ -262,7 +263,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
                     {/* Measurement Tools - only visible when UI is visible */}
                     {!isLoading && !error && (
-                        <div className="absolute right-4 top-[140px] flex flex-col items-end gap-1">
+                        <div className="absolute right-2 top-16 flex flex-col items-end gap-1 md:top-[140px] xl:right-4">
                             <MeasurementToolbar
                                 isProfileMeasuring={isProfileMeasuring}
                                 onToggleProfile={handleToggleProfile}
@@ -397,7 +398,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             {!uiVisible && (
                 <button
                     onClick={() => setUiVisible(!uiVisible)}
-                    className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-lg backdrop-blur-md border transition-all z-20 bg-neon-cyan/30 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)]"
+                    className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg backdrop-blur-md border transition-all z-20 bg-neon-cyan/30 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)] xl:right-4 xl:top-4"
                     title={t('viewer.showControls')}
                 >
                     <Icon name="eye" size={20} />
@@ -406,7 +407,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
             {/* Compass + Google Maps button - bottom right, only visible when UI is visible */}
             {uiVisible && (
-                <div className="absolute bottom-4 right-4 flex flex-col items-center gap-10">
+                <div className="absolute bottom-2 right-2 flex flex-col items-center gap-10 xl:bottom-4 xl:right-4">
                     <GoogleMapsButton viewerRef={viewerRef} />
                     <Compass viewerRef={viewerRef} />
                 </div>

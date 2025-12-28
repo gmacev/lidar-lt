@@ -25,7 +25,11 @@ interface ViewerSidebarProps {
  */
 export function ViewerSidebar({ viewerRef, initialState, updateUrl, onBack }: ViewerSidebarProps) {
     const { t } = useTranslation();
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    // Start collapsed on small screens (< 640px / sm breakpoint)
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return window.innerWidth < 640;
+    });
     const [projection, setProjection] = useState<Projection>(
         initialState.projection ?? 'PERSPECTIVE'
     );

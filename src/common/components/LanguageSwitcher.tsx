@@ -24,7 +24,7 @@ export function LanguageSwitcher() {
                 <span
                     className={`px-1.5 py-0.5 rounded transition-all ${
                         currentLang === 'lt'
-                            ? 'bg-neon-amber/20 text-neon-amber'
+                            ? 'bg-neon-cyan/20 text-neon-cyan'
                             : 'text-white/40 hover:text-white/60'
                     }`}
                 >

@@ -3,6 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTranslation } from 'react-i18next';
 import { useLithuaniaGrid } from '@/features/GridMap/hooks';
 import { GridSearchControl } from './GridSearchControl';
+import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
 
 const GRID_SOURCE_ID = 'lidar-grid';
 
@@ -57,6 +58,11 @@ export function GridVisualizer() {
                 matchedCount={matchedCount}
                 totalCount={totalCount}
             />
+
+            {/* Language switcher - top right */}
+            <div className="absolute right-2 top-2 z-10 sm:right-4 sm:top-4">
+                <LanguageSwitcher />
+            </div>
 
             <Map
                 ref={mapRef}
