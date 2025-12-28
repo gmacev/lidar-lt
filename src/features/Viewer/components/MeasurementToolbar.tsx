@@ -6,6 +6,7 @@ import { AngleMeasurement } from './AngleMeasurement';
 import { AzimuthMeasurement } from './AzimuthMeasurement';
 import { HeightProfileMeasurement } from './HeightProfileMeasurement';
 import { FloodSimulationTool } from './FloodSimulationTool';
+import { isTouchDevice } from '@/common/utils/screenSize';
 
 interface MeasurementToolbarProps {
     // Profile Tool
@@ -79,28 +80,36 @@ export function MeasurementToolbar({
     onFloodPrecisionChange,
     onResetFlood,
 }: MeasurementToolbarProps) {
+    const isTouch = isTouchDevice();
+
     return (
         <div className="flex flex-col items-end gap-1">
-            <DistanceMeasurement
-                onClick={onToggleDistance}
-                isActive={isDistanceMeasuring}
-                totalDistance={totalDistance}
-            />
-            <AreaMeasurement
-                onClick={onToggleArea}
-                isActive={isAreaMeasuring}
-                totalArea={totalArea}
-            />
-            <VolumeMeasurement
-                onClick={onToggleVolume}
-                isActive={isVolumeMeasuring}
-                totalVolume={totalVolume}
-            />
-            <CircleMeasurement onClick={onToggleCircle} isActive={isCircleMeasuring} />
-            <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />
-            <AzimuthMeasurement onClick={onToggleAzimuth} isActive={isAzimuthMeasuring} />
-            <HeightProfileMeasurement onClick={onToggleProfile} isActive={isProfileMeasuring} />
+            {/* Measurement tools only shown on non-touch devices */}
+            {!isTouch && (
+                <>
+                    <DistanceMeasurement
+                        onClick={onToggleDistance}
+                        isActive={isDistanceMeasuring}
+                        totalDistance={totalDistance}
+                    />
+                    <AreaMeasurement
+                        onClick={onToggleArea}
+                        isActive={isAreaMeasuring}
+                        totalArea={totalArea}
+                    />
+                    <VolumeMeasurement
+                        onClick={onToggleVolume}
+                        isActive={isVolumeMeasuring}
+                        totalVolume={totalVolume}
+                    />
+                    <CircleMeasurement onClick={onToggleCircle} isActive={isCircleMeasuring} />
+                    <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />
+                    <AzimuthMeasurement onClick={onToggleAzimuth} isActive={isAzimuthMeasuring} />
+                    <HeightProfileMeasurement onClick={onToggleProfile} isActive={isProfileMeasuring} />
+                </>
+            )}
 
+            {/* Flood simulation works on touch devices */}
             <FloodSimulationTool
                 isActive={isFloodActive}
                 waterLevel={floodWaterLevel}
@@ -115,3 +124,4 @@ export function MeasurementToolbar({
         </div>
     );
 }
+

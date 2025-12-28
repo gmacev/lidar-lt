@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
-import { PERFORMANCE_DEFAULTS } from '@/features/Viewer/config';
+import { getDefaultPointBudget } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
 interface PointBudgetControlProps {
@@ -22,7 +22,7 @@ export function PointBudgetControl({
 }: PointBudgetControlProps) {
     const { t } = useTranslation();
     const [pointBudget, setPointBudget] = useState<number>(
-        initialState.pb ?? PERFORMANCE_DEFAULTS.pointBudget
+        initialState.pb ?? getDefaultPointBudget()
     );
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

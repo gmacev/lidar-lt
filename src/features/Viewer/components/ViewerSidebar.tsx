@@ -19,6 +19,8 @@ interface ViewerSidebarProps {
     onBack: () => void;
 }
 
+import { isMobile } from '@/common/utils/screenSize';
+
 /**
  * Unified floating sidebar containing all viewer controls.
  * Positioned on the left side with collapsible sections.
@@ -26,10 +28,7 @@ interface ViewerSidebarProps {
 export function ViewerSidebar({ viewerRef, initialState, updateUrl, onBack }: ViewerSidebarProps) {
     const { t } = useTranslation();
     // Start collapsed on small screens (< 640px / sm breakpoint)
-    const [isCollapsed, setIsCollapsed] = useState(() => {
-        if (typeof window === 'undefined') return false;
-        return window.innerWidth < 640;
-    });
+    const [isCollapsed, setIsCollapsed] = useState(isMobile);
     const [projection, setProjection] = useState<Projection>(
         initialState.projection ?? 'PERSPECTIVE'
     );

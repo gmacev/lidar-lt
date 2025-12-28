@@ -202,7 +202,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleCircle = createHandler('circle', _toggleCircleMeasurement);
 
     return (
-        <div className="relative h-screen w-screen bg-void-black">
+        <div className="relative h-dvh w-screen bg-void-black">
             <div ref={containerRef} className="h-full w-full" />
 
             {isLoading && (
@@ -229,7 +229,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 <>
                     {/* Sector info + Coordinate Search - bottom center, always */}
                     {!isLoading && !error && (
-                        <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
+                        <div className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 xl:bottom-4">
                             <CoordinateSearchControl
                                 viewerRef={viewerRef}
                                 sectorName={initialState.sectorName}

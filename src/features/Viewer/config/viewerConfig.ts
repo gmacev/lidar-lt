@@ -11,10 +11,21 @@ export const EDL_DEFAULTS: { enabled: boolean; strength: number; radius: number 
 
 export const PERFORMANCE_DEFAULTS = {
     pointBudget: 8_000_000,
+    pointBudgetMobile: 4_000_000,
     minNodeSize: 15,
     useHighQuality: true,
     fov: 60,
 } as const;
+
+import { isMobile } from '@/common/utils/screenSize';
+
+/**
+ * Returns the appropriate default point budget based on screen size.
+ * Mobile devices (< 640px) get a lower budget for better performance.
+ */
+export function getDefaultPointBudget(): number {
+    return isMobile() ? PERFORMANCE_DEFAULTS.pointBudgetMobile : PERFORMANCE_DEFAULTS.pointBudget;
+}
 
 export const POINT_SIZE_DEFAULTS: { size: number } = {
     size: 0.5,

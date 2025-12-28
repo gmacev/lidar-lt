@@ -6,8 +6,10 @@ import {
     EDL_DEFAULTS,
     PERFORMANCE_DEFAULTS,
     POINT_APPEARANCE_DEFAULTS,
+    getDefaultPointBudget,
 } from '@/features/Viewer/config';
 import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';
+import { isTouchDevice } from '@/common/utils/screenSize';
 import type { LoadPointCloudResult, Potree, PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
@@ -196,7 +198,7 @@ export function usePotree(options: UsePotreeOptions) {
 
         // Configure viewer
         viewer.setFOV(PERFORMANCE_DEFAULTS.fov);
-        viewer.setPointBudget(PERFORMANCE_DEFAULTS.pointBudget);
+        viewer.setPointBudget(getDefaultPointBudget());
         viewer.setMinNodeSize(PERFORMANCE_DEFAULTS.minNodeSize);
         viewer.useHighQuality = PERFORMANCE_DEFAULTS.useHighQuality;
 
@@ -210,13 +212,17 @@ export function usePotree(options: UsePotreeOptions) {
 
         viewer.setDescription('');
 
-        // Control
-        viewer.setControls(viewer.earthControls);
+        // Control - use orbit controls for touch devices (better touch gesture support)
+        if (isTouchDevice()) {
+            viewer.setControls(viewer.orbitControls);
+        } else {
+            viewer.setControls(viewer.earthControls);
+        }
 
         // Load point cloud
         loadPointCloud(PotreeLib, viewer, dataUrl);
 
-        // Track user interaction - any mouse/wheel event enables camera syncing
+        // Track user interaction - any mouse/wheel/touch event enables camera syncing
         // This prevents syncing during initial fitToScreen animation
         const markUserInteracted = () => {
             userHasInteractedRef.current = true;
@@ -224,12 +230,14 @@ export function usePotree(options: UsePotreeOptions) {
         const container = containerRef.current;
         container.addEventListener('mousedown', markUserInteracted);
         container.addEventListener('wheel', markUserInteracted);
+        container.addEventListener('touchstart', markUserInteracted);
         const intervalId = setInterval(syncCamera, 200);
 
         return () => {
             clearInterval(intervalId);
             container.removeEventListener('mousedown', markUserInteracted);
             container.removeEventListener('wheel', markUserInteracted);
+            container.removeEventListener('touchstart', markUserInteracted);
             viewerRef.current?.renderer?.domElement?.remove();
             viewerRef.current = null;
         };

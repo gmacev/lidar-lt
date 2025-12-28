@@ -81837,8 +81837,8 @@ ENDSEC
 				};
 
 				if (e.drag.mouse === MOUSE$1.LEFT) {
-					this.yawDelta += ndrag.x * this.rotationSpeed;
-					this.pitchDelta += ndrag.y * this.rotationSpeed;
+					this.yawDelta -= ndrag.x * this.rotationSpeed; // inverted for natural feel
+					this.pitchDelta -= ndrag.y * this.rotationSpeed; // inverted for natural feel
 
 					this.stopTweens();
 				} else if (e.drag.mouse === MOUSE$1.RIGHT) {
@@ -81855,8 +81855,9 @@ ENDSEC
 
 			let scroll = (e) => {
 				let resolvedRadius = this.scene.view.radius + this.radiusDelta;
-
-				this.radiusDelta += -e.delta * resolvedRadius * 0.1;
+				// Hybrid zoom: proportional to radius but with minimum floor
+				let zoomStep = Math.max(100, resolvedRadius * 0.15);
+				this.radiusDelta += -e.delta * zoomStep;
 
 				this.stopTweens();
 			};
@@ -81888,11 +81889,12 @@ ENDSEC
 					let currDX = curr.touches[0].pageX - curr.touches[1].pageX;
 					let currDY = curr.touches[0].pageY - curr.touches[1].pageY;
 					let currDist = Math.sqrt(currDX * currDX + currDY * currDY);
-
 					let delta = currDist / prevDist;
 					let resolvedRadius = this.scene.view.radius + this.radiusDelta;
-					let newRadius = resolvedRadius / delta;
-					this.radiusDelta = newRadius - resolvedRadius;
+					// Hybrid pinch zoom: proportional but with minimum floor
+					let zoomStep = Math.max(200, resolvedRadius * 0.3);
+					let zoomAmount = (delta - 1) * zoomStep * 3;
+					this.radiusDelta -= zoomAmount;
 
 					this.stopTweens();
 				} else if (e.touches.length === 3 && previousTouch.touches.length === 3) {

@@ -27,6 +27,11 @@ export default defineConfig({
         include: ['maplibre-gl', 'three', 'lodash'],
     },
 
+    // Allow access from other devices on the network
+    server: {
+        host: true,
+    },
+
     build: {
         // Target modern browsers for smaller output
         target: 'esnext',

@@ -56,7 +56,7 @@ export function CoordinateSearchControl({
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={t('search.coordinatePlaceholder')}
-                    className={`w-48 rounded border bg-black/60 px-3 py-1.5 text-sm placeholder-gray-500 transition-colors focus:outline-none focus:ring-1 ${
+                    className={`w-36 rounded border bg-black/60 px-3 py-1.5 text-sm placeholder-gray-500 transition-colors focus:outline-none focus:ring-1 sm:w-48 ${
                         query && !isValid
                             ? 'border-plasma-red/50 text-plasma-red focus:border-plasma-red focus:ring-plasma-red/30'
                             : isValid

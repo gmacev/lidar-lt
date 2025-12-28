@@ -3,6 +3,7 @@ export {
     PERFORMANCE_DEFAULTS,
     POINT_SIZE_DEFAULTS,
     POINT_APPEARANCE_DEFAULTS,
+    getDefaultPointBudget,
     type ColorMode,
     type PointShape,
 } from './viewerConfig';
