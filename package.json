@@ -2,6 +2,30 @@
     "name": "lidar-lt",
     "private": true,
     "version": "0.0.0",
+    "description": "Interactive web application for exploring Lithuania's LiDAR point cloud data",
+    "author": {
+        "name": "Giedrius Macevičius",
+        "email": "gmacev@gmail.com",
+        "url": "https://github.com/gmacev/"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gmacev/lidar-lt"
+    },
+    "keywords": [
+        "lidar",
+        "point-cloud",
+        "potree",
+        "lithuania",
+        "3d-visualization",
+        "geospatial",
+        "react",
+        "threejs"
+    ],
+    "engines": {
+        "node": ">=20.19.0"
+    },
     "type": "module",
     "scripts": {
         "dev": "vite",
