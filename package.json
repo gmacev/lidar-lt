@@ -13,9 +13,9 @@
         "type-check": "tsc -b --noEmit",
         "check:circular": "dpdm --circular --no-warning --no-tree src/main.tsx",
         "check:unused": "knip",
-        "check:all": "bun run type-check && bun run lint && bun run check:circular && bun run check:unused",
+        "check:all": "npm run type-check && npm run lint && npm run check:circular && npm run check:unused",
         "preview": "vite preview",
-        "serve": "bun run build && vite preview"
+        "serve": "npm run build && vite preview"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.1.18",
@@ -26,7 +26,6 @@
         "i18next-browser-languagedetector": "^8.2.0",
         "lodash": "^4.17.21",
         "maplibre-gl": "^5.14.0",
-        "potree": "m-schuetz/potree",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "react-i18next": "^16.5.0",

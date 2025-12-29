@@ -26,16 +26,16 @@ An interactive web application for exploring Lithuania's LiDAR point cloud data 
 
 ```bash
 # Install dependencies
-bun install
+npm install
 
 # Development server
-bun dev
+npm run dev
 
 # Production build
-bun run build
+npm run build
 
 # Preview production build
-bun run serve
+npm run serve
 ```
 
 ## Project Structure
