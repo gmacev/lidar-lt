@@ -6,7 +6,9 @@ import { AngleMeasurement } from './AngleMeasurement';
 import { AzimuthMeasurement } from './AzimuthMeasurement';
 import { HeightProfileMeasurement } from './HeightProfileMeasurement';
 import { FloodSimulationTool } from './FloodSimulationTool';
+import { AnnotationTool } from './AnnotationTool';
 import { isTouchDevice } from '@/common/utils/screenSize';
+import type { StoredAnnotation } from '../utils/annotationStorage';
 
 interface MeasurementToolbarProps {
     // Profile Tool
@@ -50,6 +52,20 @@ interface MeasurementToolbarProps {
     onFloodWaterLevelChange: (level: number) => void;
     onFloodPrecisionChange: (precision: number) => void;
     onResetFlood: () => void;
+
+    // Annotation Tool
+    annotations: StoredAnnotation[];
+    isAnnotationPanelOpen: boolean;
+    onToggleAnnotationPanel: () => void;
+    isAnnotationPlacing: boolean;
+    onStartAnnotationPlacement: () => void;
+    onToggleAnnotationVisibility: (id: string) => void;
+    onToggleAllAnnotationVisibility: () => void;
+    onNavigateToAnnotation: (id: string) => void;
+    onDeleteAnnotation: (id: string) => void;
+    onDeleteAllAnnotations: () => void;
+    allAnnotationsVisible: boolean;
+    someAnnotationsVisible: boolean;
 }
 
 export function MeasurementToolbar({
@@ -79,6 +95,18 @@ export function MeasurementToolbar({
     onFloodWaterLevelChange,
     onFloodPrecisionChange,
     onResetFlood,
+    annotations,
+    isAnnotationPanelOpen,
+    onToggleAnnotationPanel,
+    isAnnotationPlacing,
+    onStartAnnotationPlacement,
+    onToggleAnnotationVisibility,
+    onToggleAllAnnotationVisibility,
+    onNavigateToAnnotation,
+    onDeleteAnnotation,
+    onDeleteAllAnnotations,
+    allAnnotationsVisible,
+    someAnnotationsVisible,
 }: MeasurementToolbarProps) {
     const isTouch = isTouchDevice();
 
@@ -112,7 +140,7 @@ export function MeasurementToolbar({
                 </>
             )}
 
-            {/* Flood simulation works on touch devices */}
+            {/* Flood simulation works on all devices */}
             <FloodSimulationTool
                 isActive={isFloodActive}
                 waterLevel={floodWaterLevel}
@@ -123,6 +151,22 @@ export function MeasurementToolbar({
                 onWaterLevelChange={onFloodWaterLevelChange}
                 onPrecisionChange={onFloodPrecisionChange}
                 onReset={onResetFlood}
+            />
+
+            {/* Annotation tool works on all devices */}
+            <AnnotationTool
+                annotations={annotations}
+                isPanelOpen={isAnnotationPanelOpen}
+                onTogglePanel={onToggleAnnotationPanel}
+                isPlacing={isAnnotationPlacing}
+                onStartPlacement={onStartAnnotationPlacement}
+                onToggleVisibility={onToggleAnnotationVisibility}
+                onToggleAllVisibility={onToggleAllAnnotationVisibility}
+                onNavigate={onNavigateToAnnotation}
+                onDelete={onDeleteAnnotation}
+                onDeleteAll={onDeleteAllAnnotations}
+                allVisible={allAnnotationsVisible}
+                someVisible={someAnnotationsVisible}
             />
         </div>
     );

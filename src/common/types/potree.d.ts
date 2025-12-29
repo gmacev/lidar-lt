@@ -161,9 +161,49 @@ export interface PotreeScene {
     volumes: BoxVolume[];
     addVolume(volume: BoxVolume): void;
     removeVolume(volume: BoxVolume): void;
+    // Annotations
+    annotations: Annotation;
+    addAnnotation(position: [number, number, number] | Vector3, args?: AnnotationArgs): Annotation;
+    removeAnnotation(annotation: Annotation): void;
     // Underlying Three.js scene for adding custom objects
     scene: import('three').Scene;
     profiles: Profile[];
+}
+
+// ============================================================================
+// Annotations
+// ============================================================================
+
+export interface AnnotationArgs {
+    title?: string;
+    description?: string;
+    cameraPosition?: [number, number, number] | Vector3;
+    cameraTarget?: [number, number, number] | Vector3;
+}
+
+export interface Annotation {
+    uuid: string;
+    position: Vector3;
+    title: string;
+    description: string;
+    visible: boolean;
+    cameraPosition?: Vector3;
+    cameraTarget?: Vector3;
+    children: Annotation[];
+    parent: Annotation | null;
+    domElement: JQuery<HTMLElement>;
+    // Methods
+    add(annotation: Annotation): void;
+    remove(annotation: Annotation): void;
+    traverse(handler: (annotation: Annotation) => boolean | void): void;
+    moveHere(camera: Camera): void;
+    // Event handling
+    addEventListener(type: string, listener: (event: { annotation: Annotation }) => void): void;
+    removeEventListener(type: string, listener: (event: { annotation: Annotation }) => void): void;
+}
+
+export interface AnnotationTool {
+    startInsertion(args?: AnnotationArgs): void;
 }
 
 // ============================================================================
@@ -194,6 +234,7 @@ export interface PotreeViewer {
     measuringTool: MeasuringTool;
     profileTool: ProfileTool;
     volumeTool: VolumeTool;
+    annotationTool: AnnotationTool;
 
     // Setup methods
     setEDLEnabled(enabled: boolean): void;
@@ -326,6 +367,13 @@ export type LoadPointCloudCallback = (result: LoadPointCloudResult) => void;
 // Potree Global
 // ============================================================================
 
+export interface PickResult {
+    location: Vector3;
+    distance: number;
+    pointcloud?: PointCloud;
+    point?: unknown;
+}
+
 export interface Potree {
     Viewer: new (container: HTMLElement) => PotreeViewer;
     PointSizeType: typeof PointSizeType;
@@ -339,6 +387,13 @@ export interface Potree {
             scene: THREE.Scene;
             parent: THREE.Object3D;
         };
+        getMousePointCloudIntersection(
+            mouse: { x: number; y: number },
+            camera: Camera,
+            viewer: PotreeViewer,
+            pointclouds: PointCloud[],
+            params?: { pickClipped?: boolean }
+        ): PickResult | null;
     };
 }
 

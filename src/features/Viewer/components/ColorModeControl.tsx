@@ -15,7 +15,6 @@ interface ColorModeControlProps {
     updateUrl: (state: Partial<ViewerState>) => void;
 }
 
-/* eslint-disable react-compiler/react-compiler */
 export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorModeControlProps) {
     const { t } = useTranslation();
     const [colorMode, setColorMode] = useState<ColorMode>(initialState.colorMode ?? 'elevation');
@@ -34,6 +33,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         } else if (mode === 'intensity') {
             configureMaterialForIntensity(pointcloud, PotreeLib);
             // Apply current intensity range
+            // eslint-disable-next-line react-compiler/react-compiler
             pointcloud.material.intensityRange = [0, intensityMax];
         } else if (mode === 'return-number') {
             configureMaterialForReturnNumber(pointcloud, PotreeLib);
