@@ -407,7 +407,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
             {/* Compass + Google Maps button - bottom right, only visible when UI is visible */}
             {uiVisible && (
-                <div className="absolute bottom-2 right-2 flex flex-col items-end gap-2">
+                <div className="absolute bottom-2 right-2 flex flex-col items-end gap-5">
                     <GoogleMapsButton viewerRef={viewerRef} />
                     <Compass viewerRef={viewerRef} />
                 </div>

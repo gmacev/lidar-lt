@@ -23,7 +23,6 @@ const DISPLAY_ORDER = [
     4, // Medium Vegetation
     5, // High Vegetation
     6, // Buildings
-    12, // Overlap
     0, // Unclassified (Master for 0 & 1)
     7, // Noise
 ];
@@ -49,9 +48,6 @@ export function ClassificationControl({
             5: 'classification.highVegetation',
             6: 'classification.buildings',
             7: 'classification.noise',
-            8: 'classification.keyPoints',
-            9: 'classification.water',
-            12: 'classification.overlap',
         };
         return t(classKeys[id] || 'classification.classLabel', { id });
     };

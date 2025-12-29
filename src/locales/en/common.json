@@ -17,9 +17,6 @@
         "highVegetation": "High Vegetation",
         "buildings": "Buildings",
         "noise": "Noise",
-        "keyPoints": "Key Points",
-        "water": "Water",
-        "overlap": "Overlap",
         "classLabel": "Class {{id}}",
         "selectAll": "All Points"
     },

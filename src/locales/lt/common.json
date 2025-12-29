@@ -17,9 +17,6 @@
         "highVegetation": "Aukšta augmenija",
         "buildings": "Pastatai",
         "noise": "Triukšmas",
-        "keyPoints": "Esminiai taškai",
-        "water": "Vanduo",
-        "overlap": "Persidengimas",
         "classLabel": "Klasė {{id}}",
         "selectAll": "Visi taškai"
     },
