@@ -8,7 +8,7 @@ An interactive web application for exploring Lithuania's LiDAR point cloud data 
 - **3D point cloud viewer** – Powered by Potree with orbit camera controls
 - **Visualization modes** – Elevation coloring, intensity, return number
 - **Classification filtering** – Show/hide ground, vegetation, buildings, etc.
-- **Measurement tools** – Distance, area, and height profile measurements
+- **Measurement tools** – Distance, area, angle, azimuth, circle, volume, and height profile
 - **Flood simulation** – Water level visualization across terrain
 - **URL persistence** – Shareable links with camera position and settings
 
