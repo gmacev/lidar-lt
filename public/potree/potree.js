@@ -57352,7 +57352,6 @@
 				let xhr = XHRFactory.createXMLHttpRequest();
 				xhr.open('GET', hurl, true);
 				xhr.responseType = 'arraybuffer';
-				xhr.overrideMimeType('text/plain; charset=x-user-defined');
 				xhr.onreadystatechange = () => {
 					if (xhr.readyState === 4) {
 						if (xhr.status === 200 || xhr.status === 0) {
@@ -66413,7 +66412,6 @@ void main() {
 				} else {
 					let response = await fetch(urlOctree, {
 						headers: {
-							'content-type': 'multipart/byteranges',
 							'Range': `bytes=${first}-${last}`,
 						},
 					});
@@ -66627,7 +66625,6 @@ void main() {
 
 			let response = await fetch(hierarchyPath, {
 				headers: {
-					'content-type': 'multipart/byteranges',
 					'Range': `bytes=${first}-${last}`,
 				},
 			});
@@ -66876,7 +66873,6 @@ void main() {
 			let xhr = XHRFactory.createXMLHttpRequest();
 			xhr.open('GET', url, true);
 			xhr.responseType = 'arraybuffer';
-			xhr.overrideMimeType('text/plain; charset=x-user-defined');
 			xhr.onreadystatechange = () => {
 				if (xhr.readyState === 4) {
 					if (xhr.status === 200) {
