@@ -105,7 +105,10 @@ export function MeasurementToolbar({
                     <CircleMeasurement onClick={onToggleCircle} isActive={isCircleMeasuring} />
                     <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />
                     <AzimuthMeasurement onClick={onToggleAzimuth} isActive={isAzimuthMeasuring} />
-                    <HeightProfileMeasurement onClick={onToggleProfile} isActive={isProfileMeasuring} />
+                    <HeightProfileMeasurement
+                        onClick={onToggleProfile}
+                        isActive={isProfileMeasuring}
+                    />
                 </>
             )}
 
@@ -124,4 +127,3 @@ export function MeasurementToolbar({
         </div>
     );
 }
-
