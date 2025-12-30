@@ -12,9 +12,6 @@ interface SEOHeadProps {
 
 /**
  * SEO head component for managing dynamic meta tags.
- *
- * Uses window.location.origin to dynamically determine the current domain,
- * so no hardcoding is needed for different environments.
  */
 export function SEOHead({ title, description, image = '/og-image.jpg', path = '' }: SEOHeadProps) {
     const { i18n } = useTranslation();

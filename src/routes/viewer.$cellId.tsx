@@ -22,7 +22,7 @@ function ViewerRoute() {
                 description={t('seo.viewerDescription', {
                     sectorName: searchParams.sectorName ?? cellId,
                 })}
-                path={`/viewer/${cellId}`}
+                path={`/viewer/${cellId}${searchParams.sectorName ? `?sectorName=${encodeURIComponent(searchParams.sectorName)}` : ''}`}
             />
             <ViewerPage
                 cellId={cellId}

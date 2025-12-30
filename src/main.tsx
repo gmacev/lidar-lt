@@ -1,11 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
-import { HelmetProvider } from 'react-helmet-async';
 import { ModalProvider } from '@/common/components';
 import './i18n';
 import './index.css';
 import { routeTree } from './routeTree.gen';
+import { HelmetProvider } from 'react-helmet-async';
 
 const router = createRouter({ routeTree });
 
@@ -15,9 +15,11 @@ declare module '@tanstack/react-router' {
     }
 }
 
+const helmetContext = {};
+
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <HelmetProvider>
+        <HelmetProvider context={helmetContext}>
             <ModalProvider>
                 <RouterProvider router={router} />
             </ModalProvider>
