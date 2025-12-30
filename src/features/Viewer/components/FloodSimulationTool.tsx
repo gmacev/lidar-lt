@@ -73,10 +73,10 @@ export function FloodSimulationTool({
     }, [isActive, handleKeyDown]);
 
     return (
-        <div className="flex items-start gap-2">
-            {/* Controls - show when active */}
+        <div className="relative flex items-center justify-end">
+            {/* Controls - show when active, absolutely positioned to left */}
             {isActive && (
-                <div className="flex flex-col gap-3 p-3 rounded-lg bg-void-black/80 backdrop-blur-md border border-white/10 min-w-[200px]">
+                <div className="absolute right-[calc(100%+12px)] top-0 flex flex-col gap-3 p-3 rounded-lg bg-void-black/80 backdrop-blur-md border border-white/10 min-w-[200px]">
                     {/* Header row */}
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-white/60 uppercase tracking-wide">
@@ -127,7 +127,7 @@ export function FloodSimulationTool({
                     </div>
 
                     {/* Step control with custom +/- buttons */}
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <div className="flex items-center justify-between pt-2 border-t border-white/10">
                         <span className="text-[10px] text-white/40 uppercase tracking-wide">
                             {t('flood.step')}
                         </span>

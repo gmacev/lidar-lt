@@ -20,6 +20,7 @@ import { useAreaMeasurementData } from '@/features/Viewer/hooks/useAreaMeasureme
 import { useAngleMeasurementData } from '@/features/Viewer/hooks/useAngleMeasurementData';
 import { useAzimuthMeasurementData } from '@/features/Viewer/hooks/useAzimuthMeasurementData';
 import { useCircleMeasurementData } from '@/features/Viewer/hooks/useCircleMeasurementData';
+import { useAnnotations } from '@/features/Viewer/hooks/useAnnotations';
 import { MeasurementToolbar } from './MeasurementToolbar';
 import type { MeasurementType } from '@/features/Viewer/types/measurement';
 import { ViewerSidebar } from './ViewerSidebar';
@@ -173,8 +174,28 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         reset: resetFlood,
     } = useFloodSimulation({ viewerRef, metadataUrl: dataUrl });
 
+    // Annotation Tool State
+    const {
+        annotations,
+        isPanelOpen: isAnnotationPanelOpen,
+        togglePanel: toggleAnnotationPanel,
+        closePanel: closeAnnotationPanel,
+        isPlacing: isAnnotationPlacing,
+        startPlacement: startAnnotationPlacement,
+        toggleVisibility: toggleAnnotationVisibility,
+        toggleAllVisibility: toggleAllAnnotationVisibility,
+        navigateToAnnotation,
+        deleteAnnotation,
+        deleteAllAnnotations,
+        allVisible: allAnnotationsVisible,
+        someVisible: someAnnotationsVisible,
+    } = useAnnotations({ viewerRef, sectorId: cellId });
+
     // Mutual exclusivity handlers - cancel other tools when starting a new one
-    const measurements: Record<MeasurementType, { isActive: boolean; deactivate: () => void }> = {
+    const measurements: Record<
+        MeasurementType | 'annotation',
+        { isActive: boolean; deactivate: () => void }
+    > = {
         distance: { isActive: isDistanceMeasuring, deactivate: _toggleDistanceMeasurement },
         area: { isActive: isAreaMeasuring, deactivate: _toggleAreaMeasurement },
         volume: { isActive: isVolumeMeasuring, deactivate: _toggleVolumeMeasurement },
@@ -183,9 +204,10 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         angle: { isActive: isAngleMeasuring, deactivate: _toggleAngleMeasurement },
         azimuth: { isActive: isAzimuthMeasuring, deactivate: _toggleAzimuthMeasurement },
         circle: { isActive: isCircleMeasuring, deactivate: _toggleCircleMeasurement },
+        annotation: { isActive: isAnnotationPanelOpen, deactivate: closeAnnotationPanel },
     };
 
-    const createHandler = (type: MeasurementType, action: () => void) => () => {
+    const createHandler = (type: MeasurementType | 'annotation', action: () => void) => () => {
         Object.entries(measurements).forEach(([key, { isActive, deactivate }]) => {
             if (key !== type && isActive) deactivate();
         });
@@ -200,10 +222,14 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleAngle = createHandler('angle', _toggleAngleMeasurement);
     const handleToggleAzimuth = createHandler('azimuth', _toggleAzimuthMeasurement);
     const handleToggleCircle = createHandler('circle', _toggleCircleMeasurement);
+    const handleToggleAnnotationPanel = createHandler('annotation', toggleAnnotationPanel);
 
     return (
         <div className="relative h-dvh w-screen bg-void-black">
-            <div ref={containerRef} className="h-full w-full" />
+            <div
+                ref={containerRef}
+                className={`h-full w-full ${isAnnotationPlacing ? '!cursor-pointer' : ''}`}
+            />
 
             {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-void-black/80">
@@ -291,6 +317,18 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                 onFloodWaterLevelChange={setFloodWaterLevel}
                                 onFloodPrecisionChange={setFloodPrecision}
                                 onResetFlood={resetFlood}
+                                annotations={annotations}
+                                isAnnotationPanelOpen={isAnnotationPanelOpen}
+                                onToggleAnnotationPanel={handleToggleAnnotationPanel}
+                                isAnnotationPlacing={isAnnotationPlacing}
+                                onStartAnnotationPlacement={startAnnotationPlacement}
+                                onToggleAnnotationVisibility={toggleAnnotationVisibility}
+                                onToggleAllAnnotationVisibility={toggleAllAnnotationVisibility}
+                                onNavigateToAnnotation={navigateToAnnotation}
+                                onDeleteAnnotation={deleteAnnotation}
+                                onDeleteAllAnnotations={deleteAllAnnotations}
+                                allAnnotationsVisible={allAnnotationsVisible}
+                                someAnnotationsVisible={someAnnotationsVisible}
                             />
                         </div>
                     )}

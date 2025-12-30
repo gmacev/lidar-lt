@@ -69,3 +69,11 @@ body,
     background-color: rgba(255, 255, 255, 0.2);
 }
 
+/* Hide Potree annotations when modal/dialog is open (body overflow hidden) */
+body[style*='overflow: hidden'] .potree .annotation,
+body[style*='overflow: hidden'] .potree-panel,
+body[style*='overflow: hidden'] .annotation-label,
+body[style*='overflow: hidden'] [class*='annotation'] {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}

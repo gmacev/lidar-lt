@@ -113,5 +113,26 @@
     "language": {
         "lt": "LT",
         "en": "EN"
+    },
+    "annotation": {
+        "title": "Pavadinimas",
+        "titlePlaceholder": "Įveskite anotacijos pavadinimą...",
+        "description": "Aprašymas",
+        "descriptionPlaceholder": "Pridėkite detalių (neprivaloma)...",
+        "save": "Išsaugoti",
+        "annotations": "Anotacijos",
+        "addAnnotation": "Pridėti",
+        "deleteAll": "Ištrinti visas",
+        "deleteAllConfirm": "Ištrinti visas anotacijas?",
+        "showAll": "Rodyti visas",
+        "noAnnotations": "Anotacijų dar nėra",
+        "navigate": "Naviguoti į anotaciją",
+        "delete": "Ištrinti anotaciją",
+        "annotation": "Anotacija",
+        "newAnnotation": "Nauja anotacija"
+    },
+    "common": {
+        "cancel": "Atšaukti",
+        "confirm": "Patvirtinti"
     }
 }

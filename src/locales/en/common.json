@@ -113,5 +113,26 @@
     "language": {
         "lt": "LT",
         "en": "EN"
+    },
+    "annotation": {
+        "title": "Title",
+        "titlePlaceholder": "Enter annotation title...",
+        "description": "Description",
+        "descriptionPlaceholder": "Add details (optional)...",
+        "save": "Save",
+        "annotations": "Annotations",
+        "addAnnotation": "Add",
+        "deleteAll": "Delete All",
+        "deleteAllConfirm": "Delete all annotations?",
+        "showAll": "Show All",
+        "noAnnotations": "No annotations yet",
+        "navigate": "Navigate to annotation",
+        "delete": "Delete annotation",
+        "annotation": "Annotation",
+        "newAnnotation": "New Annotation"
+    },
+    "common": {
+        "cancel": "Cancel",
+        "confirm": "Confirm"
     }
 }
