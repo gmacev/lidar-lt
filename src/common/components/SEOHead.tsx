@@ -15,7 +15,6 @@ interface SEOHeadProps {
  * is useful for:
  * - Social media platforms that execute JavaScript
  * - Keeping document head consistent as users navigate
- * - Future-proofing if migrating to SSR
  */
 export function SEOHead({ title, description, image = '/og-image.jpg' }: SEOHeadProps) {
     return (
