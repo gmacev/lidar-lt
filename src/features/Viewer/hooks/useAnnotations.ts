@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer, Annotation } from '@/common/types/potree';
 import {
     getAnnotationStorage,
@@ -41,6 +42,7 @@ export function useAnnotations({
     const [isPlacing, setIsPlacing] = useState(false);
     const potreeAnnotationsRef = useRef<Map<string, Annotation>>(new Map());
     const { openModal } = useModal();
+    const { t } = useTranslation();
 
     const storage = getAnnotationStorage(sectorId);
 
@@ -111,7 +113,32 @@ export function useAnnotations({
 
         setIsPlacing(true);
 
-        // Handler for click - does the picking and opens modal
+        // Create a mouse-following preview element
+        const preview = document.createElement('div');
+        preview.className = 'annotation-titlebar';
+        preview.style.cssText =
+            'position: fixed; pointer-events: none; z-index: 10000; transform: translate(-50%, -100%); margin-top: -10px;';
+        preview.innerHTML = `<span class="annotation-label">${t('annotation.annotation')}</span>`;
+        document.body.appendChild(preview);
+
+        const handleMouseMove = (e: MouseEvent) => {
+            preview.style.left = `${e.clientX}px`;
+            preview.style.top = `${e.clientY}px`;
+        };
+
+        const cleanup = () => {
+            document.body.removeChild(preview);
+            document.removeEventListener('mousemove', handleMouseMove);
+            viewer.renderer.domElement.removeEventListener('click', handleClick);
+            viewer.renderer.domElement.removeEventListener('contextmenu', handleRightClick);
+        };
+
+        const handleRightClick = (e: MouseEvent) => {
+            e.preventDefault();
+            cleanup();
+            setIsPlacing(false);
+        };
+
         const handleClick = (e: MouseEvent) => {
             const rect = viewer.renderer.domElement.getBoundingClientRect();
             const mouse = {
@@ -147,6 +174,9 @@ export function useAnnotations({
             const cameraPosition = camera.position.clone();
             const cameraTarget = viewer.scene.view.getPivot();
 
+            // Clean up preview
+            cleanup();
+
             // Open modal for title/description
             void openModal<AnnotationFormData>({
                 titleKey: 'annotation.newAnnotation',
@@ -170,11 +200,11 @@ export function useAnnotations({
 
                 setIsPlacing(false);
             });
-
-            viewer.renderer.domElement.removeEventListener('click', handleClick);
         };
 
+        document.addEventListener('mousemove', handleMouseMove);
         viewer.renderer.domElement.addEventListener('click', handleClick, { once: true });
+        viewer.renderer.domElement.addEventListener('contextmenu', handleRightClick);
     };
 
     const cancelPlacement = () => {

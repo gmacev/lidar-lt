@@ -203,7 +203,9 @@ export interface Annotation {
 }
 
 export interface AnnotationTool {
-    startInsertion(args?: AnnotationArgs): void;
+    startInsertion(args?: AnnotationArgs): Annotation;
+    addEventListener(type: string, listener: (event: { annotation: Annotation }) => void): void;
+    removeEventListener(type: string, listener: (event: { annotation: Annotation }) => void): void;
 }
 
 // ============================================================================

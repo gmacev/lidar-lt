@@ -128,6 +128,7 @@
         "noAnnotations": "No annotations yet",
         "navigate": "Navigate to annotation",
         "delete": "Delete annotation",
+        "annotation": "Annotation",
         "newAnnotation": "New Annotation"
     },
     "common": {

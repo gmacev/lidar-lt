@@ -228,7 +228,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         <div className="relative h-dvh w-screen bg-void-black">
             <div
                 ref={containerRef}
-                className={`h-full w-full ${isAnnotationPlacing ? '!cursor-crosshair' : ''}`}
+                className={`h-full w-full ${isAnnotationPlacing ? '!cursor-pointer' : ''}`}
             />
 
             {isLoading && (
