@@ -26,6 +26,7 @@ jobs:
               run: npm run build
               env:
                   VITE_EPT_BASE_URL: ${{ secrets.VITE_EPT_BASE_URL }}
+                  SITE_URL: ${{ secrets.SITE_URL }}
 
             - name: Deploy to Cloudflare Pages
               uses: cloudflare/wrangler-action@v3
