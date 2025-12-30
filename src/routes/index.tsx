@@ -12,10 +12,7 @@ function HomePage() {
 
     return (
         <>
-            <SEOHead
-                title={t('seo.homeTitle')}
-                description={t('seo.homeDescription')}
-            />
+            <SEOHead title={t('seo.homeTitle')} description={t('seo.homeDescription')} path="/" />
             <div className="flex h-screen flex-col overflow-hidden bg-void-black">
                 <header className="shrink-0 border-b border-glass-border p-4">
                     <h1 className="text-center text-2xl font-bold tracking-widest text-neon-amber">
@@ -37,4 +34,3 @@ function HomePage() {
         </>
     );
 }
-

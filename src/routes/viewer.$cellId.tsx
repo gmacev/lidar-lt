@@ -18,8 +18,11 @@ function ViewerRoute() {
     return (
         <>
             <SEOHead
-                title={t('seo.viewerTitle', { cellId })}
-                description={t('seo.viewerDescription', { cellId })}
+                title={t('seo.viewerTitle', { sectorName: searchParams.sectorName ?? cellId })}
+                description={t('seo.viewerDescription', {
+                    sectorName: searchParams.sectorName ?? cellId,
+                })}
+                path={`/viewer/${cellId}`}
             />
             <ViewerPage
                 cellId={cellId}
