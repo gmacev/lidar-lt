@@ -1,4 +1,10 @@
 {
+    "seo": {
+        "homeTitle": "Lietuvos LiDAR žemėlapis - 3D taškų debesų peržiūra",
+        "homeDescription": "Interaktyvus Lietuvos LiDAR duomenų žemėlapis. Naršykite 3D taškų debesis, matuokite atstumus ir plotus.",
+        "viewerTitle": "LiDAR peržiūra: {{sectorName}}",
+        "viewerDescription": "3D taškų debesų peržiūra - {{sectorName}}"
+    },
     "home": {
         "title": "LIETUVOS LIDAR ŽEMĖLAPIS",
         "subtitle": "Pasirinkite sektorių peržiūrai",

@@ -6,3 +6,4 @@ export type { IconName } from './Icon';
 export { LanguageSwitcher } from './LanguageSwitcher';
 export { Modal, ModalProvider } from './Modal';
 export type { ModalContentProps, ModalContextValue } from './Modal';
+export { SEOHead } from './SEOHead';

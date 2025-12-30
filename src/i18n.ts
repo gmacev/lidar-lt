@@ -21,7 +21,8 @@ i18n.use(LanguageDetector)
             escapeValue: false, // React already escapes
         },
         detection: {
-            order: ['localStorage', 'navigator'],
+            order: ['querystring', 'localStorage', 'navigator'],
+            lookupQuerystring: 'lng', // explicit param name
             caches: ['localStorage'],
         },
     })
