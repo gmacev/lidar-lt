@@ -18,8 +18,6 @@ interface SEOHeadProps {
  */
 export function SEOHead({ title, description, image = '/og-image.jpg', path = '' }: SEOHeadProps) {
     const { i18n } = useTranslation();
-
-    // Dynamically get current domain (works in dev, preview, and production)
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const fullUrl = `${origin}${path}`;
     const imageUrl = `${origin}${image}`;
