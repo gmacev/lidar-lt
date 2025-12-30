@@ -2,7 +2,7 @@
  * Sitemap Generator Script
  *
  * Generates sitemap.xml from grid.json at build time.
- * Run with: npx tsx scripts/generate-sitemap.ts
+ * Run with: npm run sitemap
  *
  * Set SITE_URL environment variable for absolute URLs (required for valid sitemaps)
  * Example: SITE_URL=https://your-domain.com npm run build
