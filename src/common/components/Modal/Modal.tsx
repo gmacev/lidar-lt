@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { Icon } from '../Icon';
 
 interface ModalProps {
     children: ReactNode;
@@ -83,17 +84,7 @@ export function Modal({
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition-all hover:bg-white/10 hover:text-white"
                             aria-label="Close modal"
                         >
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 14 14"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                            >
-                                <path d="M1 1l12 12M13 1L1 13" />
-                            </svg>
+                            <Icon name="close" size={14} strokeWidth={2} />
                         </button>
                     </div>
                 )}
