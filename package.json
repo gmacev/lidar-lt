@@ -52,6 +52,7 @@
         "maplibre-gl": "^5.14.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
+        "react-helmet-async": "^2.0.5",
         "react-i18next": "^16.5.0",
         "tailwindcss": "^4.1.18",
         "three": "^0.182.0",

@@ -1,4 +1,10 @@
 {
+    "seo": {
+        "homeTitle": "Lithuania LiDAR map - 3D point cloud viewer",
+        "homeDescription": "Free interactive map of Lithuanian LiDAR data. Browse 3D point clouds, measure distances and areas, simulate floods.",
+        "viewerTitle": "LiDAR viewer: sector {{cellId}}",
+        "viewerDescription": "3D point cloud viewer for sector {{cellId}} with measurement tools and flood simulation"
+    },
     "home": {
         "title": "LITHUANIA LIDAR MAP",
         "subtitle": "Select a sector to view",

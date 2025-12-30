@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { HelmetProvider } from 'react-helmet-async';
 import { ModalProvider } from '@/common/components';
 import './i18n';
 import './index.css';
@@ -16,8 +17,10 @@ declare module '@tanstack/react-router' {
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
-        <ModalProvider>
-            <RouterProvider router={router} />
-        </ModalProvider>
+        <HelmetProvider>
+            <ModalProvider>
+                <RouterProvider router={router} />
+            </ModalProvider>
+        </HelmetProvider>
     </StrictMode>
 );
