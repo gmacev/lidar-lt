@@ -18,7 +18,7 @@ interface AnnotationToolProps {
 }
 
 /**
- * Annotation tool with floating panel (similar to FloodSimulationTool)
+ * Annotation tool with floating panel
  */
 export function AnnotationTool({
     annotations,
