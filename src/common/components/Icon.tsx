@@ -25,6 +25,12 @@ const icons = {
     ),
     minus: () => <line x1="5" y1="12" x2="19" y2="12" />,
     check: () => <polyline points="20 6 9 17 4 12" />,
+    question: () => (
+        <>
+            <path d="M9.1 9a3 3 0 1 1 4.8 2.4c-1 .7-1.9 1.4-1.9 2.6" />
+            <path d="M12 18h.01" />
+        </>
+    ),
     crosshair: () => (
         <>
             <circle cx="12" cy="12" r="8" />

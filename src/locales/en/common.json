@@ -38,8 +38,13 @@
     },
     "edl": {
         "label": "EDL",
+        "helpAria": "Explain EDL settings",
+        "helpTitle": "Eye-Dome Lighting",
+        "helpDescription": "EDL adds soft depth shading so the point cloud surface is easier to read.",
         "strength": "Strength",
-        "radius": "Radius"
+        "strengthHelp": "controls how strong the edge and depth contrast appears.",
+        "radius": "Radius",
+        "radiusHelp": "controls how far the shading looks around each point."
     },
     "flood": {
         "waterLevel": "Water Level",
@@ -53,6 +58,8 @@
     },
     "pointCloud": {
         "pointSize": "Point Size",
+        "pointSizeHelpAria": "Explain point size",
+        "pointSizeHelp": "Changes how large each LiDAR point is drawn on screen. Higher values make the cloud look denser, but can hide fine details.",
         "pointShape": "Point Shape",
         "shapes": {
             "square": "Squares",
@@ -60,8 +67,14 @@
             "paraboloid": "Paraboloids"
         },
         "zScale": "Vertical Exaggeration",
+        "zScaleHelpAria": "Explain vertical exaggeration",
+        "zScaleHelp": "Stretches height differences vertically. Useful for making subtle terrain changes easier to see.",
         "detailLevel": "Detail Level (Min Node)",
+        "detailLevelHelpAria": "Explain detail level",
+        "detailLevelHelp": "Controls when distant point-cloud sections are simplified. Lower values show more detail; higher values improve performance.",
         "pointBudget": "Point Budget",
+        "pointBudgetHelpAria": "Explain point budget",
+        "pointBudgetHelp": "Sets the maximum number of points displayed at once. More points look sharper but need more GPU power.",
         "fov": "Field of View",
         "projection": "Camera Projection",
         "projections": {

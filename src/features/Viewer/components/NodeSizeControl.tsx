@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { HelpHint } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { PERFORMANCE_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -31,7 +32,15 @@ export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSize
     return (
         <div className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
-                {t('pointCloud.detailLevel')}
+                <span className="flex items-center gap-1.5">
+                    {t('pointCloud.detailLevel')}
+                    <HelpHint
+                        ariaLabel={t('pointCloud.detailLevelHelpAria')}
+                        title={t('pointCloud.detailLevel')}
+                    >
+                        {t('pointCloud.detailLevelHelp')}
+                    </HelpHint>
+                </span>
                 <span className="text-laser-green">{minNodeSize}</span>
             </label>
             <input

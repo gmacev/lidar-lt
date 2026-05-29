@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { HelpHint } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { Z_SCALE_DEFAULTS } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -37,7 +38,15 @@ export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleCont
     return (
         <div className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
-                {t('pointCloud.zScale')}
+                <span className="flex items-center gap-1.5">
+                    {t('pointCloud.zScale')}
+                    <HelpHint
+                        ariaLabel={t('pointCloud.zScaleHelpAria')}
+                        title={t('pointCloud.zScale')}
+                    >
+                        {t('pointCloud.zScaleHelp')}
+                    </HelpHint>
+                </span>
                 <span className="text-laser-green">{zScale.toFixed(1)}</span>
             </label>
             <input

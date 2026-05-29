@@ -1,6 +1,8 @@
 export { GlassPanel } from './GlassPanel';
 export { NeonButton } from './NeonButton';
 export { DataLoader } from './DataLoader';
+export { FloatingPopover } from './FloatingPopover';
+export { HelpHint } from './HelpHint';
 export { Icon } from './Icon';
 export type { IconName } from './Icon';
 export { LanguageSwitcher } from './LanguageSwitcher';

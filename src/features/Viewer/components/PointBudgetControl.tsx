@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { HelpHint } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { getDefaultPointBudget } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -39,7 +40,15 @@ export function PointBudgetControl({
     return (
         <div className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
-                {t('pointCloud.pointBudget')}
+                <span className="flex items-center gap-1.5">
+                    {t('pointCloud.pointBudget')}
+                    <HelpHint
+                        ariaLabel={t('pointCloud.pointBudgetHelpAria')}
+                        title={t('pointCloud.pointBudget')}
+                    >
+                        {t('pointCloud.pointBudgetHelp')}
+                    </HelpHint>
+                </span>
                 <span className="text-laser-green">{formatBudget(pointBudget)}</span>
             </label>
             <input

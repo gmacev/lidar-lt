@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Switch } from '@/common/components/Switch';
-import { Icon } from '@/common/components';
+import { HelpHint, Icon } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { EDL_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -43,7 +43,31 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
     return (
         <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white/90">{t('edl.label')}</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white/90">{t('edl.label')}</span>
+                    <HelpHint
+                        ariaLabel={t('edl.helpAria')}
+                        title={t('edl.helpTitle')}
+                        side="right"
+                        align="start"
+                    >
+                        <div className="flex flex-col gap-1.5">
+                            <p>{t('edl.helpDescription')}</p>
+                            <p>
+                                <span className="font-semibold text-white/95">
+                                    {t('edl.strength')}:
+                                </span>{' '}
+                                {t('edl.strengthHelp')}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-white/95">
+                                    {t('edl.radius')}:
+                                </span>{' '}
+                                {t('edl.radiusHelp')}
+                            </p>
+                        </div>
+                    </HelpHint>
+                </div>
                 <Switch
                     checked={edlEnabled}
                     onChange={(checked) => {

@@ -38,8 +38,13 @@
     },
     "edl": {
         "label": "EDL",
+        "helpAria": "Paaiškinti EDL nustatymus",
+        "helpTitle": "Eye-Dome Lighting",
+        "helpDescription": "EDL prideda švelnų gylio šešėliavimą, kad taškų debesies paviršių būtų lengviau suprasti.",
         "strength": "Stiprumas",
-        "radius": "Spindulys"
+        "strengthHelp": "nustato, kiek ryškus bus kraštų ir gylio kontrastas.",
+        "radius": "Spindulys",
+        "radiusHelp": "nustato, kaip plačiai šešėliavimas skaičiuojamas aplink kiekvieną tašką."
     },
     "flood": {
         "waterLevel": "Vandens lygis",
@@ -53,6 +58,8 @@
     },
     "pointCloud": {
         "pointSize": "Taškų dydis",
+        "pointSizeHelpAria": "Paaiškinti taškų dydį",
+        "pointSizeHelp": "Keičia, kokio dydžio LiDAR taškai piešiami ekrane. Didesnė reikšmė debesį padaro tankesnį, bet gali paslėpti smulkias detales.",
         "pointShape": "Taškų forma",
         "shapes": {
             "square": "Kvadratai",
@@ -60,8 +67,14 @@
             "paraboloid": "Paraboloidai"
         },
         "zScale": "Z Skalė",
+        "zScaleHelpAria": "Paaiškinti Z skalę",
+        "zScaleHelp": "Vertikaliai ištempia aukščio skirtumus. Naudinga, kai norisi aiškiau matyti subtilius reljefo pokyčius.",
         "detailLevel": "Detalumas (Min Node)",
+        "detailLevelHelpAria": "Paaiškinti detalumą",
+        "detailLevelHelp": "Nustato, kada tolimesnės taškų debesies dalys supaprastinamos. Mažesnė reikšmė rodo daugiau detalių, didesnė pagerina našumą.",
         "pointBudget": "Taškų biudžetas",
+        "pointBudgetHelpAria": "Paaiškinti taškų biudžetą",
+        "pointBudgetHelp": "Nustato didžiausią vienu metu rodomų taškų kiekį. Daugiau taškų atrodo ryškiau, bet labiau apkrauna vaizdo plokštę.",
         "fov": "Matymo laukas",
         "projection": "Kameros Projekcija",
         "projections": {
