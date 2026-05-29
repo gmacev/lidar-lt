@@ -27,6 +27,7 @@ import { ViewerSidebar } from './ViewerSidebar';
 import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
 import { GoogleMapsButton } from './GoogleMapsButton';
+import { RecenterButton } from './RecenterButton';
 
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
@@ -69,7 +70,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         };
     }, [updateUrlDebounced]);
 
-    const { containerRef, viewerRef, isLoading, error } = usePotree({
+    const { containerRef, viewerRef, orientNorth, recenterView, isLoading, error } = usePotree({
         dataUrl,
         initialState,
         updateUrl: updateUrlDebounced,
@@ -223,6 +224,16 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleAzimuth = createHandler('azimuth', _toggleAzimuthMeasurement);
     const handleToggleCircle = createHandler('circle', _toggleCircleMeasurement);
     const handleToggleAnnotationPanel = createHandler('annotation', toggleAnnotationPanel);
+    const handleRecenter = () => {
+        updateUrlDebounced.cancel();
+        recenterView();
+        void navigate({
+            to: '/viewer/$cellId',
+            params: { cellId },
+            search: initialState.sectorName ? { sectorName: initialState.sectorName } : {},
+            replace: true,
+        });
+    };
 
     return (
         <div className="relative h-dvh w-screen bg-void-black">
@@ -287,10 +298,11 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         </GlassPanel>
                     </div>
 
-                    {/* Measurement Tools - only visible when UI is visible */}
+                    {/* Right rail - keeps measurement tools and navigation aids from colliding */}
                     {!isLoading && !error && (
-                        <div className="absolute right-2 top-16 flex flex-col items-end gap-1 md:top-[140px] xl:right-4">
+                        <div className="absolute bottom-2 right-2 top-16 z-20 flex w-10 flex-col items-center gap-3 md:top-[140px] xl:right-4">
                             <MeasurementToolbar
+                                className="min-h-0 w-max max-w-[280px] flex-1 self-end"
                                 isProfileMeasuring={isProfileMeasuring}
                                 onToggleProfile={handleToggleProfile}
                                 isDistanceMeasuring={isDistanceMeasuring}
@@ -330,6 +342,12 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                 allAnnotationsVisible={allAnnotationsVisible}
                                 someAnnotationsVisible={someAnnotationsVisible}
                             />
+
+                            <div className="flex shrink-0 flex-col items-center gap-2">
+                                <GoogleMapsButton viewerRef={viewerRef} />
+                                <RecenterButton onRecenter={handleRecenter} />
+                                <Compass viewerRef={viewerRef} onOrientNorth={orientNorth} />
+                            </div>
                         </div>
                     )}
 
@@ -441,14 +459,6 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 >
                     <Icon name="eye" size={20} />
                 </button>
-            )}
-
-            {/* Compass + Google Maps button - bottom right, only visible when UI is visible */}
-            {uiVisible && (
-                <div className="absolute bottom-2 right-2 flex flex-col items-end gap-5">
-                    <GoogleMapsButton viewerRef={viewerRef} />
-                    <Compass viewerRef={viewerRef} />
-                </div>
             )}
         </div>
     );

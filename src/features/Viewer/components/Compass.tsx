@@ -1,12 +1,15 @@
 import { useEffect, useRef, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Vector3 } from 'three';
 import type { PotreeViewer } from '@/common/types/potree';
 
 interface CompassProps {
     viewerRef: RefObject<PotreeViewer | null>;
+    onOrientNorth: () => void;
 }
 
-export function Compass({ viewerRef }: CompassProps) {
+export function Compass({ viewerRef, onOrientNorth }: CompassProps) {
+    const { t } = useTranslation();
     // 1. Use a ref for the DOM element instead of state
     const compassRef = useRef<HTMLDivElement>(null);
     const requestRef = useRef<number | null>(null);
@@ -71,7 +74,13 @@ export function Compass({ viewerRef }: CompassProps) {
     }, []); // Empty dependency array is fine here as refs are stable
 
     return (
-        <div className="w-12 h-12 flex items-center justify-center pointer-events-none select-none">
+        <button
+            type="button"
+            onClick={onOrientNorth}
+            className="flex h-12 w-12 items-center justify-center border-0 bg-transparent p-0 text-white/70 transition-colors hover:text-neon-cyan"
+            title={t('viewer.orientNorth')}
+            aria-label={t('viewer.orientNorth')}
+        >
             {/* Attach the ref here */}
             <div
                 ref={compassRef}
@@ -96,6 +105,6 @@ export function Compass({ viewerRef }: CompassProps) {
                 <div className="absolute w-[6px] h-[1px] bg-white/40 left-0 top-1/2 -translate-y-1/2" />
                 <div className="absolute w-[6px] h-[1px] bg-white/40 right-0 top-1/2 -translate-y-1/2" />
             </div>
-        </div>
+        </button>
     );
 }

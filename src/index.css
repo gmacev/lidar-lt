@@ -69,6 +69,15 @@ body,
     background-color: rgba(255, 255, 255, 0.2);
 }
 
+.viewer-control-scroll {
+    scrollbar-width: none;
+    overscroll-behavior: contain;
+}
+
+.viewer-control-scroll::-webkit-scrollbar {
+    display: none;
+}
+
 /* Hide Potree annotations when modal/dialog is open (body overflow hidden) */
 body[style*='overflow: hidden'] .potree .annotation,
 body[style*='overflow: hidden'] .potree-panel,

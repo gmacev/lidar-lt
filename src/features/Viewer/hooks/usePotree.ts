@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { Vector3 } from 'three';
 import {
     configureMaterialForElevation,
     configureMaterialForIntensity,
@@ -16,7 +17,7 @@ import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 interface UsePotreeOptions {
     dataUrl: string;
     initialState: ViewerState;
-    updateUrl: (state: ViewerState) => void;
+    updateUrl: (state: Partial<ViewerState>) => void;
 }
 
 interface PotreeState {
@@ -24,7 +25,14 @@ interface PotreeState {
     error: string | null;
 }
 
-export function usePotree(options: UsePotreeOptions) {
+interface UsePotreeResult extends PotreeState {
+    containerRef: RefObject<HTMLDivElement | null>;
+    viewerRef: RefObject<PotreeViewer | null>;
+    orientNorth: () => void;
+    recenterView: () => void;
+}
+
+export function usePotree(options: UsePotreeOptions): UsePotreeResult {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<PotreeViewer | null>(null);
     const [state, setState] = useState<PotreeState>({ isLoading: true, error: null });
@@ -178,6 +186,31 @@ export function usePotree(options: UsePotreeOptions) {
         });
     };
 
+    const orientNorth = () => {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+
+        const view = viewer.scene.view;
+        const pivot = view.getPivot();
+
+        view.yaw = 0;
+        const direction = new Vector3(0, 1, 0)
+            .applyAxisAngle(new Vector3(1, 0, 0), view.pitch)
+            .applyAxisAngle(new Vector3(0, 0, 1), view.yaw);
+        view.position.copy(pivot.sub(direction.multiplyScalar(view.radius)));
+        userHasInteractedRef.current = true;
+        requestAnimationFrame(syncCamera);
+    };
+
+    const recenterView = () => {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+
+        viewer.setTopView();
+        userHasInteractedRef.current = false;
+        lastStateRef.current = '';
+    };
+
     useEffect(() => {
         if (!containerRef.current) return;
 
@@ -269,5 +302,5 @@ export function usePotree(options: UsePotreeOptions) {
     }, [initialState.bg, initialState.sb]);
 
     // Expose viewer for external controls
-    return { containerRef, viewerRef, ...state };
+    return { containerRef, viewerRef, orientNorth, recenterView, ...state };
 }

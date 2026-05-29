@@ -79,6 +79,8 @@
         "controlLeftClick": "🖱️ Kairysis: Slinkti",
         "controlRightClick": "🖱️ Dešinysis: Sukti",
         "controlScroll": "🖲️ Ratukas: Artinti / Tolinti",
+        "recenter": "Centruoti vaizdą",
+        "orientNorth": "Šiaurė viršuje",
         "background": "Fonas",
         "bg": {
             "skybox": "Dangus",

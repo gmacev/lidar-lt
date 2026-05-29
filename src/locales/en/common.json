@@ -79,6 +79,8 @@
         "controlLeftClick": "🖱️ Left click: Pan",
         "controlRightClick": "🖱️ Right click: Rotate",
         "controlScroll": "🖲️ Scroll: Zoom in / out",
+        "recenter": "Recenter view",
+        "orientNorth": "North up",
         "background": "Background",
         "bg": {
             "skybox": "Skybox",

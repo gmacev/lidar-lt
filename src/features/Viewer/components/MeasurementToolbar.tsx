@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { DistanceMeasurement } from './DistanceMeasurement';
 import { AreaMeasurement } from './AreaMeasurement';
 import { VolumeMeasurement } from './VolumeMeasurement';
@@ -11,6 +12,8 @@ import { isTouchDevice } from '@/common/utils/screenSize';
 import type { StoredAnnotation } from '../utils/annotationStorage';
 
 interface MeasurementToolbarProps {
+    className?: string;
+
     // Profile Tool
     isProfileMeasuring: boolean;
     onToggleProfile: () => void;
@@ -69,6 +72,7 @@ interface MeasurementToolbarProps {
 }
 
 export function MeasurementToolbar({
+    className = '',
     isProfileMeasuring,
     onToggleProfile,
     isDistanceMeasuring,
@@ -109,65 +113,130 @@ export function MeasurementToolbar({
     someAnnotationsVisible,
 }: MeasurementToolbarProps) {
     const isTouch = isTouchDevice();
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const [scrollState, setScrollState] = useState({
+        canScroll: false,
+        thumbHeight: 0,
+        thumbTop: 0,
+    });
+
+    useEffect(() => {
+        const scrollEl = scrollRef.current;
+        if (!scrollEl) return;
+
+        const updateScrollIndicator = () => {
+            const { clientHeight, scrollHeight, scrollTop } = scrollEl;
+            const canScroll = scrollHeight > clientHeight + 1;
+            const maxScrollTop = scrollHeight - clientHeight;
+            const thumbHeight = canScroll
+                ? Math.min(56, Math.max(28, (clientHeight / scrollHeight) * clientHeight))
+                : 0;
+            const thumbTop =
+                canScroll && maxScrollTop > 0
+                    ? (scrollTop / maxScrollTop) * (clientHeight - thumbHeight)
+                    : 0;
+
+            setScrollState({ canScroll, thumbHeight, thumbTop });
+        };
+
+        updateScrollIndicator();
+        scrollEl.addEventListener('scroll', updateScrollIndicator, { passive: true });
+        window.addEventListener('resize', updateScrollIndicator);
+
+        const resizeObserver = new ResizeObserver(updateScrollIndicator);
+        resizeObserver.observe(scrollEl);
+        if (contentRef.current) resizeObserver.observe(contentRef.current);
+
+        return () => {
+            scrollEl.removeEventListener('scroll', updateScrollIndicator);
+            window.removeEventListener('resize', updateScrollIndicator);
+            resizeObserver.disconnect();
+        };
+    }, []);
 
     return (
-        <div className="flex flex-col items-end gap-1">
-            {/* Measurement tools only shown on non-touch devices */}
-            {!isTouch && (
-                <>
-                    <DistanceMeasurement
-                        onClick={onToggleDistance}
-                        isActive={isDistanceMeasuring}
-                        totalDistance={totalDistance}
+        <div className={`relative ${className}`}>
+            <div
+                ref={scrollRef}
+                className="viewer-control-scroll h-full w-full overflow-x-visible overflow-y-auto"
+            >
+                <div ref={contentRef} className="flex flex-col items-end gap-1">
+                    {/* Measurement tools only shown on non-touch devices */}
+                    {!isTouch && (
+                        <>
+                            <DistanceMeasurement
+                                onClick={onToggleDistance}
+                                isActive={isDistanceMeasuring}
+                                totalDistance={totalDistance}
+                            />
+                            <AreaMeasurement
+                                onClick={onToggleArea}
+                                isActive={isAreaMeasuring}
+                                totalArea={totalArea}
+                            />
+                            <VolumeMeasurement
+                                onClick={onToggleVolume}
+                                isActive={isVolumeMeasuring}
+                                totalVolume={totalVolume}
+                            />
+                            <CircleMeasurement
+                                onClick={onToggleCircle}
+                                isActive={isCircleMeasuring}
+                            />
+                            <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />
+                            <AzimuthMeasurement
+                                onClick={onToggleAzimuth}
+                                isActive={isAzimuthMeasuring}
+                            />
+                            <HeightProfileMeasurement
+                                onClick={onToggleProfile}
+                                isActive={isProfileMeasuring}
+                            />
+                        </>
+                    )}
+
+                    {/* Flood simulation works on all devices */}
+                    <FloodSimulationTool
+                        isActive={isFloodActive}
+                        waterLevel={floodWaterLevel}
+                        minLevel={floodMinLevel}
+                        maxLevel={floodMaxLevel}
+                        precision={floodPrecision}
+                        onStart={onStartFlood}
+                        onWaterLevelChange={onFloodWaterLevelChange}
+                        onPrecisionChange={onFloodPrecisionChange}
+                        onReset={onResetFlood}
                     />
-                    <AreaMeasurement
-                        onClick={onToggleArea}
-                        isActive={isAreaMeasuring}
-                        totalArea={totalArea}
+
+                    {/* Annotation tool works on all devices */}
+                    <AnnotationTool
+                        annotations={annotations}
+                        isPanelOpen={isAnnotationPanelOpen}
+                        onTogglePanel={onToggleAnnotationPanel}
+                        isPlacing={isAnnotationPlacing}
+                        onStartPlacement={onStartAnnotationPlacement}
+                        onToggleVisibility={onToggleAnnotationVisibility}
+                        onToggleAllVisibility={onToggleAllAnnotationVisibility}
+                        onNavigate={onNavigateToAnnotation}
+                        onDelete={onDeleteAnnotation}
+                        onDeleteAll={onDeleteAllAnnotations}
+                        allVisible={allAnnotationsVisible}
+                        someVisible={someAnnotationsVisible}
                     />
-                    <VolumeMeasurement
-                        onClick={onToggleVolume}
-                        isActive={isVolumeMeasuring}
-                        totalVolume={totalVolume}
+                </div>
+            </div>
+            {scrollState.canScroll && (
+                <div className="pointer-events-none absolute -right-1 top-0 bottom-0 w-0.5">
+                    <div
+                        className="absolute right-0 w-0.5 rounded-full bg-white/30"
+                        style={{
+                            height: scrollState.thumbHeight,
+                            transform: `translateY(${scrollState.thumbTop}px)`,
+                        }}
                     />
-                    <CircleMeasurement onClick={onToggleCircle} isActive={isCircleMeasuring} />
-                    <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />
-                    <AzimuthMeasurement onClick={onToggleAzimuth} isActive={isAzimuthMeasuring} />
-                    <HeightProfileMeasurement
-                        onClick={onToggleProfile}
-                        isActive={isProfileMeasuring}
-                    />
-                </>
+                </div>
             )}
-
-            {/* Flood simulation works on all devices */}
-            <FloodSimulationTool
-                isActive={isFloodActive}
-                waterLevel={floodWaterLevel}
-                minLevel={floodMinLevel}
-                maxLevel={floodMaxLevel}
-                precision={floodPrecision}
-                onStart={onStartFlood}
-                onWaterLevelChange={onFloodWaterLevelChange}
-                onPrecisionChange={onFloodPrecisionChange}
-                onReset={onResetFlood}
-            />
-
-            {/* Annotation tool works on all devices */}
-            <AnnotationTool
-                annotations={annotations}
-                isPanelOpen={isAnnotationPanelOpen}
-                onTogglePanel={onToggleAnnotationPanel}
-                isPlacing={isAnnotationPlacing}
-                onStartPlacement={onStartAnnotationPlacement}
-                onToggleVisibility={onToggleAnnotationVisibility}
-                onToggleAllVisibility={onToggleAllAnnotationVisibility}
-                onNavigate={onNavigateToAnnotation}
-                onDelete={onDeleteAnnotation}
-                onDeleteAll={onDeleteAllAnnotations}
-                allVisible={allAnnotationsVisible}
-                someVisible={someAnnotationsVisible}
-            />
         </div>
     );
 }
