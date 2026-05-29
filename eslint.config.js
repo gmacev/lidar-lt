@@ -41,4 +41,10 @@ export default defineConfig([
             'react-no-manual-memo/no-hook-memo': 'warn',
         },
     },
+    {
+        files: ['src/routes/**/*.tsx'],
+        rules: {
+            'react-refresh/only-export-components': 'off',
+        },
+    },
 ]);

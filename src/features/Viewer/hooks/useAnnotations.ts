@@ -31,13 +31,19 @@ interface UseAnnotationsReturn {
     someVisible: boolean;
 }
 
+interface AnnotationState {
+    sectorId: string;
+    annotations: StoredAnnotation[];
+}
+
 export function useAnnotations({
     viewerRef,
     sectorId,
 }: UseAnnotationsOptions): UseAnnotationsReturn {
-    const [annotations, setAnnotations] = useState<StoredAnnotation[]>(() => {
-        return getAnnotationStorage(sectorId).get();
-    });
+    const [annotationState, setAnnotationState] = useState<AnnotationState>(() => ({
+        sectorId,
+        annotations: getAnnotationStorage(sectorId).get(),
+    }));
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isPlacing, setIsPlacing] = useState(false);
     const potreeAnnotationsRef = useRef<Map<string, Annotation>>(new Map());
@@ -45,11 +51,16 @@ export function useAnnotations({
     const { t } = useTranslation();
 
     const storage = getAnnotationStorage(sectorId);
+    const annotations =
+        annotationState.sectorId === sectorId ? annotationState.annotations : storage.get();
 
-    // Reload annotations when sector changes
-    useEffect(() => {
-        setAnnotations(getAnnotationStorage(sectorId).get());
-    }, [sectorId]);
+    if (annotationState.sectorId !== sectorId) {
+        setAnnotationState({ sectorId, annotations });
+    }
+
+    const refreshAnnotations = () => {
+        setAnnotationState({ sectorId, annotations: storage.get() });
+    };
 
     // Sync stored annotations to Potree scene
     useEffect(() => {
@@ -195,7 +206,7 @@ export function useAnnotations({
                     };
 
                     storage.add(newAnnotation);
-                    setAnnotations(storage.get());
+                    refreshAnnotations();
                 }
 
                 setIsPlacing(false);
@@ -216,7 +227,7 @@ export function useAnnotations({
             (ann) => ann.id === id,
             (ann) => ({ ...ann, visible: !ann.visible })
         );
-        setAnnotations(storage.get());
+        refreshAnnotations();
     };
 
     const allVisible = annotations.length > 0 && annotations.every((a) => a.visible);
@@ -230,7 +241,7 @@ export function useAnnotations({
                 (a) => ({ ...a, visible: newVisible })
             );
         });
-        setAnnotations(storage.get());
+        refreshAnnotations();
     };
 
     const navigateToAnnotation = (id: string) => {
@@ -256,7 +267,7 @@ export function useAnnotations({
         }
 
         storage.removeWhere((ann) => ann.id === id);
-        setAnnotations(storage.get());
+        refreshAnnotations();
     };
 
     const deleteAllAnnotations = () => {
@@ -274,7 +285,7 @@ export function useAnnotations({
         potreeAnnotationsRef.current.clear();
 
         storage.set([]);
-        setAnnotations([]);
+        refreshAnnotations();
     };
 
     return {
