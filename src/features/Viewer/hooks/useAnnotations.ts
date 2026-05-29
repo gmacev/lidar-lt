@@ -129,7 +129,10 @@ export function useAnnotations({
         preview.className = 'annotation-titlebar';
         preview.style.cssText =
             'position: fixed; pointer-events: none; z-index: 10000; transform: translate(-50%, -100%); margin-top: -10px;';
-        preview.innerHTML = `<span class="annotation-label">${t('annotation.annotation')}</span>`;
+        const previewLabel = document.createElement('span');
+        previewLabel.className = 'annotation-label';
+        previewLabel.textContent = t('annotation.annotation');
+        preview.appendChild(previewLabel);
         document.body.appendChild(preview);
 
         const handleMouseMove = (e: MouseEvent) => {

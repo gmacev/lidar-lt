@@ -55760,15 +55760,16 @@
 					<span class="annotation-description-close">
 						<img src="${iconClose}" width="16px">
 					</span>
-					<span class="annotation-description-content">${this._description}</span>
+					<span class="annotation-description-content"></span>
 				</div>
 			</div>
 		`);
 
 			this.elTitlebar = this.domElement.find('.annotation-titlebar');
 			this.elTitle = this.elTitlebar.find('.annotation-label');
-			this.elTitle.append(this._title);
+			this.elTitle.text(this._title);
 			this.elDescription = this.domElement.find('.annotation-description');
+			this.elDescription.find(".annotation-description-content").text(this._description);
 			this.elDescriptionClose = this.elDescription.find('.annotation-description-close');
 			// this.elDescriptionContent = this.elDescription.find(".annotation-description-content");
 
@@ -56050,7 +56051,7 @@
 
 			this._title = title;
 			this.elTitle.empty();
-			this.elTitle.append(this._title);
+			this.elTitle.text(this._title);
 
 			this.dispatchEvent({
 				type: "annotation_changed",
@@ -56071,7 +56072,7 @@
 
 			const elDescriptionContent = this.elDescription.find(".annotation-description-content");
 			elDescriptionContent.empty();
-			elDescriptionContent.append(this._description);
+			elDescriptionContent.text(this._description);
 
 			this.dispatchEvent({
 				type: "annotation_changed",
