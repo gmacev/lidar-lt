@@ -47,6 +47,8 @@ export function useAnnotations({
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isPlacing, setIsPlacing] = useState(false);
     const potreeAnnotationsRef = useRef<Map<string, Annotation>>(new Map());
+    const placementCleanupRef = useRef<(() => void) | null>(null);
+    const isMountedRef = useRef(true);
     const { openModal } = useModal();
     const { t } = useTranslation();
 
@@ -61,6 +63,20 @@ export function useAnnotations({
     const refreshAnnotations = () => {
         setAnnotationState({ sectorId, annotations: storage.get() });
     };
+
+    const cleanupPlacement = () => {
+        placementCleanupRef.current?.();
+        placementCleanupRef.current = null;
+    };
+
+    useEffect(() => {
+        isMountedRef.current = true;
+
+        return () => {
+            isMountedRef.current = false;
+            cleanupPlacement();
+        };
+    }, []);
 
     // Sync stored annotations to Potree scene
     useEffect(() => {
@@ -115,6 +131,7 @@ export function useAnnotations({
 
     const closePanel = () => {
         setIsPanelOpen(false);
+        cleanupPlacement();
         setIsPlacing(false);
     };
 
@@ -122,6 +139,7 @@ export function useAnnotations({
         const viewer = viewerRef.current;
         if (!viewer) return;
 
+        cleanupPlacement();
         setIsPlacing(true);
 
         // Create a mouse-following preview element
@@ -140,11 +158,20 @@ export function useAnnotations({
             preview.style.top = `${e.clientY}px`;
         };
 
+        const rendererElement = viewer.renderer.domElement;
+        let isCleanedUp = false;
+
         const cleanup = () => {
-            document.body.removeChild(preview);
+            if (isCleanedUp) return;
+
+            isCleanedUp = true;
+            preview.parentNode?.removeChild(preview);
             document.removeEventListener('mousemove', handleMouseMove);
-            viewer.renderer.domElement.removeEventListener('click', handleClick);
-            viewer.renderer.domElement.removeEventListener('contextmenu', handleRightClick);
+            rendererElement.removeEventListener('click', handleClick);
+            rendererElement.removeEventListener('contextmenu', handleRightClick);
+            if (placementCleanupRef.current === cleanup) {
+                placementCleanupRef.current = null;
+            }
         };
 
         const handleRightClick = (e: MouseEvent) => {
@@ -196,6 +223,8 @@ export function useAnnotations({
                 titleKey: 'annotation.newAnnotation',
                 component: AnnotationModal,
             }).then((result) => {
+                if (!isMountedRef.current) return;
+
                 if (result) {
                     const newAnnotation: StoredAnnotation = {
                         id: generateAnnotationId(),
@@ -217,11 +246,13 @@ export function useAnnotations({
         };
 
         document.addEventListener('mousemove', handleMouseMove);
-        viewer.renderer.domElement.addEventListener('click', handleClick, { once: true });
-        viewer.renderer.domElement.addEventListener('contextmenu', handleRightClick);
+        rendererElement.addEventListener('click', handleClick, { once: true });
+        rendererElement.addEventListener('contextmenu', handleRightClick);
+        placementCleanupRef.current = cleanup;
     };
 
     const cancelPlacement = () => {
+        cleanupPlacement();
         setIsPlacing(false);
     };
 

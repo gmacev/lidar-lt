@@ -145,6 +145,11 @@ function createWaterTexture(): CanvasTexture {
     return sharedTexture;
 }
 
+function disposeSharedWaterTexture() {
+    sharedTexture?.dispose();
+    sharedTexture = null;
+}
+
 interface MetadataPosition {
     min: [number, number, number];
     max: [number, number, number];
@@ -173,18 +178,20 @@ export function useFloodSimulation({
 
     // Define removeWaterMesh before useEffect to avoid accessing before declaration
     const removeWaterMesh = () => {
+        const mesh = waterMeshRef.current;
         const viewer = viewerRef.current;
-        if (!viewer || !waterMeshRef.current) return;
+        if (!mesh) return;
 
-        const threeScene = viewer.scene.scene;
+        const threeScene = viewer?.scene.scene;
         if (threeScene) {
-            threeScene.remove(waterMeshRef.current);
+            threeScene.remove(mesh);
+        } else {
+            mesh.removeFromParent();
         }
 
-        waterMeshRef.current.geometry.dispose();
-        if (waterMeshRef.current.material instanceof MeshBasicMaterial) {
-            const mat = waterMeshRef.current.material;
-            if (mat.map) mat.map.dispose();
+        mesh.geometry.dispose();
+        if (mesh.material instanceof MeshBasicMaterial) {
+            const mat = mesh.material;
             mat.dispose();
         }
         waterMeshRef.current = null;
@@ -194,6 +201,7 @@ export function useFloodSimulation({
     useEffect(() => {
         return () => {
             removeWaterMesh();
+            disposeSharedWaterTexture();
         };
     }, []);
 
@@ -462,6 +470,7 @@ export function useFloodSimulation({
 
     const reset = () => {
         removeWaterMesh();
+        disposeSharedWaterTexture();
         boundsRef.current = null;
         globalMinZRef.current = 0;
         setWaterLevelState(0);

@@ -14,6 +14,34 @@ import { isTouchDevice } from '@/common/utils/screenSize';
 import type { LoadPointCloudResult, Potree, PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
+interface DisposableResource {
+    dispose: () => void;
+}
+
+interface SceneObjectLike {
+    geometry?: unknown;
+    material?: unknown;
+    children?: unknown[];
+    parent?: { remove: (child: unknown) => void };
+    removeFromParent?: () => void;
+    sceneNode?: unknown;
+    traverse?: (callback: (child: unknown) => void) => void;
+}
+
+interface TreeNodeLike {
+    children?: unknown[] | Record<string, unknown>;
+    dispose?: () => void;
+    geometry?: unknown;
+    geometryNode?: unknown;
+    sceneNode?: unknown;
+}
+
+interface PotreeRuntime extends Potree {
+    lru?: {
+        remove?: (node: unknown) => void;
+    };
+}
+
 interface UsePotreeOptions {
     dataUrl: string;
     initialState: ViewerState;
@@ -30,6 +58,150 @@ interface UsePotreeResult extends PotreeState {
     viewerRef: RefObject<PotreeViewer | null>;
     orientNorth: () => void;
     recenterView: () => void;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+function hasDispose(value: unknown): value is DisposableResource {
+    return isRecord(value) && typeof value.dispose === 'function';
+}
+
+function asSceneObject(value: unknown): SceneObjectLike | null {
+    return isRecord(value) ? value : null;
+}
+
+function asTreeNode(value: unknown): TreeNodeLike | null {
+    return isRecord(value) ? value : null;
+}
+
+function disposeResource(value: unknown, disposed: Set<unknown>) {
+    if (!value || disposed.has(value)) return;
+
+    if (Array.isArray(value)) {
+        value.forEach((item) => disposeResource(item, disposed));
+        return;
+    }
+
+    if (hasDispose(value)) {
+        disposed.add(value);
+        value.dispose();
+    }
+}
+
+function disposeSceneObject(
+    value: unknown,
+    disposedObjects: Set<unknown>,
+    disposedResources: Set<unknown>
+) {
+    const object = asSceneObject(value);
+    if (!object || disposedObjects.has(value)) return;
+
+    disposedObjects.add(value);
+
+    if (typeof object.traverse === 'function') {
+        object.traverse((child) => {
+            if (child !== value) {
+                disposeSceneObject(child, disposedObjects, disposedResources);
+            }
+        });
+    } else {
+        object.children?.forEach((child) =>
+            disposeSceneObject(child, disposedObjects, disposedResources)
+        );
+    }
+
+    disposeResource(object.geometry, disposedResources);
+    disposeResource(object.material, disposedResources);
+}
+
+function removeSceneObject(value: unknown) {
+    const object = asSceneObject(value);
+    if (!object) return;
+
+    if (typeof object.removeFromParent === 'function') {
+        object.removeFromParent();
+    } else {
+        object.parent?.remove(value);
+    }
+}
+
+function disposePointCloud(pointcloud: LoadPointCloudResult['pointcloud'], PotreeLib: Potree) {
+    pointcloud.profileRequests?.forEach((request) => request.cancel());
+    if (pointcloud.profileRequests) {
+        pointcloud.profileRequests.length = 0;
+    }
+
+    const disposedNodes = new Set<unknown>();
+    const disposedObjects = new Set<unknown>();
+    const disposedResources = new Set<unknown>();
+    const lru = (PotreeLib as PotreeRuntime).lru;
+
+    const disposeTreeNode = (nodeValue: unknown) => {
+        const node = asTreeNode(nodeValue);
+        if (!node || disposedNodes.has(nodeValue)) return;
+
+        disposedNodes.add(nodeValue);
+        lru?.remove?.(nodeValue);
+
+        if (node.geometryNode) {
+            disposeTreeNode(node.geometryNode);
+        }
+
+        if (node.sceneNode) {
+            disposeSceneObject(node.sceneNode, disposedObjects, disposedResources);
+            removeSceneObject(node.sceneNode);
+        }
+
+        if (typeof node.dispose === 'function') {
+            node.dispose();
+        }
+
+        disposeResource(node.geometry, disposedResources);
+
+        if (Array.isArray(node.children)) {
+            node.children.forEach(disposeTreeNode);
+        } else if (isRecord(node.children)) {
+            Object.values(node.children).forEach(disposeTreeNode);
+        }
+    };
+
+    pointcloud.visibleNodes?.forEach((node) => {
+        disposeTreeNode(node.geometryNode);
+    });
+    disposeTreeNode(pointcloud.root);
+    disposeTreeNode(pointcloud.pcoGeometry);
+
+    removeSceneObject(pointcloud);
+    disposeSceneObject(pointcloud, disposedObjects, disposedResources);
+    disposeResource(pointcloud.material, disposedResources);
+}
+
+function disposeViewer(viewer: PotreeViewer, PotreeLib: Potree, container: HTMLElement) {
+    viewer.renderer.setAnimationLoop(null);
+
+    viewer.scene.removeAllMeasurements();
+
+    const annotations = [...viewer.scene.annotations.children];
+    annotations.forEach((annotation) => {
+        viewer.scene.removeAnnotation(annotation);
+    });
+
+    const pointclouds = [...viewer.scene.pointclouds];
+    pointclouds.forEach((pointcloud) => {
+        disposePointCloud(pointcloud, PotreeLib);
+    });
+    viewer.scene.pointclouds.length = 0;
+
+    const disposedObjects = new Set<unknown>();
+    const disposedResources = new Set<unknown>();
+    disposeSceneObject(viewer.skybox?.scene, disposedObjects, disposedResources);
+    disposeSceneObject(viewer.scene.scene, disposedObjects, disposedResources);
+
+    viewer.renderer.dispose();
+    viewer.renderer.domElement.remove();
+    container.replaceChildren();
 }
 
 export function usePotree(options: UsePotreeOptions): UsePotreeResult {
@@ -87,9 +259,19 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
     };
 
     // Load function
-    const loadPointCloud = (PotreeLib: Potree, viewer: PotreeViewer, url: string) => {
+    const loadPointCloud = (
+        PotreeLib: Potree,
+        viewer: PotreeViewer,
+        url: string,
+        isDisposed: () => boolean
+    ) => {
         PotreeLib.loadPointCloud(url, 'cloud', (e: LoadPointCloudResult) => {
             const pointcloud = e.pointcloud;
+
+            if (isDisposed()) {
+                disposePointCloud(pointcloud, PotreeLib);
+                return;
+            }
 
             // Add to viewer scene
             viewer.scene.addPointCloud(pointcloud);
@@ -138,6 +320,8 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             if (!isNaN(scale)) {
                 // Use setTimeout to ensure scale is applied after point cloud is fully initialized
                 setTimeout(() => {
+                    if (isDisposed()) return;
+
                     const currentX = pointcloud.scale.x;
                     pointcloud.scale.z = currentX * scale;
                 }, 0);
@@ -214,15 +398,20 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
     useEffect(() => {
         if (!containerRef.current) return;
 
+        let disposed = false;
+
         // Access global Potree
         const PotreeLib: Potree | undefined = window.Potree;
 
         if (!PotreeLib) {
             console.error('Potree not loaded globally');
             setTimeout(() => {
+                if (disposed) return;
                 setState({ isLoading: false, error: 'Potree library not loaded' });
             }, 0);
-            return;
+            return () => {
+                disposed = true;
+            };
         }
 
         // Create Potree Viewer
@@ -253,7 +442,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
         }
 
         // Load point cloud
-        loadPointCloud(PotreeLib, viewer, dataUrl);
+        loadPointCloud(PotreeLib, viewer, dataUrl, () => disposed);
 
         // Track user interaction - any mouse/wheel/touch event enables camera syncing
         // This prevents syncing during initial fitToScreen animation
@@ -267,11 +456,12 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
         const intervalId = setInterval(syncCamera, 200);
 
         return () => {
+            disposed = true;
             clearInterval(intervalId);
             container.removeEventListener('mousedown', markUserInteracted);
             container.removeEventListener('wheel', markUserInteracted);
             container.removeEventListener('touchstart', markUserInteracted);
-            viewerRef.current?.renderer?.domElement?.remove();
+            disposeViewer(viewer, PotreeLib, container);
             viewerRef.current = null;
         };
     }, [dataUrl]);

@@ -124,14 +124,21 @@ function computeMatchedIds(searchQuery: string, data: FeatureCollection | undefi
 }
 
 export function useGridSearch(data: FeatureCollection | undefined) {
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchState, setSearchState] = useState(() => ({
+        searchQuery: '',
+        matchedIds: computeMatchedIds('', data),
+    }));
 
-    // Derive matchedIds from searchQuery and data
-    const matchedIds = computeMatchedIds(searchQuery, data);
+    const setSearchQuery = (query: string) => {
+        setSearchState({
+            searchQuery: query,
+            matchedIds: computeMatchedIds(query, data),
+        });
+    };
 
     return {
-        searchQuery,
+        searchQuery: searchState.searchQuery,
         setSearchQuery,
-        matchedIds,
+        matchedIds: searchState.matchedIds,
     };
 }
