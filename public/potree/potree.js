@@ -88195,6 +88195,7 @@ ENDSEC
 				this.description = "";
 
 				this.classifications = ClassificationScheme.DEFAULT;
+				this._classificationDirty = true;
 
 				this.moveSpeed = 10;
 
@@ -88735,6 +88736,7 @@ ENDSEC
 
 		setClassifications(classifications) {
 			this.classifications = classifications;
+			this._classificationDirty = true;
 
 			this.dispatchEvent({ 'type': 'classifications_changed', 'viewer': this });
 		}
@@ -88742,9 +88744,11 @@ ENDSEC
 		setClassificationVisibility(key, value) {
 			if (!this.classifications[key]) {
 				this.classifications[key] = { visible: value, name: 'no name' };
+				this._classificationDirty = true;
 				this.dispatchEvent({ 'type': 'classification_visibility_changed', 'viewer': this });
 			} else if (this.classifications[key].visible !== value) {
 				this.classifications[key].visible = value;
+				this._classificationDirty = true;
 				this.dispatchEvent({ 'type': 'classification_visibility_changed', 'viewer': this });
 			}
 		}
@@ -88775,6 +88779,7 @@ ENDSEC
 			}
 
 			if (somethingChanged) {
+				this._classificationDirty = true;
 				this.dispatchEvent({ 'type': 'classification_visibility_changed', 'viewer': this });
 			}
 		}
@@ -89706,10 +89711,16 @@ ENDSEC
 				material.uniforms.uFilterGPSTimeClipRange.value = this.filterGPSTimeRange;
 				material.uniforms.uFilterPointSourceIDClipRange.value = this.filterPointSourceIDRange;
 
-				material.classification = this.classifications;
-				material.recomputeClassification();
+				if (material.classification !== this.classifications || this._classificationDirty) {
+					material.classification = this.classifications;
+					material.recomputeClassification();
+				}
 
 				this.updateMaterialDefaults(pointcloud);
+			}
+
+			if (visiblePointClouds.length > 0) {
+				this._classificationDirty = false;
 			}
 
 			{
@@ -90147,7 +90158,11 @@ ENDSEC
 				const width = this.scaleFactor * this.renderArea.clientWidth;
 				const height = this.scaleFactor * this.renderArea.clientHeight;
 
-				this.renderer.setSize(width, height);
+				if (this._lastRenderWidth !== width || this._lastRenderHeight !== height) {
+					this.renderer.setSize(width, height);
+					this._lastRenderWidth = width;
+					this._lastRenderHeight = height;
+				}
 				const pixelRatio = this.renderer.getPixelRatio();
 				const aspect = width / height;
 

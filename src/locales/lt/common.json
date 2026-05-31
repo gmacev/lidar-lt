@@ -42,9 +42,11 @@
         "helpTitle": "Eye-Dome Lighting",
         "helpDescription": "EDL prideda švelnų gylio šešėliavimą, kad taškų debesies paviršių būtų lengviau suprasti.",
         "strength": "Stiprumas",
-        "strengthHelp": "nustato, kiek ryškus bus kraštų ir gylio kontrastas.",
+        "strengthHelpAria": "Paaiškinti EDL stiprumą",
+        "strengthHelp": "Nustato, kiek ryškus bus kraštų ir gylio kontrastas.",
         "radius": "Spindulys",
-        "radiusHelp": "nustato, kaip plačiai šešėliavimas skaičiuojamas aplink kiekvieną tašką."
+        "radiusHelpAria": "Paaiškinti EDL spindulį",
+        "radiusHelp": "Nustato, kaip plačiai šešėliavimas skaičiuojamas aplink kiekvieną tašką."
     },
     "flood": {
         "waterLevel": "Vandens lygis",
@@ -88,6 +90,7 @@
         "loading": "Kraunami taškų debesys...",
         "error": "Klaida",
         "back": "Atgal",
+        "resetDefaults": "Atstatyti",
         "controls": "Valdymas",
         "controlLeftClick": "🖱️ Kairysis: Slinkti",
         "controlRightClick": "🖱️ Dešinysis: Sukti",

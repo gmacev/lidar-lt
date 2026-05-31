@@ -65,56 +65,20 @@ export function ClassificationControl({
     const someVisible = classifications.some((c) => c.visible);
     const isIndeterminate = someVisible && !allVisible;
 
-    // Periodically sync our state TO the Potree viewer
+    // Sync our state to Potree only when visibility changes.
     useEffect(() => {
-        const syncToPotree = () => {
-            const viewer = viewerRef.current;
-            if (!viewer || !viewer.scene || viewer.scene.pointclouds.length === 0) return;
+        const viewer = viewerRef.current;
+        if (!viewer) return;
 
-            const material = viewer.scene.pointclouds[0].material;
-            const classMap = material.classification;
+        DISPLAY_ORDER.forEach((id) => {
+            const shouldBeVisible = !hiddenClasses.has(id);
+            viewer.setClassificationVisibility(id, shouldBeVisible);
 
-            if (!classMap) return;
-
-            let needsUpdate = false;
-
-            // Apply our UI state to the Potree material
-            DISPLAY_ORDER.forEach((id) => {
-                const isHidden = hiddenClasses.has(id);
-                const shouldBeVisible = !isHidden;
-
-                // Handle Class 0 (Master) -> Also control Class 1
-                if (id === 0) {
-                    if (classMap[0] && classMap[0].visible !== shouldBeVisible) {
-                        classMap[0].visible = shouldBeVisible;
-                        needsUpdate = true;
-                    }
-                    if (classMap[1] && classMap[1].visible !== shouldBeVisible) {
-                        classMap[1].visible = shouldBeVisible;
-                        needsUpdate = true;
-                    }
-                } else {
-                    // Normal classes
-                    if (classMap[id] && classMap[id].visible !== shouldBeVisible) {
-                        classMap[id].visible = shouldBeVisible;
-                        needsUpdate = true;
-                    }
-                }
-            });
-
-            // If we made changes, update the GPU texture
-            if (needsUpdate) {
-                material.recomputeClassification();
+            // Class 0 is the UI master for both unclassified classes 0 and 1.
+            if (id === 0) {
+                viewer.setClassificationVisibility(1, shouldBeVisible);
             }
-        };
-
-        // Run sync frequently to catch when model loads or reloads
-        const intervalId = setInterval(syncToPotree, 500);
-
-        // Also run immediately in case it's already there
-        syncToPotree();
-
-        return () => clearInterval(intervalId);
+        });
     }, [viewerRef, hiddenClasses]);
 
     const toggleClassification = (id: number) => {

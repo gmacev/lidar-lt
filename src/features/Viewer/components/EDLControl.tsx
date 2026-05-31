@@ -51,21 +51,7 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
                         side="right"
                         align="start"
                     >
-                        <div className="flex flex-col gap-1.5">
-                            <p>{t('edl.helpDescription')}</p>
-                            <p>
-                                <span className="font-semibold text-white/95">
-                                    {t('edl.strength')}:
-                                </span>{' '}
-                                {t('edl.strengthHelp')}
-                            </p>
-                            <p>
-                                <span className="font-semibold text-white/95">
-                                    {t('edl.radius')}:
-                                </span>{' '}
-                                {t('edl.radiusHelp')}
-                            </p>
-                        </div>
+                        {t('edl.helpDescription')}
                     </HelpHint>
                 </div>
                 <Switch
@@ -83,8 +69,13 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
             </div>
 
             <div className={`flex flex-col gap-1 ${!edlEnabled ? 'opacity-40' : ''}`}>
-                <label className="text-xs text-white/70">
-                    {t('edl.strength')}:{' '}
+                <label className="flex justify-between text-xs text-white/70">
+                    <span className="flex items-center gap-1.5">
+                        {t('edl.strength')}
+                        <HelpHint ariaLabel={t('edl.strengthHelpAria')} title={t('edl.strength')}>
+                            {t('edl.strengthHelp')}
+                        </HelpHint>
+                    </span>
                     <span className="text-laser-green">{edlStrength.toFixed(1)}</span>
                 </label>
                 <input
@@ -99,8 +90,13 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
                 />
             </div>
             <div className={`flex flex-col gap-1 ${!edlEnabled ? 'opacity-40' : ''}`}>
-                <label className="text-xs text-white/70">
-                    {t('edl.radius')}:{' '}
+                <label className="flex justify-between text-xs text-white/70">
+                    <span className="flex items-center gap-1.5">
+                        {t('edl.radius')}
+                        <HelpHint ariaLabel={t('edl.radiusHelpAria')} title={t('edl.radius')}>
+                            {t('edl.radiusHelp')}
+                        </HelpHint>
+                    </span>
                     <span className="text-laser-green">{edlRadius.toFixed(1)}</span>
                 </label>
                 <input

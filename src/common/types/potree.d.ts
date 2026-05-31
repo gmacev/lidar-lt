@@ -245,6 +245,7 @@ export interface PotreeViewer {
     setFOV(fov: number): void;
     setPointBudget(budget: number): void;
     setBackground(type: string): void;
+    setClassificationVisibility(key: number, value: boolean): void;
     loadSkybox(path: string): void;
     setDescription(desc: string): void;
 
@@ -255,6 +256,8 @@ export interface PotreeViewer {
         parent: THREE.Object3D;
     } | null;
 
+    addEventListener(type: string, listener: (event?: unknown) => void): void;
+    removeEventListener(type: string, listener: (event?: unknown) => void): void;
     setMinNodeSize(size: number): void;
     setControls(controls: PotreeControls): void;
     loadSettingsFromURL(): void;

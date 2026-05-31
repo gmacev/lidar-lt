@@ -32,6 +32,10 @@ import { RecenterButton } from './RecenterButton';
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import {
+    getCurrentCameraState,
+    resetPotreeViewerDisplayDefaults,
+} from '@/features/Viewer/utils/viewerDefaults';
 import { Route } from '@/routes/viewer.$cellId';
 
 interface ViewerPageProps {
@@ -46,6 +50,13 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const eptBaseUrl = import.meta.env.VITE_EPT_BASE_URL;
     const dataUrl = `${eptBaseUrl}/${cellId}/potree_output/metadata.json`;
     const [uiVisible, setUiVisible] = useState(true);
+    const [sidebarResetKey, setSidebarResetKey] = useState(0);
+    const [resetSidebarInitialState, setResetSidebarInitialState] = useState<{
+        cellId: string;
+        state: ViewerState;
+    } | null>(null);
+    const sidebarInitialState =
+        resetSidebarInitialState?.cellId === cellId ? resetSidebarInitialState.state : initialState;
 
     const updateUrlDebounced = debounce((state: Partial<ViewerState>) => {
         void navigate({
@@ -231,6 +242,25 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             to: '/viewer/$cellId',
             params: { cellId },
             search: initialState.sectorName ? { sectorName: initialState.sectorName } : {},
+            replace: true,
+        });
+    };
+
+    const handleResetDefaults = () => {
+        updateUrlDebounced.cancel();
+
+        const cameraState = getCurrentCameraState(viewerRef.current);
+        resetPotreeViewerDisplayDefaults(viewerRef.current);
+        const resetState = {
+            ...(initialState.sectorName ? { sectorName: initialState.sectorName } : {}),
+            ...cameraState,
+        };
+        setResetSidebarInitialState({ cellId, state: resetState });
+        setSidebarResetKey((value) => value + 1);
+        void navigate({
+            to: '/viewer/$cellId',
+            params: { cellId },
+            search: resetState,
             replace: true,
         });
     };
@@ -442,9 +472,11 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                     {!isLoading && !error && (
                         <ViewerSidebar
                             viewerRef={viewerRef}
-                            initialState={initialState}
+                            initialState={sidebarInitialState}
                             updateUrl={updateUrl}
                             onBack={onBack}
+                            onResetDefaults={handleResetDefaults}
+                            resetKey={sidebarResetKey}
                         />
                     )}
                 </>

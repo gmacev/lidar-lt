@@ -42,9 +42,11 @@
         "helpTitle": "Eye-Dome Lighting",
         "helpDescription": "EDL adds soft depth shading so the point cloud surface is easier to read.",
         "strength": "Strength",
-        "strengthHelp": "controls how strong the edge and depth contrast appears.",
+        "strengthHelpAria": "Explain EDL strength",
+        "strengthHelp": "Controls how strong the edge and depth contrast appears.",
         "radius": "Radius",
-        "radiusHelp": "controls how far the shading looks around each point."
+        "radiusHelpAria": "Explain EDL radius",
+        "radiusHelp": "Controls how far the shading looks around each point."
     },
     "flood": {
         "waterLevel": "Water Level",
@@ -88,6 +90,7 @@
         "loading": "Loading point cloud...",
         "error": "Error",
         "back": "Back",
+        "resetDefaults": "Defaults",
         "controls": "Controls",
         "controlLeftClick": "🖱️ Left click: Pan",
         "controlRightClick": "🖱️ Right click: Rotate",

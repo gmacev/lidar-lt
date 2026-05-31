@@ -17,6 +17,8 @@ interface ViewerSidebarProps {
     initialState: ViewerState;
     updateUrl: (state: Partial<ViewerState>) => void;
     onBack: () => void;
+    onResetDefaults: () => void;
+    resetKey: number;
 }
 
 import { isMobile } from '@/common/utils/screenSize';
@@ -25,13 +27,25 @@ import { isMobile } from '@/common/utils/screenSize';
  * Unified floating sidebar containing all viewer controls.
  * Positioned on the left side with collapsible sections.
  */
-export function ViewerSidebar({ viewerRef, initialState, updateUrl, onBack }: ViewerSidebarProps) {
+export function ViewerSidebar({
+    viewerRef,
+    initialState,
+    updateUrl,
+    onBack,
+    onResetDefaults,
+    resetKey,
+}: ViewerSidebarProps) {
     const { t } = useTranslation();
     // Start collapsed on small screens (< 640px / sm breakpoint)
     const [isCollapsed, setIsCollapsed] = useState(isMobile);
     const [projection, setProjection] = useState<Projection>(
         initialState.projection ?? 'PERSPECTIVE'
     );
+
+    const handleResetDefaults = () => {
+        setProjection('PERSPECTIVE');
+        onResetDefaults();
+    };
 
     return (
         <div
@@ -40,7 +54,7 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl, onBack }: Vi
             }`}
         >
             <div className="flex w-80 flex-col border-r border-white/10 bg-glass-bg backdrop-blur-xl">
-                <div className="flex border-b border-white/10 px-4 py-2 bg-white/[0.02]">
+                <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-2 py-2">
                     <button
                         onClick={onBack}
                         className="group flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-white/40 transition-all hover:text-neon-amber"
@@ -54,11 +68,17 @@ export function ViewerSidebar({ viewerRef, initialState, updateUrl, onBack }: Vi
                         </div>
                         {t('viewer.back')}
                     </button>
+                    <button
+                        onClick={handleResetDefaults}
+                        className="rounded border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white/45 transition-all hover:border-laser-green/40 hover:bg-laser-green/10 hover:text-laser-green"
+                    >
+                        {t('viewer.resetDefaults')}
+                    </button>
                 </div>
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 custom-scrollbar">
-                    <div className="flex flex-col">
+                    <div key={resetKey} className="flex flex-col">
                         {/* Visualization Section */}
                         <SidebarSection
                             title={t('sidebar.visualization')}

@@ -10,68 +10,54 @@ interface CompassProps {
 
 export function Compass({ viewerRef, onOrientNorth }: CompassProps) {
     const { t } = useTranslation();
-    // 1. Use a ref for the DOM element instead of state
     const compassRef = useRef<HTMLDivElement>(null);
-    const requestRef = useRef<number | null>(null);
-
-    const updateCompass = () => {
-        const viewer = viewerRef.current;
-        const compassEl = compassRef.current;
-
-        if (viewer && viewer.scene && compassEl) {
-            const camera = viewer.scene.getActiveCamera();
-            if (camera) {
-                // --- Math Logic ---
-
-                // 1. Get Camera Forward vector
-                const forward = new Vector3();
-                camera.getWorldDirection(forward);
-
-                // 2. Define a target point in front of the camera
-                const centerPoint = camera.position.clone().add(forward.multiplyScalar(10));
-
-                // 3. Define "North" relative to that center point.
-                // NOTE: Potree/Geospatial data is usually Z-Up.
-                // If Z is up, Y is usually North.
-                // If your North arrow points East/West, change this vector.
-                const northOffset = new Vector3(0, 10, 0);
-                const northPoint = centerPoint.clone().add(northOffset);
-
-                // 4. Project both to 2D screen space
-                const p1 = centerPoint.project(camera);
-                const p2 = northPoint.project(camera);
-
-                // 5. Calculate angle
-                const dx = p2.x - p1.x;
-                const dy = p2.y - p1.y;
-
-                if (dx !== 0 || dy !== 0) {
-                    // Calculate angle from +X axis (Standard Math)
-                    const theta = Math.atan2(dy, dx) * (180 / Math.PI);
-
-                    // Convert to CSS Rotation:
-                    // Math 0 (Right) -> CSS 90
-                    // Math 90 (Up)   -> CSS 0
-                    const rotationDeg = 90 - theta;
-
-                    // --- DIRECT DOM UPDATE (High Performance) ---
-                    compassEl.style.transform = `rotate(${rotationDeg}deg)`;
-                }
-            }
-        }
-        requestRef.current = requestAnimationFrame(updateCompass);
-    };
+    const lastRotationRef = useRef<number | null>(null);
 
     useEffect(() => {
-        // Start loop
-        requestRef.current = requestAnimationFrame(updateCompass);
+        const viewer = viewerRef.current;
+        let frameId: number | null = null;
 
-        return () => {
-            if (requestRef.current !== null) {
-                cancelAnimationFrame(requestRef.current);
+        const forward = new Vector3();
+        const centerPoint = new Vector3();
+        const northOffset = new Vector3(0, 10, 0);
+        const northPoint = new Vector3();
+
+        const updateCompass = () => {
+            const compassEl = compassRef.current;
+            const camera = viewer?.scene?.getActiveCamera();
+            if (!camera || !compassEl) return;
+
+            camera.getWorldDirection(forward);
+            centerPoint.copy(camera.position).add(forward.multiplyScalar(10));
+            northPoint.copy(centerPoint).add(northOffset);
+
+            centerPoint.project(camera);
+            northPoint.project(camera);
+
+            const dx = northPoint.x - centerPoint.x;
+            const dy = northPoint.y - centerPoint.y;
+            if (dx === 0 && dy === 0) return;
+
+            const theta = Math.atan2(dy, dx) * (180 / Math.PI);
+            const rotationDeg = 90 - theta;
+            const previousRotation = lastRotationRef.current;
+
+            if (previousRotation === null || Math.abs(previousRotation - rotationDeg) > 0.01) {
+                compassEl.style.transform = `rotate(${rotationDeg}deg)`;
+                lastRotationRef.current = rotationDeg;
             }
         };
-    }, []); // Empty dependency array is fine here as refs are stable
+
+        frameId = requestAnimationFrame(updateCompass);
+        viewer?.addEventListener('camera_changed', updateCompass);
+
+        return () => {
+            if (frameId !== null) {
+                cancelAnimationFrame(frameId);
+            }
+            viewer?.removeEventListener('camera_changed', updateCompass);
+        };
+    }, [viewerRef]);
 
     return (
         <button
@@ -85,7 +71,6 @@ export function Compass({ viewerRef, onOrientNorth }: CompassProps) {
             <div
                 ref={compassRef}
                 className="relative w-full h-full flex items-center justify-center will-change-transform"
-                // Remove the style prop here, it's handled by the ref now
             >
                 {/* North Indicator */}
                 <div className="absolute top-0 flex flex-col items-center">
