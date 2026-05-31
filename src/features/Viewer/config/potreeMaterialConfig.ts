@@ -11,6 +11,15 @@ interface PointCloudWithBaseRange extends PointCloud {
 import { POINT_SIZE_DEFAULTS } from './viewerConfig';
 import { createViridisGradient } from '@/features/Viewer/config/viridisPalette.ts';
 
+const HIGH_ELEVATION_TAIL_START_MIN = 0.75;
+const HIGH_ELEVATION_TAIL_START_MAX = 0.94;
+
+interface ElevationDisplayRange {
+    min: number;
+    max: number;
+    topTailStart: number;
+}
+
 /**
  * Configure point cloud material for elevation-based coloring with Viridis gradient
  */
@@ -92,16 +101,16 @@ function refineElevationRangeFromData(pointcloud: PointCloud) {
             const positions = sampleElevationsWithTransform(geometry, pointcloud.matrixWorld);
 
             if (positions && positions.length > 0) {
-                const [robustMin, robustMax] = calculateRobustRange(positions);
+                const displayRange = calculateRobustRange(positions);
 
                 // Normalize range to Scale 1.0 to ensure consistent coloring regardless of current Z-scale
                 // This ensures that when Z-scale increases, points move UP relative to the fixed color gradient
-                // causing them to turn yellow (limit of the gradient), consistent with slider behavior.
+                // causing them to move toward the top color, consistent with slider behavior.
                 const scaleZ = pointcloud.scale.z || 1;
                 const posZ = pointcloud.position.z || 0;
 
-                const baseMin = (robustMin - posZ) / scaleZ + posZ;
-                const baseMax = (robustMax - posZ) / scaleZ + posZ;
+                const baseMin = (displayRange.min - posZ) / scaleZ + posZ;
+                const baseMax = (displayRange.max - posZ) / scaleZ + posZ;
 
                 // Store base range (at scale 1.0) on the pointcloud for later Z-scale updates
                 const pc = pointcloud as PointCloudWithBaseRange;
@@ -114,6 +123,7 @@ function refineElevationRangeFromData(pointcloud: PointCloud) {
 
                 const material = pointcloud.material;
                 material.elevationRange = [scaledMin, scaledMax];
+                material.gradient = createViridisGradient(window.THREE, displayRange.topTailStart);
                 material.needsUpdate = true;
             }
         }
@@ -169,9 +179,9 @@ function sampleElevationsWithTransform(
 
 /**
  * Data-Driven Robust Range Calculation
- * Uses a histogram approach to trim bottom 1% and top 1% of outliers.
+ * Uses a histogram approach to trim bottom 1% and reserve a small color tail above P99.
  */
-function calculateRobustRange(values: Float32Array): [number, number] {
+function calculateRobustRange(values: Float32Array): ElevationDisplayRange {
     let min = Infinity;
     let max = -Infinity;
 
@@ -182,10 +192,12 @@ function calculateRobustRange(values: Float32Array): [number, number] {
         if (v > max) max = v;
     }
 
-    if (min === Infinity || max === -Infinity) return [0, 100];
+    if (min === Infinity || max === -Infinity) {
+        return { min: 0, max: 100, topTailStart: 1 };
+    }
 
     const range = max - min;
-    if (range < 0.1) return [min, max]; // Flat terrain
+    if (range < 0.1) return { min, max, topTailStart: 1 }; // Flat terrain
 
     // 2. Histogram Analysis
     const BINS = 256;
@@ -231,8 +243,21 @@ function calculateRobustRange(values: Float32Array): [number, number] {
 
     const robustMin = min + robustMinIndex * binSize;
     const robustMax = min + robustMaxIndex * binSize;
+    const robustRange = robustMax - robustMin;
+    const fullRange = max - robustMin;
 
-    return [robustMin, robustMax];
+    if (robustRange < 0.1 || fullRange <= robustRange) {
+        return { min: robustMin, max: robustMax, topTailStart: 1 };
+    }
+
+    const rawTailStart = robustRange / fullRange;
+    const topTailStart = Math.max(
+        HIGH_ELEVATION_TAIL_START_MIN,
+        Math.min(HIGH_ELEVATION_TAIL_START_MAX, rawTailStart)
+    );
+    const displayMax = robustMin + robustRange / topTailStart;
+
+    return { min: robustMin, max: displayMax, topTailStart };
 }
 
 /**

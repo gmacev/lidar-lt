@@ -246,12 +246,65 @@ export const VIRIDIS_LUT: [number, number, number][] = [
     [1.0, 0.15, 0.0],
 ];
 
+const ORIGINAL_LUT_TOP_TAIL_START = 0.97;
+const HIGH_ELEVATION_TAIL: [number, number, number, number][] = [
+    [0.45, 1.0, 0.3, 0.0],
+    [0.8, 1.0, 0.1, 0.0],
+    [1.0, 1.0, 0.0, 0.0],
+];
+
+function sampleViridisLut(position: number): [number, number, number] {
+    const clampedPosition = Math.max(0, Math.min(1, position));
+    const scaledIndex = clampedPosition * (VIRIDIS_LUT.length - 1);
+    const lowerIndex = Math.floor(scaledIndex);
+    const upperIndex = Math.min(VIRIDIS_LUT.length - 1, lowerIndex + 1);
+    const t = scaledIndex - lowerIndex;
+    const lower = VIRIDIS_LUT[lowerIndex];
+    const upper = VIRIDIS_LUT[upperIndex];
+
+    return [
+        lower[0] + (upper[0] - lower[0]) * t,
+        lower[1] + (upper[1] - lower[1]) * t,
+        lower[2] + (upper[2] - lower[2]) * t,
+    ];
+}
+
 /**
- * Creates Viridis color gradient: Purple (low) -> Blue -> Green -> Yellow -> Orange -> Red (high)
+ * Creates Viridis color gradient: Purple (low) -> Blue -> Green -> Yellow -> Orange -> Red (high).
+ *
+ * When topTailStart is below 1, almost the full original palette is compressed
+ * into 0..topTailStart. The remaining headroom becomes a monotonic
+ * high-elevation orange-to-red tail for points above P99.
  */
-export function createViridisGradient(THREE: typeof import('three')): GradientStop[] {
-    return VIRIDIS_LUT.map((rgb, index) => {
-        const position = index / (VIRIDIS_LUT.length - 1);
-        return [position, new THREE.Color(rgb[0], rgb[1], rgb[2])];
+export function createViridisGradient(
+    THREE: typeof import('three'),
+    topTailStart = 1
+): GradientStop[] {
+    if (topTailStart >= 0.999) {
+        return VIRIDIS_LUT.map((rgb, index) => {
+            const position = index / (VIRIDIS_LUT.length - 1);
+            return [position, new THREE.Color(rgb[0], rgb[1], rgb[2])];
+        });
+    }
+
+    const tailStart = Math.max(0.01, Math.min(0.99, topTailStart));
+    const sourceStopPosition = ORIGINAL_LUT_TOP_TAIL_START;
+    const stops: GradientStop[] = VIRIDIS_LUT.flatMap((rgb, index): GradientStop[] => {
+        const sourcePosition = index / (VIRIDIS_LUT.length - 1);
+
+        if (sourcePosition > sourceStopPosition) {
+            return [];
+        }
+
+        const position = (sourcePosition / sourceStopPosition) * tailStart;
+        return [[position, new THREE.Color(rgb[0], rgb[1], rgb[2])]];
     });
+    const [boundaryR, boundaryG, boundaryB] = sampleViridisLut(sourceStopPosition);
+    stops.push([tailStart, new THREE.Color(boundaryR, boundaryG, boundaryB)]);
+
+    for (const [tailPosition, r, g, b] of HIGH_ELEVATION_TAIL) {
+        stops.push([tailStart + (1 - tailStart) * tailPosition, new THREE.Color(r, g, b)]);
+    }
+
+    return stops;
 }
