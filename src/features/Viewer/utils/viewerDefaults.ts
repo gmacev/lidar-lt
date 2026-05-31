@@ -11,17 +11,22 @@ import { updateElevationRangeForZScale } from '@/features/Viewer/config/potreeMa
 import { Z_SCALE_DEFAULTS, type ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';
 
+function toFixedFinite(value: number, digits: number): number | undefined {
+    const rounded = Number(value.toFixed(digits));
+    return Number.isFinite(rounded) ? rounded : undefined;
+}
+
 export function getCurrentCameraState(viewer: PotreeViewer | null): Partial<ViewerState> {
     const view = viewer?.scene?.view;
     if (!view) return {};
 
     return {
-        x: Number(view.position.x.toFixed(3)),
-        y: Number(view.position.y.toFixed(3)),
-        z: Number(view.position.z.toFixed(3)),
-        yaw: Number(view.yaw.toFixed(6)),
-        pitch: Number(view.pitch.toFixed(6)),
-        radius: Number(view.radius.toFixed(3)),
+        x: toFixedFinite(view.position.x, 3),
+        y: toFixedFinite(view.position.y, 3),
+        z: toFixedFinite(view.position.z, 3),
+        yaw: toFixedFinite(view.yaw, 6),
+        pitch: toFixedFinite(view.pitch, 6),
+        radius: toFixedFinite(view.radius, 3),
     };
 }
 

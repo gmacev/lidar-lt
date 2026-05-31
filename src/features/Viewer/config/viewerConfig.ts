@@ -37,6 +37,33 @@ export const Z_SCALE_DEFAULTS: { scale: number } = {
 
 import { z } from 'zod';
 
+const optionalSearchNumber = z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+
+    const parsed = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+}, z.number().optional());
+
+const optionalSearchBoolean = z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+}, z.boolean().optional());
+
+const optionalSearchNumberArray = z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+
+    const values: unknown[] = Array.isArray(value) ? value : [value];
+    const parsedValues = values
+        .flatMap((item): unknown[] => (typeof item === 'string' ? item.split(',') : [item]))
+        .map((item) => (typeof item === 'number' ? item : Number(item)))
+        .filter(Number.isFinite);
+
+    return parsedValues.length > 0 ? parsedValues : undefined;
+}, z.array(z.number()).optional());
+
 export const ColorModeSchema = z.enum(['elevation', 'intensity', 'return-number']);
 export type ColorMode = z.infer<typeof ColorModeSchema>;
 
@@ -57,29 +84,29 @@ export type SkyboxVariant = z.infer<typeof SkyboxVariantSchema>;
 
 export const ViewerStateSchema = z.object({
     // Camera position
-    x: z.number().optional(),
-    y: z.number().optional(),
-    z: z.number().optional(),
+    x: optionalSearchNumber,
+    y: optionalSearchNumber,
+    z: optionalSearchNumber,
     // Camera orientation (direct values, more stable than target position)
-    yaw: z.number().optional(),
-    pitch: z.number().optional(),
-    radius: z.number().optional(),
+    yaw: optionalSearchNumber,
+    pitch: optionalSearchNumber,
+    radius: optionalSearchNumber,
     // Color mode
     colorMode: ColorModeSchema.optional(),
-    intensityMax: z.number().optional(),
+    intensityMax: optionalSearchNumber,
     // EDL settings
-    edlEnabled: z.boolean().optional(),
-    edlStrength: z.number().optional(),
-    edlRadius: z.number().optional(),
+    edlEnabled: optionalSearchBoolean,
+    edlStrength: optionalSearchNumber,
+    edlRadius: optionalSearchNumber,
     // Rendering settings (short names to avoid Potree URL conflicts)
-    ps: z.number().optional(), // point size
-    mns: z.number().optional(), // min node size
+    ps: optionalSearchNumber, // point size
+    mns: optionalSearchNumber, // min node size
     psh: PointShapeSchema.optional(), // point shape
-    zScale: z.number().optional(), // vertical exaggeration
-    pb: z.number().optional(), // point budget
-    fov: z.number().optional(), // field of view
+    zScale: optionalSearchNumber, // vertical exaggeration
+    pb: optionalSearchNumber, // point budget
+    fov: optionalSearchNumber, // field of view
     // Classifications (array of hidden class IDs)
-    hiddenClasses: z.array(z.number()).optional(),
+    hiddenClasses: optionalSearchNumberArray,
     // Sector metadata
     sectorName: z.string().optional(),
     // Camera Projection

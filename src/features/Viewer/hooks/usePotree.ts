@@ -10,6 +10,7 @@ import {
     getDefaultPointBudget,
 } from '@/features/Viewer/config';
 import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';
+import { getCurrentCameraState } from '@/features/Viewer/utils/viewerDefaults';
 import { isTouchDevice } from '@/common/utils/screenSize';
 import type { LoadPointCloudResult, Potree, PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -235,18 +236,8 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
         // initial fitToScreen animation which causes the 45-degree rotation bug
         if (!userHasInteractedRef.current) return;
 
-        const view = viewer.scene.view;
-        if (!view) return;
-
-        // Sync yaw/pitch/radius directly for accurate orientation restoration
-        const newState: ViewerState = {
-            x: Number(view.position.x.toFixed(3)),
-            y: Number(view.position.y.toFixed(3)),
-            z: Number(view.position.z.toFixed(3)),
-            yaw: Number(view.yaw.toFixed(6)),
-            pitch: Number(view.pitch.toFixed(6)),
-            radius: Number(view.radius.toFixed(3)),
-        };
+        // Sync yaw/pitch/radius directly for accurate orientation restoration.
+        const newState = getCurrentCameraState(viewer);
 
         // Create a signature to check for changes
         const stateSignature = JSON.stringify(newState);
