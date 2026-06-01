@@ -36,7 +36,7 @@ export function resetPotreeViewerDisplayDefaults(viewer: PotreeViewer | null): v
     viewer.setFOV(PERFORMANCE_DEFAULTS.fov);
     viewer.setPointBudget(getDefaultPointBudget());
     viewer.setMinNodeSize(PERFORMANCE_DEFAULTS.minNodeSize);
-    viewer.useHighQuality = PERFORMANCE_DEFAULTS.useHighQuality;
+    viewer.useHQ = PERFORMANCE_DEFAULTS.highQualitySplats;
     viewer.setEDLEnabled(EDL_DEFAULTS.enabled);
     viewer.setEDLStrength(EDL_DEFAULTS.strength);
     viewer.setEDLRadius(EDL_DEFAULTS.radius);

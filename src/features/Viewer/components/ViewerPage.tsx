@@ -26,6 +26,7 @@ import type { MeasurementType } from '@/features/Viewer/types/measurement';
 import { ViewerSidebar } from './ViewerSidebar';
 import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
+import { FpsCounter } from './FpsCounter';
 import { GoogleMapsButton } from './GoogleMapsButton';
 import { RecenterButton } from './RecenterButton';
 
@@ -304,6 +305,8 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                             />
                         </div>
                     )}
+
+                    {!isLoading && !error && <FpsCounter />}
 
                     {/* Language switcher, UI toggle, and Controls - top right corner */}
                     <div className="absolute right-2 top-2 flex items-start gap-2 xl:right-4 xl:top-4">

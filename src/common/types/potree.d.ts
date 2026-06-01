@@ -232,7 +232,8 @@ export interface PotreeViewer {
     renderer: WebGLRenderer;
     orbitControls: OrbitControls;
     earthControls: EarthControls;
-    useHighQuality: boolean;
+    /** Enables Potree's high-quality splat renderer. */
+    useHQ: boolean;
     measuringTool: MeasuringTool;
     profileTool: ProfileTool;
     volumeTool: VolumeTool;

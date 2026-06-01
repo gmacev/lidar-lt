@@ -3,6 +3,7 @@ export { PointCloudSettings } from './PointCloudSettings';
 export { PointSizeControl } from './PointSizeControl';
 export { PointBudgetControl } from './PointBudgetControl';
 export { FOVControl } from './FOVControl';
+export { FpsCounter } from './FpsCounter';
 export { NodeSizeControl } from './NodeSizeControl';
 export { EDLControl } from './EDLControl';
 export { ClassificationControl } from './ClassificationControl';

@@ -13,7 +13,8 @@ export const PERFORMANCE_DEFAULTS = {
     pointBudget: 8_000_000,
     pointBudgetMobile: 4_000_000,
     minNodeSize: 15,
-    useHighQuality: true,
+    // true cuts fps in half with not much visible improvement
+    highQualitySplats: false,
     fov: 60,
 } as const;
 

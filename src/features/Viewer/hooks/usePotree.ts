@@ -420,7 +420,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
         viewer.setFOV(PERFORMANCE_DEFAULTS.fov);
         viewer.setPointBudget(getDefaultPointBudget());
         viewer.setMinNodeSize(PERFORMANCE_DEFAULTS.minNodeSize);
-        viewer.useHighQuality = PERFORMANCE_DEFAULTS.useHighQuality;
+        viewer.useHQ = PERFORMANCE_DEFAULTS.highQualitySplats;
 
         // Enable EDL
         viewer.setEDLEnabled(EDL_DEFAULTS.enabled);
