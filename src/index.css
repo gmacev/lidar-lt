@@ -78,6 +78,44 @@ body,
     display: none;
 }
 
+.range-thumb {
+    --range-thumb-size: 18px;
+    --range-thumb-fill: #4f4f5f;
+    --range-thumb-border: rgba(255, 255, 255, 0.92);
+    pointer-events: none;
+}
+
+.range-thumb::-webkit-slider-runnable-track {
+    background: transparent;
+}
+
+.range-thumb::-webkit-slider-thumb {
+    pointer-events: auto;
+    width: var(--range-thumb-size);
+    height: var(--range-thumb-size);
+    appearance: none;
+    border: 2px solid var(--range-thumb-border);
+    border-radius: 9999px;
+    background: var(--range-thumb-fill);
+    box-shadow: none;
+    cursor: ew-resize;
+}
+
+.range-thumb::-moz-range-track {
+    background: transparent;
+}
+
+.range-thumb::-moz-range-thumb {
+    pointer-events: auto;
+    width: var(--range-thumb-size);
+    height: var(--range-thumb-size);
+    border: 2px solid var(--range-thumb-border);
+    border-radius: 9999px;
+    background: var(--range-thumb-fill);
+    box-shadow: none;
+    cursor: ew-resize;
+}
+
 /* Hide Potree annotations when modal/dialog is open (body overflow hidden) */
 body[style*='overflow: hidden'] .potree .annotation,
 body[style*='overflow: hidden'] .potree-panel,

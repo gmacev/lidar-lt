@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer, Potree } from '@/common/types/potree';
 import {
     configureMaterialForElevation,
     configureMaterialForIntensity,
     configureMaterialForReturnNumber,
+    getAutoElevationRange,
+    setManualElevationRange,
     type ColorMode,
 } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+
+type ElevationRangeMode = 'auto' | 'manual';
+
+interface ElevationRangeState {
+    range: [number, number];
+    bounds: [number, number];
+}
 
 interface ColorModeControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -15,10 +24,51 @@ interface ColorModeControlProps {
     updateUrl: (state: Partial<ViewerState>) => void;
 }
 
+function getPointCloudElevationBounds(
+    pointcloud: PotreeViewer['scene']['pointclouds'][number] | undefined
+): [number, number] | null {
+    if (!pointcloud) return null;
+
+    const posAttr = pointcloud.pcoGeometry?.pointAttributes?.attributes?.find(
+        (attr) => attr.name === 'position'
+    );
+
+    const metadataRange = posAttr?.range;
+    if (metadataRange) {
+        const minZ = metadataRange[0][2];
+        const maxZ = metadataRange[1][2];
+        if (Number.isFinite(minZ) && Number.isFinite(maxZ) && maxZ > minZ) {
+            return [minZ, maxZ];
+        }
+    }
+
+    const box = pointcloud.boundingBox;
+    if (box && Number.isFinite(box.min.z) && Number.isFinite(box.max.z) && box.max.z > box.min.z) {
+        return [box.min.z, box.max.z];
+    }
+
+    return null;
+}
+
 export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorModeControlProps) {
     const { t } = useTranslation();
     const [colorMode, setColorMode] = useState<ColorMode>(initialState.colorMode ?? 'elevation');
     const [intensityMax, setIntensityMax] = useState(initialState.intensityMax ?? 10000);
+    const hasInitialManualRange =
+        typeof initialState.elevationMin === 'number' &&
+        typeof initialState.elevationMax === 'number' &&
+        initialState.elevationMax > initialState.elevationMin;
+    const [elevationRangeMode, setElevationRangeMode] = useState<ElevationRangeMode>(
+        hasInitialManualRange ? 'manual' : 'auto'
+    );
+    const [elevationRange, setElevationRange] = useState<ElevationRangeState | null>(
+        hasInitialManualRange
+            ? {
+                  range: [initialState.elevationMin!, initialState.elevationMax!],
+                  bounds: [initialState.elevationMin!, initialState.elevationMax!],
+              }
+            : null
+    );
 
     const handleModeChange = (mode: ColorMode) => {
         const viewer = viewerRef.current;
@@ -29,7 +79,12 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         const pointcloud = viewer.scene.pointclouds[0];
 
         if (mode === 'elevation') {
-            configureMaterialForElevation(pointcloud, PotreeLib);
+            configureMaterialForElevation(pointcloud, PotreeLib, {
+                elevationRange:
+                    elevationRangeMode === 'manual'
+                        ? (elevationRange?.range ?? undefined)
+                        : undefined,
+            });
         } else if (mode === 'intensity') {
             configureMaterialForIntensity(pointcloud, PotreeLib);
             // Apply current intensity range
@@ -43,6 +98,55 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         updateUrl({ colorMode: mode });
     };
 
+    useEffect(() => {
+        if (colorMode !== 'elevation') return;
+
+        const syncRange = () => {
+            const pointcloud = viewerRef.current?.scene?.pointclouds?.[0];
+            const material = pointcloud?.material;
+            const range = material?.elevationRange;
+            if (!range || !Number.isFinite(range[0]) || !Number.isFinite(range[1])) return;
+
+            const metadataBounds = getPointCloudElevationBounds(pointcloud);
+            const nextBounds: [number, number] = metadataBounds ?? [range[0], range[1]];
+
+            setElevationRange((previous) => {
+                if (elevationRangeMode === 'manual' && previous) {
+                    const mergedBounds: [number, number] = [
+                        Math.min(nextBounds[0], previous.range[0]),
+                        Math.max(nextBounds[1], previous.range[1]),
+                    ];
+
+                    if (
+                        Math.abs(previous.bounds[0] - mergedBounds[0]) < 0.01 &&
+                        Math.abs(previous.bounds[1] - mergedBounds[1]) < 0.01
+                    ) {
+                        return previous;
+                    }
+
+                    return { ...previous, bounds: mergedBounds };
+                }
+
+                const nextRange: [number, number] = [range[0], range[1]];
+                if (
+                    previous &&
+                    Math.abs(previous.range[0] - nextRange[0]) < 0.01 &&
+                    Math.abs(previous.range[1] - nextRange[1]) < 0.01 &&
+                    Math.abs(previous.bounds[0] - nextBounds[0]) < 0.01 &&
+                    Math.abs(previous.bounds[1] - nextBounds[1]) < 0.01
+                ) {
+                    return previous;
+                }
+
+                return { range: nextRange, bounds: nextBounds };
+            });
+        };
+
+        syncRange();
+        const intervalId = window.setInterval(syncRange, 250);
+        return () => window.clearInterval(intervalId);
+    }, [colorMode, elevationRangeMode, viewerRef]);
+
     const handleIntensityRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const maxVal = parseInt(e.target.value, 10);
         setIntensityMax(maxVal);
@@ -55,6 +159,89 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         material.needsUpdate = true;
 
         updateUrl({ intensityMax: maxVal });
+    };
+
+    const applyManualElevationRange = (range: [number, number]) => {
+        setElevationRange((previous) => ({
+            range,
+            bounds: previous?.bounds ?? range,
+        }));
+        setElevationRangeMode('manual');
+
+        const pointcloud = viewerRef.current?.scene?.pointclouds?.[0];
+        if (pointcloud) {
+            setManualElevationRange(pointcloud, range);
+        }
+
+        updateUrl({ elevationMin: range[0], elevationMax: range[1] });
+    };
+
+    const handleElevationModeChange = (mode: ElevationRangeMode) => {
+        setElevationRangeMode(mode);
+
+        const pointcloud = viewerRef.current?.scene?.pointclouds?.[0];
+        if (mode === 'auto') {
+            if (pointcloud) {
+                setManualElevationRange(pointcloud, null);
+            }
+            updateUrl({ elevationMin: undefined, elevationMax: undefined });
+            return;
+        }
+
+        const currentRange = elevationRange?.range ?? pointcloud?.material.elevationRange;
+        if (currentRange) {
+            applyManualElevationRange([currentRange[0], currentRange[1]]);
+        }
+    };
+
+    const handleElevationRangeSliderChange = (index: 0 | 1, value: string) => {
+        if (!elevationRange) return;
+
+        const numericValue = Number(value);
+        if (!Number.isFinite(numericValue)) return;
+
+        const [boundMin, boundMax] = elevationRange.bounds;
+        const minGap = Math.max((boundMax - boundMin) * 0.01, 0.1);
+        const nextRange: [number, number] = [...elevationRange.range];
+
+        if (index === 0) {
+            nextRange[0] = Math.min(numericValue, nextRange[1] - minGap);
+        } else {
+            nextRange[1] = Math.max(numericValue, nextRange[0] + minGap);
+        }
+
+        nextRange[0] = Math.max(boundMin, nextRange[0]);
+        nextRange[1] = Math.min(boundMax, nextRange[1]);
+
+        if (nextRange[1] <= nextRange[0]) {
+            return;
+        }
+
+        applyManualElevationRange(nextRange);
+    };
+
+    const handleResetElevationRange = () => {
+        const pointcloud = viewerRef.current?.scene?.pointclouds?.[0];
+        const autoRange = pointcloud ? getAutoElevationRange(pointcloud) : null;
+        const nextRange = autoRange ?? elevationRange?.range;
+
+        if (nextRange) {
+            applyManualElevationRange([nextRange[0], nextRange[1]]);
+        }
+    };
+
+    const formatElevation = (value: number) => {
+        const digits = Math.abs(value) >= 100 ? 0 : 1;
+        return `${value.toFixed(digits)} m`;
+    };
+
+    const elevationRangePercent = (value: number) => {
+        if (!elevationRange) return 0;
+
+        const [boundMin, boundMax] = elevationRange.bounds;
+        if (boundMax <= boundMin) return 0;
+
+        return ((value - boundMin) / (boundMax - boundMin)) * 100;
     };
 
     const buttonClass = (mode: ColorMode) =>
@@ -88,6 +275,96 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                     {t('colorMode.returnNumber')}
                 </button>
             </div>
+
+            {colorMode === 'elevation' && elevationRange && (
+                <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-white/70">{t('colorMode.heightRange')}</span>
+                        <div className="flex rounded border border-white/10 bg-black/20 p-0.5">
+                            {(['auto', 'manual'] as const).map((mode) => (
+                                <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => handleElevationModeChange(mode)}
+                                    className={`rounded px-2 py-0.5 text-[10px] font-medium transition-all ${
+                                        elevationRangeMode === mode
+                                            ? 'bg-laser-green/20 text-laser-green'
+                                            : 'text-white/50 hover:text-white/80'
+                                    }`}
+                                >
+                                    {t(`colorMode.${mode}`)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                        <div className="h-3 rounded-full bg-[linear-gradient(to_right,#440154_0%,#31688e_30%,#35b779_58%,#fde725_78%,#ff9800_90%,#ff2600_100%)]" />
+                        <div className="flex items-center justify-between text-[10px] text-white/55">
+                            <span>{formatElevation(elevationRange.range[0])}</span>
+                            <span>
+                                {formatElevation(
+                                    (elevationRange.range[0] + elevationRange.range[1]) / 2
+                                )}
+                            </span>
+                            <span>{formatElevation(elevationRange.range[1])}</span>
+                        </div>
+                    </div>
+
+                    {elevationRangeMode === 'manual' && (
+                        <div className="flex flex-col gap-2">
+                            <div className="relative h-8">
+                                <div
+                                    className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/15"
+                                    style={{
+                                        background: `linear-gradient(to right, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.15) ${elevationRangePercent(elevationRange.range[0])}%, rgba(0,255,136,0.65) ${elevationRangePercent(elevationRange.range[0])}%, rgba(0,255,136,0.65) ${elevationRangePercent(elevationRange.range[1])}%, rgba(255,255,255,0.15) ${elevationRangePercent(elevationRange.range[1])}%, rgba(255,255,255,0.15) 100%)`,
+                                    }}
+                                />
+                                <input
+                                    aria-label={t('colorMode.min')}
+                                    type="range"
+                                    min={elevationRange.bounds[0]}
+                                    max={elevationRange.bounds[1]}
+                                    step="0.1"
+                                    value={elevationRange.range[0]}
+                                    onChange={(event) =>
+                                        handleElevationRangeSliderChange(0, event.target.value)
+                                    }
+                                    className="range-thumb absolute inset-x-0 top-1/2 w-full -translate-y-1/2 bg-transparent accent-laser-green"
+                                />
+                                <input
+                                    aria-label={t('colorMode.max')}
+                                    type="range"
+                                    min={elevationRange.bounds[0]}
+                                    max={elevationRange.bounds[1]}
+                                    step="0.1"
+                                    value={elevationRange.range[1]}
+                                    onChange={(event) =>
+                                        handleElevationRangeSliderChange(1, event.target.value)
+                                    }
+                                    className="range-thumb absolute inset-x-0 top-1/2 w-full -translate-y-1/2 bg-transparent accent-laser-green"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 text-[10px] text-white/55">
+                                <span>
+                                    {t('colorMode.min')}: {formatElevation(elevationRange.range[0])}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleResetElevationRange}
+                                    className="rounded border border-white/10 px-2 py-0.5 text-white/50 transition-colors hover:border-laser-green/40 hover:text-laser-green"
+                                >
+                                    {t('colorMode.reset')}
+                                </button>
+                                <span>
+                                    {t('colorMode.max')}: {formatElevation(elevationRange.range[1])}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Intensity range slider - only show when in intensity mode */}
             {colorMode === 'intensity' && (

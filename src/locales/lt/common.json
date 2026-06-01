@@ -32,6 +32,12 @@
         "intensity": "Intensyvumas",
         "returnNumber": "Grįžimai",
         "returnNumberTooltip": "Rodo lazerio grįžimus: 1-as = viršūnė, paskutinis = žemė",
+        "heightRange": "Aukščio intervalas",
+        "auto": "Auto",
+        "manual": "Rankinis",
+        "min": "Min",
+        "max": "Maks",
+        "reset": "Atstatyti",
         "contrast": "Kontrastas",
         "bright": "Ryškus",
         "dark": "Tamsus"

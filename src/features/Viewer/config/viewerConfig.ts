@@ -94,6 +94,8 @@ export const ViewerStateSchema = z.object({
     // Color mode
     colorMode: ColorModeSchema.optional(),
     intensityMax: optionalSearchNumber,
+    elevationMin: optionalSearchNumber,
+    elevationMax: optionalSearchNumber,
     // EDL settings
     edlEnabled: optionalSearchBoolean,
     edlStrength: optionalSearchNumber,

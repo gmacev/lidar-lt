@@ -11,5 +11,7 @@ export {
     configureMaterialForElevation,
     configureMaterialForIntensity,
     configureMaterialForReturnNumber,
+    getAutoElevationRange,
+    setManualElevationRange,
 } from './potreeMaterialConfig';
 export { VIRIDIS_LUT, createViridisGradient } from './viridisPalette';

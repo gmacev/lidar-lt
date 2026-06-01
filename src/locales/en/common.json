@@ -32,6 +32,12 @@
         "intensity": "Intensity",
         "returnNumber": "Returns",
         "returnNumberTooltip": "Shows laser returns: 1st = canopy top, last = ground",
+        "heightRange": "Height range",
+        "auto": "Auto",
+        "manual": "Manual",
+        "min": "Min",
+        "max": "Max",
+        "reset": "Reset",
         "contrast": "Contrast",
         "bright": "Bright",
         "dark": "Dark"

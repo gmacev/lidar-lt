@@ -279,7 +279,14 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             } else if (colorMode === 'return-number') {
                 configureMaterialForReturnNumber(pointcloud, PotreeLib);
             } else {
-                configureMaterialForElevation(pointcloud, PotreeLib);
+                const { elevationMin, elevationMax } = initialStateRef.current;
+                const elevationRange =
+                    typeof elevationMin === 'number' &&
+                    typeof elevationMax === 'number' &&
+                    elevationMax > elevationMin
+                        ? ([elevationMin, elevationMax] as [number, number])
+                        : undefined;
+                configureMaterialForElevation(pointcloud, PotreeLib, { elevationRange });
             }
 
             // Apply URL state overrides for rendering settings
