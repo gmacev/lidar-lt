@@ -13,6 +13,7 @@ import { createViridisGradient } from '@/features/Viewer/config/viridisPalette.t
 
 const HIGH_ELEVATION_TAIL_START_MIN = 0.75;
 const HIGH_ELEVATION_TAIL_START_MAX = 0.94;
+const NOISE_CLASSIFICATIONS = new Set([7, 18]);
 
 interface ElevationDisplayRange {
     min: number;
@@ -97,7 +98,7 @@ function refineElevationRangeFromData(pointcloud: PointCloud) {
             // Ensure world matrix is up to date for transformation
             pointcloud.updateMatrixWorld(true);
 
-            // Extract World Z values
+            // Extract World Z values, excluding classified noise points from color scaling.
             const positions = sampleElevationsWithTransform(geometry, pointcloud.matrixWorld);
 
             if (positions && positions.length > 0) {
@@ -146,13 +147,14 @@ function sampleElevationsWithTransform(
     if (!attributes || !attributes.position) return null;
 
     const array = attributes.position.array;
+    const classifications = attributes.classification?.array;
     const count = attributes.position.count;
     const stride = attributes.position.itemSize || 3;
 
     // Sampling parameters
     const TARGET_SAMPLE_COUNT = 50000;
     const step = Math.max(1, Math.floor(count / TARGET_SAMPLE_COUNT));
-    const sampleCount = Math.floor(count / step);
+    const sampleCount = Math.ceil(count / step);
 
     const zValues = new Float32Array(sampleCount);
 
@@ -166,6 +168,10 @@ function sampleElevationsWithTransform(
 
     let outIdx = 0;
     for (let i = 0; i < count; i += step) {
+        if (classifications && NOISE_CLASSIFICATIONS.has(classifications[i])) {
+            continue;
+        }
+
         const x = array[i * stride];
         const y = array[i * stride + 1];
         const z = array[i * stride + 2];
@@ -174,7 +180,7 @@ function sampleElevationsWithTransform(
         zValues[outIdx++] = x * m2 + y * m6 + z * m10 + m14;
     }
 
-    return zValues;
+    return outIdx > 0 ? zValues.subarray(0, outIdx) : null;
 }
 
 /**
