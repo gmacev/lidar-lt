@@ -71,11 +71,15 @@ export type ColorMode = z.infer<typeof ColorModeSchema>;
 export const PointShapeSchema = z.enum(['square', 'circle', 'paraboloid']);
 export type PointShape = z.infer<typeof PointShapeSchema>;
 
+export const PointSizeModeSchema = z.enum(['fixed', 'adaptive']);
+export type PointSizeMode = z.infer<typeof PointSizeModeSchema>;
+
 export const ProjectionSchema = z.enum(['PERSPECTIVE', 'ORTHOGRAPHIC']);
 export type Projection = z.infer<typeof ProjectionSchema>;
 
 export const POINT_APPEARANCE_DEFAULTS = {
     shape: 'circle' as PointShape,
+    sizeMode: 'adaptive' as PointSizeMode,
 } as const;
 
 export const BackgroundSchema = z.enum(['skybox', 'gradient', 'black']);
@@ -103,6 +107,7 @@ export const ViewerStateSchema = z.object({
     edlRadius: optionalSearchNumber,
     // Rendering settings (short names to avoid Potree URL conflicts)
     ps: optionalSearchNumber, // point size
+    psm: PointSizeModeSchema.optional(), // point size mode
     mns: optionalSearchNumber, // min node size
     psh: PointShapeSchema.optional(), // point shape
     zScale: optionalSearchNumber, // vertical exaggeration

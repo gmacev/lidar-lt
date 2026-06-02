@@ -6,6 +6,7 @@ export {
     getDefaultPointBudget,
     type ColorMode,
     type PointShape,
+    type PointSizeMode,
 } from './viewerConfig';
 export {
     configureMaterialForElevation,

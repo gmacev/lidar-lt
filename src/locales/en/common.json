@@ -68,6 +68,11 @@
         "pointSize": "Point Size",
         "pointSizeHelpAria": "Explain point size",
         "pointSizeHelp": "Changes how large each LiDAR point is drawn on screen. Higher values make the cloud look denser, but can hide fine details.",
+        "pointSizeMode": "Point Size Mode",
+        "sizeModes": {
+            "fixed": "Fixed",
+            "adaptive": "Adaptive"
+        },
         "pointShape": "Point Shape",
         "shapes": {
             "square": "Squares",

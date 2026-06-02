@@ -2,6 +2,7 @@ import type { PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
 import { PointSizeControl } from './PointSizeControl';
+import { PointSizeModeControl } from './PointSizeModeControl';
 import { PointBudgetControl } from './PointBudgetControl';
 import { NodeSizeControl } from './NodeSizeControl';
 import { PointShapeControl } from './PointShapeControl';
@@ -21,6 +22,11 @@ export function PointCloudSettings({
     return (
         <div className="flex flex-col gap-3">
             <PointShapeControl
+                viewerRef={viewerRef}
+                initialState={initialState}
+                updateUrl={updateUrl}
+            />
+            <PointSizeModeControl
                 viewerRef={viewerRef}
                 initialState={initialState}
                 updateUrl={updateUrl}

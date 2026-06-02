@@ -1,6 +1,7 @@
 export { ViewerPage } from './ViewerPage';
 export { PointCloudSettings } from './PointCloudSettings';
 export { PointSizeControl } from './PointSizeControl';
+export { PointSizeModeControl } from './PointSizeModeControl';
 export { PointBudgetControl } from './PointBudgetControl';
 export { FOVControl } from './FOVControl';
 export { FpsCounter } from './FpsCounter';

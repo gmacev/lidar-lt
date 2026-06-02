@@ -69,6 +69,11 @@
         "pointSizeHelpAria": "Paaiškinti taškų dydį",
         "pointSizeHelp": "Keičia, kokio dydžio LiDAR taškai piešiami ekrane. Didesnė reikšmė debesį padaro tankesnį, bet gali paslėpti smulkias detales.",
         "pointShape": "Taškų forma",
+        "pointSizeMode": "Ta\u0161k\u0173 dyd\u017eio re\u017eimas",
+        "sizeModes": {
+            "fixed": "Fiksuotas",
+            "adaptive": "Adaptyvus"
+        },
         "shapes": {
             "square": "Kvadratai",
             "circle": "Apskritimai",

@@ -10,6 +10,7 @@ import {
     getDefaultPointBudget,
 } from '@/features/Viewer/config';
 import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';
+import { getPointSizeModeEnumValue } from '@/features/Viewer/utils/pointSizeModeUtils';
 import { getCurrentCameraState } from '@/features/Viewer/utils/viewerDefaults';
 import { isTouchDevice } from '@/common/utils/screenSize';
 import type { LoadPointCloudResult, Potree, PotreeViewer } from '@/common/types/potree';
@@ -290,13 +291,18 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             }
 
             // Apply URL state overrides for rendering settings
-            const { ps, mns, pb, fov, edlEnabled, edlStrength, edlRadius, psh, zScale } =
+            const { ps, psm, mns, pb, fov, edlEnabled, edlStrength, edlRadius, psh, zScale } =
                 initialStateRef.current;
 
             // Point size from URL overrides the default
             if (typeof ps === 'number') {
                 pointcloud.material.size = ps;
             }
+
+            pointcloud.material.pointSizeType = getPointSizeModeEnumValue(
+                psm ?? POINT_APPEARANCE_DEFAULTS.sizeMode,
+                PotreeLib
+            );
 
             // Min node size from URL
             if (typeof mns === 'number') {

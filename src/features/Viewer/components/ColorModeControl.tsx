@@ -10,6 +10,7 @@ import {
     type ColorMode,
 } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { getPointSizeModeEnumValue } from '@/features/Viewer/utils/pointSizeModeUtils';
 
 type ElevationRangeMode = 'auto' | 'manual';
 
@@ -94,6 +95,10 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
             configureMaterialForReturnNumber(pointcloud, PotreeLib);
         }
 
+        pointcloud.material.pointSizeType = getPointSizeModeEnumValue(
+            initialState.psm ?? 'adaptive',
+            PotreeLib
+        );
         setColorMode(mode);
         updateUrl({ colorMode: mode });
     };

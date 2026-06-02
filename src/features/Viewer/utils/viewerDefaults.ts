@@ -9,6 +9,7 @@ import {
 } from '@/features/Viewer/config';
 import { updateElevationRangeForZScale } from '@/features/Viewer/config/potreeMaterialConfig';
 import { Z_SCALE_DEFAULTS, type ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { getPointSizeModeEnumValue } from '@/features/Viewer/utils/pointSizeModeUtils';
 import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';
 
 function toFixedFinite(value: number, digits: number): number | undefined {
@@ -54,6 +55,10 @@ export function resetPotreeViewerDisplayDefaults(viewer: PotreeViewer | null): v
 
         // Potree is an external mutable renderer; reset its live material state.
         pointcloud.material.size = POINT_SIZE_DEFAULTS.size;
+        pointcloud.material.pointSizeType = getPointSizeModeEnumValue(
+            POINT_APPEARANCE_DEFAULTS.sizeMode,
+            PotreeLib
+        );
         pointcloud.material.shape = getShapeEnumValue(POINT_APPEARANCE_DEFAULTS.shape, PotreeLib);
 
         const currentX = pointcloud.scale.x;
