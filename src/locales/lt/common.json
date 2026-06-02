@@ -38,6 +38,12 @@
         "min": "Min",
         "max": "Maks",
         "reset": "Atstatyti",
+        "palette": "Palet\u0117",
+        "palettes": {
+            "custom": "Numatyta",
+            "terrain": "Reljefas",
+            "grayscale": "Pilka"
+        },
         "contrast": "Kontrastas",
         "bright": "Ryškus",
         "dark": "Tamsus"

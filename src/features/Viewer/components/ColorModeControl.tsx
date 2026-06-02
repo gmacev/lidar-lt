@@ -6,13 +6,25 @@ import {
     configureMaterialForIntensity,
     configureMaterialForReturnNumber,
     getAutoElevationRange,
+    POINT_APPEARANCE_DEFAULTS,
+    setElevationPalette,
     setManualElevationRange,
     type ColorMode,
+    type ElevationPalette,
 } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { getPointSizeModeEnumValue } from '@/features/Viewer/utils/pointSizeModeUtils';
 
 type ElevationRangeMode = 'auto' | 'manual';
+
+const ELEVATION_PALETTES: ElevationPalette[] = ['custom', 'terrain', 'grayscale'];
+
+const ELEVATION_PALETTE_GRADIENTS: Record<ElevationPalette, string> = {
+    custom: 'linear-gradient(to right,#440154 0%,#31688e 30%,#35b779 58%,#fde725 78%,#ff9800 90%,#ff2600 100%)',
+    terrain:
+        'linear-gradient(to right,#123524 0%,#2d6a4f 20%,#74c69d 40%,#d6c96f 58%,#b08968 72%,#7f5539 86%,#f2f2f2 100%)',
+    grayscale: 'linear-gradient(to right,#111111 0%,#f2f2f2 100%)',
+};
 
 interface ElevationRangeState {
     range: [number, number];
@@ -54,6 +66,9 @@ function getPointCloudElevationBounds(
 export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorModeControlProps) {
     const { t } = useTranslation();
     const [colorMode, setColorMode] = useState<ColorMode>(initialState.colorMode ?? 'elevation');
+    const [elevationPalette, setElevationPaletteState] = useState<ElevationPalette>(
+        initialState.ep ?? POINT_APPEARANCE_DEFAULTS.elevationPalette
+    );
     const [intensityMax, setIntensityMax] = useState(initialState.intensityMax ?? 10000);
     const hasInitialManualRange =
         typeof initialState.elevationMin === 'number' &&
@@ -85,6 +100,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                     elevationRangeMode === 'manual'
                         ? (elevationRange?.range ?? undefined)
                         : undefined,
+                palette: elevationPalette,
             });
         } else if (mode === 'intensity') {
             configureMaterialForIntensity(pointcloud, PotreeLib);
@@ -101,6 +117,19 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         );
         setColorMode(mode);
         updateUrl({ colorMode: mode });
+    };
+
+    const handleElevationPaletteChange = (palette: ElevationPalette) => {
+        setElevationPaletteState(palette);
+
+        const viewer = viewerRef.current;
+        if (viewer?.scene?.pointclouds) {
+            for (const pointcloud of viewer.scene.pointclouds) {
+                setElevationPalette(pointcloud, palette);
+            }
+        }
+
+        updateUrl({ ep: palette });
     };
 
     useEffect(() => {
@@ -304,7 +333,10 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <div className="h-3 rounded-full bg-[linear-gradient(to_right,#440154_0%,#31688e_30%,#35b779_58%,#fde725_78%,#ff9800_90%,#ff2600_100%)]" />
+                        <div
+                            className="h-3 rounded-full"
+                            style={{ background: ELEVATION_PALETTE_GRADIENTS[elevationPalette] }}
+                        />
                         <div className="flex items-center justify-between text-[10px] text-white/55">
                             <span>{formatElevation(elevationRange.range[0])}</span>
                             <span>
@@ -313,6 +345,26 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                 )}
                             </span>
                             <span>{formatElevation(elevationRange.range[1])}</span>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        <span className="text-xs text-white/70">{t('colorMode.palette')}</span>
+                        <div className="grid grid-cols-3 gap-1">
+                            {ELEVATION_PALETTES.map((palette) => (
+                                <button
+                                    key={palette}
+                                    type="button"
+                                    onClick={() => handleElevationPaletteChange(palette)}
+                                    className={`rounded border px-2 py-1 text-[10px] font-medium transition-all ${
+                                        elevationPalette === palette
+                                            ? 'border-laser-green bg-laser-green/20 text-laser-green'
+                                            : 'border-white/15 text-white/55 hover:border-white/35 hover:text-white/80'
+                                    }`}
+                                >
+                                    {t(`colorMode.palettes.${palette}`)}
+                                </button>
+                            ))}
                         </div>
                     </div>
 

@@ -51,7 +51,9 @@ export function resetPotreeViewerDisplayDefaults(viewer: PotreeViewer | null): v
     if (!PotreeLib || !viewer.scene?.pointclouds) return;
 
     for (const pointcloud of viewer.scene.pointclouds) {
-        configureMaterialForElevation(pointcloud, PotreeLib);
+        configureMaterialForElevation(pointcloud, PotreeLib, {
+            palette: POINT_APPEARANCE_DEFAULTS.elevationPalette,
+        });
 
         // Potree is an external mutable renderer; reset its live material state.
         pointcloud.material.size = POINT_SIZE_DEFAULTS.size;

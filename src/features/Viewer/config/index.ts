@@ -5,6 +5,7 @@ export {
     POINT_APPEARANCE_DEFAULTS,
     getDefaultPointBudget,
     type ColorMode,
+    type ElevationPalette,
     type PointShape,
     type PointSizeMode,
 } from './viewerConfig';
@@ -13,6 +14,7 @@ export {
     configureMaterialForIntensity,
     configureMaterialForReturnNumber,
     getAutoElevationRange,
+    setElevationPalette,
     setManualElevationRange,
 } from './potreeMaterialConfig';
 export { VIRIDIS_LUT, createViridisGradient } from './viridisPalette';

@@ -74,12 +74,16 @@ export type PointShape = z.infer<typeof PointShapeSchema>;
 export const PointSizeModeSchema = z.enum(['fixed', 'adaptive']);
 export type PointSizeMode = z.infer<typeof PointSizeModeSchema>;
 
+export const ElevationPaletteSchema = z.enum(['custom', 'terrain', 'grayscale']);
+export type ElevationPalette = z.infer<typeof ElevationPaletteSchema>;
+
 export const ProjectionSchema = z.enum(['PERSPECTIVE', 'ORTHOGRAPHIC']);
 export type Projection = z.infer<typeof ProjectionSchema>;
 
 export const POINT_APPEARANCE_DEFAULTS = {
     shape: 'circle' as PointShape,
     sizeMode: 'adaptive' as PointSizeMode,
+    elevationPalette: 'custom' as ElevationPalette,
 } as const;
 
 export const BackgroundSchema = z.enum(['skybox', 'gradient', 'black']);
@@ -101,6 +105,7 @@ export const ViewerStateSchema = z.object({
     intensityMax: optionalSearchNumber,
     elevationMin: optionalSearchNumber,
     elevationMax: optionalSearchNumber,
+    ep: ElevationPaletteSchema.optional(), // elevation palette
     // EDL settings
     edlEnabled: optionalSearchBoolean,
     edlStrength: optionalSearchNumber,

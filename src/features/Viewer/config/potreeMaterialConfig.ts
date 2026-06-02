@@ -9,9 +9,15 @@ interface PointCloudWithBaseRange extends PointCloud {
     _baseElevationRange?: [number, number];
     _autoElevationRange?: [number, number];
     _manualElevationRange?: [number, number];
+    _elevationPalette?: ElevationPalette;
+    _elevationTopTailStart?: number;
 }
-import { POINT_SIZE_DEFAULTS } from './viewerConfig';
-import { createViridisGradient } from '@/features/Viewer/config/viridisPalette.ts';
+import {
+    POINT_APPEARANCE_DEFAULTS,
+    POINT_SIZE_DEFAULTS,
+    type ElevationPalette,
+} from './viewerConfig';
+import { createElevationGradient } from '@/features/Viewer/config/viridisPalette.ts';
 
 const HIGH_ELEVATION_TAIL_START_MIN = 0.75;
 const HIGH_ELEVATION_TAIL_START_MAX = 0.94;
@@ -28,6 +34,7 @@ interface ElevationDisplayRange {
  */
 interface ConfigureElevationOptions {
     elevationRange?: [number, number];
+    palette?: ElevationPalette;
 }
 
 export function configureMaterialForElevation(
@@ -61,10 +68,14 @@ export function configureMaterialForElevation(
 
     // Apply safe defaults initially
     const pc = pointcloud as PointCloudWithBaseRange;
+    const palette =
+        options.palette ?? pc._elevationPalette ?? POINT_APPEARANCE_DEFAULTS.elevationPalette;
+    pc._elevationPalette = palette;
+    pc._elevationTopTailStart = 1;
     pc._autoElevationRange = [minZ, maxZ];
     material.activeAttributeName = 'elevation';
     material.elevationRange = options.elevationRange ?? [minZ, maxZ];
-    material.gradient = createViridisGradient(THREE);
+    material.gradient = createElevationGradient(THREE, palette);
     pc._manualElevationRange = options.elevationRange;
 
     // Point appearance
@@ -93,6 +104,17 @@ export function setManualElevationRange(pointcloud: PointCloud, range: [number, 
 
 export function getAutoElevationRange(pointcloud: PointCloud): [number, number] | null {
     return (pointcloud as PointCloudWithBaseRange)._autoElevationRange ?? null;
+}
+
+export function setElevationPalette(pointcloud: PointCloud, palette: ElevationPalette) {
+    const pc = pointcloud as PointCloudWithBaseRange;
+    pc._elevationPalette = palette;
+    pointcloud.material.gradient = createElevationGradient(
+        window.THREE,
+        palette,
+        pc._elevationTopTailStart ?? 1
+    );
+    pointcloud.material.needsUpdate = true;
 }
 
 /**
@@ -146,6 +168,7 @@ function refineElevationRangeFromData(pointcloud: PointCloud, applyToMaterial = 
                 // Store base range (at scale 1.0) on the pointcloud for later Z-scale updates
                 const pc = pointcloud as PointCloudWithBaseRange;
                 pc._baseElevationRange = [baseMin, baseMax];
+                pc._elevationTopTailStart = displayRange.topTailStart;
 
                 // Apply range accounting for current Z-scale (handles page reload with zScale in URL)
                 const currentZScale = pointcloud.scale.z / (pointcloud.scale.x || 1);
@@ -154,7 +177,11 @@ function refineElevationRangeFromData(pointcloud: PointCloud, applyToMaterial = 
                 pc._autoElevationRange = [scaledMin, scaledMax];
 
                 const material = pointcloud.material;
-                material.gradient = createViridisGradient(window.THREE, displayRange.topTailStart);
+                material.gradient = createElevationGradient(
+                    window.THREE,
+                    pc._elevationPalette ?? POINT_APPEARANCE_DEFAULTS.elevationPalette,
+                    displayRange.topTailStart
+                );
 
                 if (applyToMaterial && !pc._manualElevationRange) {
                     material.elevationRange = [scaledMin, scaledMax];

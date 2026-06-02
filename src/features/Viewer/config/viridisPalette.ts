@@ -1,6 +1,7 @@
 // Viridis colormap - 256 colors for smooth gradients
 // Each color is [R, G, B] normalized to 0-1
 import type { GradientStop } from '@/common/types/potree';
+import type { ElevationPalette } from '@/features/Viewer/config/viewerConfig';
 
 export const VIRIDIS_LUT: [number, number, number][] = [
     [0.267, 0.004, 0.329],
@@ -307,4 +308,42 @@ export function createViridisGradient(
     }
 
     return stops;
+}
+
+const TERRAIN_STOPS: [number, string][] = [
+    [0, '#123524'],
+    [0.2, '#2d6a4f'],
+    [0.4, '#74c69d'],
+    [0.58, '#d6c96f'],
+    [0.72, '#b08968'],
+    [0.86, '#7f5539'],
+    [1, '#f2f2f2'],
+];
+
+const GRAYSCALE_STOPS: [number, string][] = [
+    [0, '#111111'],
+    [1, '#f2f2f2'],
+];
+
+function createGradientFromStops(
+    THREE: typeof import('three'),
+    stops: [number, string][]
+): GradientStop[] {
+    return stops.map(([position, color]) => [position, new THREE.Color(color)]);
+}
+
+export function createElevationGradient(
+    THREE: typeof import('three'),
+    palette: ElevationPalette,
+    topTailStart = 1
+): GradientStop[] {
+    switch (palette) {
+        case 'terrain':
+            return createGradientFromStops(THREE, TERRAIN_STOPS);
+        case 'grayscale':
+            return createGradientFromStops(THREE, GRAYSCALE_STOPS);
+        case 'custom':
+        default:
+            return createViridisGradient(THREE, topTailStart);
+    }
 }

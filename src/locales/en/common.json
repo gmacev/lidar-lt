@@ -38,6 +38,12 @@
         "min": "Min",
         "max": "Max",
         "reset": "Reset",
+        "palette": "Palette",
+        "palettes": {
+            "custom": "Default",
+            "terrain": "Terrain",
+            "grayscale": "Grayscale"
+        },
         "contrast": "Contrast",
         "bright": "Bright",
         "dark": "Dark"
