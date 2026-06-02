@@ -70,6 +70,8 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         initialState.ep ?? POINT_APPEARANCE_DEFAULTS.elevationPalette
     );
     const [intensityMax, setIntensityMax] = useState(initialState.intensityMax ?? 10000);
+    const [intensityGamma, setIntensityGamma] = useState(initialState.ig ?? 1);
+    const [intensityBrightness, setIntensityBrightness] = useState(initialState.ib ?? 0);
     const hasInitialManualRange =
         typeof initialState.elevationMin === 'number' &&
         typeof initialState.elevationMax === 'number' &&
@@ -104,9 +106,11 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
             });
         } else if (mode === 'intensity') {
             configureMaterialForIntensity(pointcloud, PotreeLib);
-            // Apply current intensity range
+            // Apply current intensity tuning
             // eslint-disable-next-line react-compiler/react-compiler
             pointcloud.material.intensityRange = [0, intensityMax];
+            pointcloud.material.intensityGamma = intensityGamma;
+            pointcloud.material.intensityBrightness = intensityBrightness;
         } else if (mode === 'return-number') {
             configureMaterialForReturnNumber(pointcloud, PotreeLib);
         }
@@ -193,6 +197,34 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         material.needsUpdate = true;
 
         updateUrl({ intensityMax: maxVal });
+    };
+
+    const handleIntensityGammaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseFloat(e.target.value);
+        setIntensityGamma(value);
+
+        const viewer = viewerRef.current;
+        if (!viewer?.scene?.pointclouds?.length) return;
+
+        const material = viewer.scene.pointclouds[0].material;
+        material.intensityGamma = value;
+        material.needsUpdate = true;
+
+        updateUrl({ ig: value });
+    };
+
+    const handleIntensityBrightnessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseFloat(e.target.value);
+        setIntensityBrightness(value);
+
+        const viewer = viewerRef.current;
+        if (!viewer?.scene?.pointclouds?.length) return;
+
+        const material = viewer.scene.pointclouds[0].material;
+        material.intensityBrightness = value;
+        material.needsUpdate = true;
+
+        updateUrl({ ib: value });
     };
 
     const applyManualElevationRange = (range: [number, number]) => {
@@ -425,8 +457,8 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
 
             {/* Intensity range slider - only show when in intensity mode */}
             {colorMode === 'intensity' && (
-                <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-white/10">
-                    <label className="text-xs text-white/70 flex justify-between">
+                <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-2">
+                    <label className="flex justify-between text-xs text-white/70">
                         {t('colorMode.contrast')}
                         <span className="text-laser-green">{intensityMax.toLocaleString()}</span>
                     </label>
@@ -439,10 +471,33 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         onChange={handleIntensityRangeChange}
                         className="w-full accent-laser-green"
                     />
-                    <div className="flex justify-between text-[10px] text-white/40">
-                        <span>{t('colorMode.bright')}</span>
-                        <span>{t('colorMode.dark')}</span>
-                    </div>
+                    <label className="flex justify-between text-xs text-white/70">
+                        {t('colorMode.gamma')}
+                        <span className="text-laser-green">{intensityGamma.toFixed(2)}</span>
+                    </label>
+                    <input
+                        type="range"
+                        min="0.1"
+                        max="4"
+                        step="0.05"
+                        value={intensityGamma}
+                        onChange={handleIntensityGammaChange}
+                        className="w-full accent-laser-green"
+                    />
+
+                    <label className="flex justify-between text-xs text-white/70">
+                        {t('colorMode.brightness')}
+                        <span className="text-laser-green">{intensityBrightness.toFixed(2)}</span>
+                    </label>
+                    <input
+                        type="range"
+                        min="-1"
+                        max="1"
+                        step="0.05"
+                        value={intensityBrightness}
+                        onChange={handleIntensityBrightnessChange}
+                        className="w-full accent-laser-green"
+                    />
                 </div>
             )}
         </div>

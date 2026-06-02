@@ -45,8 +45,8 @@
             "grayscale": "Grayscale"
         },
         "contrast": "Contrast",
-        "bright": "Bright",
-        "dark": "Dark"
+        "gamma": "Gamma",
+        "brightness": "Brightness"
     },
     "edl": {
         "label": "EDL",
@@ -99,7 +99,10 @@
         "projections": {
             "perspective": "Perspective",
             "orthographic": "Orthographic"
-        }
+        },
+        "pointSizeModeHelpAria": "Explain point size mode",
+        "pointSizeModeHelpAdaptive": "Adaptive: points change size automatically to make the cloud look fuller from different zoom levels.",
+        "pointSizeModeHelpFixed": "Fixed: every point uses the same screen size. Better when you want to see real point spacing or compare density."
     },
     "viewer": {
         "hideControls": "Hide controls",

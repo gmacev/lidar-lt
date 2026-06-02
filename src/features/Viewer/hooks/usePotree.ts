@@ -273,9 +273,15 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             if (colorMode === 'intensity') {
                 configureMaterialForIntensity(pointcloud, PotreeLib);
                 // Apply intensity range from URL if present
-                const intensityMax = initialStateRef.current.intensityMax;
+                const { intensityMax, ig, ib } = initialStateRef.current;
                 if (typeof intensityMax === 'number') {
                     pointcloud.material.intensityRange = [0, intensityMax];
+                }
+                if (typeof ig === 'number') {
+                    pointcloud.material.intensityGamma = ig;
+                }
+                if (typeof ib === 'number') {
+                    pointcloud.material.intensityBrightness = ib;
                 }
             } else if (colorMode === 'return-number') {
                 configureMaterialForReturnNumber(pointcloud, PotreeLib);

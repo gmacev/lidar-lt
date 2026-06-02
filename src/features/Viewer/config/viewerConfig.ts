@@ -103,6 +103,8 @@ export const ViewerStateSchema = z.object({
     // Color mode
     colorMode: ColorModeSchema.optional(),
     intensityMax: optionalSearchNumber,
+    ig: optionalSearchNumber, // intensity gamma
+    ib: optionalSearchNumber, // intensity brightness
     elevationMin: optionalSearchNumber,
     elevationMax: optionalSearchNumber,
     ep: ElevationPaletteSchema.optional(), // elevation palette

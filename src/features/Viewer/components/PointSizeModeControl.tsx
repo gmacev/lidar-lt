@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { HelpHint } from '@/common/components';
 import type { PotreeViewer, Potree } from '@/common/types/potree';
 import { POINT_APPEARANCE_DEFAULTS, type PointSizeMode } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -60,8 +61,17 @@ export function PointSizeModeControl({
 
     return (
         <div className="flex flex-col gap-1">
-            <span className="text-xs text-white/70">
+            <span className="flex items-center gap-1.5 text-xs text-white/70">
                 {translateWithFallback('pointCloud.pointSizeMode', 'Point Size Mode')}
+                <HelpHint
+                    ariaLabel={t('pointCloud.pointSizeModeHelpAria')}
+                    title={t('pointCloud.pointSizeMode')}
+                >
+                    <div className="flex flex-col gap-2">
+                        <p>{t('pointCloud.pointSizeModeHelpAdaptive')}</p>
+                        <p>{t('pointCloud.pointSizeModeHelpFixed')}</p>
+                    </div>
+                </HelpHint>
             </span>
             <div className="flex gap-1">
                 {SIZE_MODE_OPTIONS.map((option) => (

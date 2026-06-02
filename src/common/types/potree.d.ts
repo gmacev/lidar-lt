@@ -94,6 +94,8 @@ export interface PointCloudMaterial {
     activeAttributeName: string;
     elevationRange: [number, number];
     intensityRange: [number, number];
+    intensityGamma: number;
+    intensityBrightness: number;
     gradient: GradientStop[] | null;
     size: number;
     pointSizeType: PointSizeType;

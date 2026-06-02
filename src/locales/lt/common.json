@@ -38,15 +38,15 @@
         "min": "Min",
         "max": "Maks",
         "reset": "Atstatyti",
-        "palette": "Palet\u0117",
+        "palette": "Paletė",
         "palettes": {
             "custom": "Numatyta",
             "terrain": "Reljefas",
             "grayscale": "Pilka"
         },
         "contrast": "Kontrastas",
-        "bright": "Ryškus",
-        "dark": "Tamsus"
+        "gamma": "Gama",
+        "brightness": "Ryškumas"
     },
     "edl": {
         "label": "EDL",
@@ -75,7 +75,7 @@
         "pointSizeHelpAria": "Paaiškinti taškų dydį",
         "pointSizeHelp": "Keičia, kokio dydžio LiDAR taškai piešiami ekrane. Didesnė reikšmė debesį padaro tankesnį, bet gali paslėpti smulkias detales.",
         "pointShape": "Taškų forma",
-        "pointSizeMode": "Ta\u0161k\u0173 dyd\u017eio re\u017eimas",
+        "pointSizeMode": "Taškų dydžio režimas",
         "sizeModes": {
             "fixed": "Fiksuotas",
             "adaptive": "Adaptyvus"
@@ -99,7 +99,10 @@
         "projections": {
             "perspective": "Perspektyva",
             "orthographic": "Ortografinė"
-        }
+        },
+        "pointSizeModeHelpAria": "Paaiškinti taškų dydžio režimą",
+        "pointSizeModeHelpAdaptive": "Adaptyvus: taškų dydis keičiasi automatiškai, kad debesis skirtinguose priartinimuose atrodytų vientisesnis.",
+        "pointSizeModeHelpFixed": "Fiksuotas: visi taškai ekrane piešiami vienodo dydžio. Geriau, kai nori matyti tikrus tarpus tarp taškų arba lyginti tankį."
     },
     "viewer": {
         "hideControls": "Slėpti valdiklius",
