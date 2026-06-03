@@ -6,7 +6,7 @@
 export const EDL_DEFAULTS: { enabled: boolean; strength: number; radius: number } = {
     enabled: true,
     strength: 1.0,
-    radius: 0.5,
+    radius: 0.6,
 };
 
 export const PERFORMANCE_DEFAULTS = {

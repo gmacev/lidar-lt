@@ -58848,8 +58848,8 @@ Shaders["normalize_and_edl.fs"] = `
 // https://github.com/cloudcompare/trunk/tree/master/plugins/qEDL/shaders/EDL
 //
 
-precision highp float;
-precision highp int;
+precision mediump float;
+precision mediump int;
 
 uniform sampler2D uWeightMap;
 uniform sampler2D uEDLMap;
@@ -58933,8 +58933,8 @@ Shaders["edl.fs"] = `
 // https://github.com/cloudcompare/trunk/tree/master/plugins/qEDL/shaders/EDL
 //
 
-precision highp float;
-precision highp int;
+precision mediump float;
+precision mediump int;
 
 uniform float screenWidth;
 uniform float screenHeight;
