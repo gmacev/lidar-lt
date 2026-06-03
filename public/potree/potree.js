@@ -61699,6 +61699,11 @@ void main() {
 			}
 
 			if (node.isTreeNode()) {
+				if (visibleNodes.length >= maxVisibleNodes) {
+					node.sceneNode.visible = false;
+					continue;
+				}
+
 				exports.lru.touch(node.geometryNode);
 				node.sceneNode.visible = true;
 				node.sceneNode.material = pointcloud.material;
@@ -63430,6 +63435,9 @@ void main() {
 			let gl = this.gl;
 
 			let material = params.material ? params.material : octree.material;
+			if (nodes.length > maxVisibleNodes) {
+				nodes = nodes.slice(0, maxVisibleNodes);
+			}
 			let shadowMaps = params.shadowMaps == null ? [] : params.shadowMaps;
 			let view = camera.matrixWorldInverse;
 			let viewInv = camera.matrixWorld;
@@ -63453,6 +63461,9 @@ void main() {
 					material.activeAttributeName === "level of detail") {
 
 					let vnNodes = (params.vnTextureNodes != null) ? params.vnTextureNodes : nodes;
+					if (vnNodes.length > maxVisibleNodes) {
+						vnNodes = vnNodes.slice(0, maxVisibleNodes);
+					}
 					visibilityTextureData = octree.computeVisibilityTextureData(vnNodes, camera);
 
 					const vnt = material.visibleNodesTexture;
@@ -90478,6 +90489,7 @@ ENDSEC
 	console.log('Potree ' + version.major + '.' + version.minor + version.suffix);
 
 	let pointBudget = 1 * 1000 * 1000;
+	let maxVisibleNodes = 2048;
 	let framenumber = 0;
 	let numNodesLoading = 0;
 	let maxNodesLoading = 2; // Reduced to prevent OOM during Brotli decompression in workers
@@ -90778,6 +90790,7 @@ ENDSEC
 	exports.loadProject = loadProject;
 	exports.lru = lru;
 	exports.maxNodesLoading = maxNodesLoading;
+	exports.maxVisibleNodes = maxVisibleNodes;
 	exports.numNodesLoading = numNodesLoading;
 	exports.pointBudget = pointBudget;
 	exports.resourcePath = resourcePath;
