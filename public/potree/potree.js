@@ -58630,7 +58630,7 @@ void main() {
 
 `;
 
-	Shaders["pointcloud_sm.vs"] = `
+Shaders["pointcloud_sm.vs"] = `
 precision mediump float;
 precision mediump int;
 
@@ -58774,7 +58774,7 @@ void main() {
 }
 `;
 
-	Shaders["pointcloud_sm.fs"] = `
+Shaders["pointcloud_sm.fs"] = `
 precision mediump float;
 precision mediump int;
 
@@ -58840,7 +58840,7 @@ void main() {
 
 }`;
 
-	Shaders["normalize_and_edl.fs"] = `
+Shaders["normalize_and_edl.fs"] = `
 #extension GL_EXT_frag_depth : enable
 
 // 
@@ -58848,8 +58848,8 @@ void main() {
 // https://github.com/cloudcompare/trunk/tree/master/plugins/qEDL/shaders/EDL
 //
 
-precision mediump float;
-precision mediump int;
+precision highp float;
+precision highp int;
 
 uniform sampler2D uWeightMap;
 uniform sampler2D uEDLMap;
@@ -58925,7 +58925,7 @@ void main() {
 	gl_Position = projectionMatrix * mvPosition;
 }`;
 
-	Shaders["edl.fs"] = `
+Shaders["edl.fs"] = `
 #extension GL_EXT_frag_depth : enable
 
 // 
@@ -58933,8 +58933,8 @@ void main() {
 // https://github.com/cloudcompare/trunk/tree/master/plugins/qEDL/shaders/EDL
 //
 
-precision mediump float;
-precision mediump int;
+precision highp float;
+precision highp int;
 
 uniform float screenWidth;
 uniform float screenHeight;
