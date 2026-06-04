@@ -12,7 +12,6 @@ export function GlassPanel({ children, className = '', ...props }: GlassPanelPro
         rounded-lg
         border border-glass-border
         bg-glass-bg
-        backdrop-blur-xl
         p-2
         ${className}
       `}

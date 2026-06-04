@@ -53,7 +53,7 @@ export function ViewerSidebar({
                 isCollapsed ? '-translate-x-full' : 'translate-x-0'
             }`}
         >
-            <div className="flex w-80 flex-col border-r border-white/10 bg-glass-bg backdrop-blur-xl">
+            <div className="flex w-80 flex-col border-r border-white/10 bg-glass-bg">
                 <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-2 py-2">
                     <button
                         onClick={onBack}
@@ -154,7 +154,7 @@ export function ViewerSidebar({
 
             <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className={`absolute -right-4 top-1/2 flex h-24 w-4 -translate-y-1/2 items-center justify-center rounded-r-xl border-y border-r border-white/10 bg-glass-bg backdrop-blur-2xl transition-all duration-300 hover:w-6 hover:bg-white/10 group ${
+                className={`absolute -right-4 top-1/2 flex h-24 w-4 -translate-y-1/2 items-center justify-center rounded-r-xl border-y border-r border-white/10 bg-glass-bg transition-all duration-300 hover:w-6 hover:bg-white/10 group ${
                     isCollapsed ? 'opacity-100 shadow-[4px_0_15px_rgba(0,0,0,0.5)]' : 'opacity-80'
                 }`}
                 aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}

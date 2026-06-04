@@ -131,7 +131,7 @@ export function HelpHint({
                 isOpen={isOpen}
                 side={side}
                 width={width}
-                className={`rounded-lg border border-white/10 bg-void-black/90 px-3 py-2.5 text-[13px] leading-snug text-white/75 shadow-[0_18px_50px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl ${popoverClassName}`}
+                className={`rounded-lg border border-white/10 bg-void-black/90 px-3 py-2.5 text-[13px] leading-snug text-white/75 shadow-[0_18px_50px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ${popoverClassName}`}
                 onMouseEnter={open}
                 onMouseLeave={close}
             >

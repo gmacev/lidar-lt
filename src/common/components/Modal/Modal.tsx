@@ -63,14 +63,14 @@ export function Modal({
         >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/70"
                 onClick={handleBackdropClick}
                 aria-hidden="true"
             />
 
             {/* Modal container */}
             <div
-                className="relative z-10 w-full max-w-md rounded-xl border border-white/10 bg-void-black/95 shadow-2xl backdrop-blur-xl"
+                className="relative z-10 w-full max-w-md rounded-xl border border-white/10 bg-void-black/95 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
