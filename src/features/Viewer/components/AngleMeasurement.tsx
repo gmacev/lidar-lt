@@ -18,7 +18,7 @@ export function AngleMeasurement({ onClick, isActive }: AngleMeasurementProps) {
             onClick={onClick}
             className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
                 isActive
-                    ? 'bg-neon-cyan/40 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)]'
+                    ? 'bg-neon-amber/30 border-neon-amber text-neon-amber shadow-[0_0_6px_rgba(255,191,0,0.22)]'
                     : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
             }`}
             title={t('measurement.angle')}
