@@ -66387,6 +66387,41 @@ void main() {
 			this.url = url;
 		}
 
+		async loadRangeBuffer(url, first, last, expectedByteSize, priority = "auto") {
+			const expectedLength = Number(expectedByteSize);
+			const rangeHeader = `bytes=${first}-${last}`;
+			let lastError = null;
+
+			for (let attempt = 0; attempt < 3; attempt++) {
+				try {
+					let response = await fetch(url, {
+						headers: {
+							'Range': rangeHeader,
+						},
+						priority: priority,
+					});
+
+					if (response.status !== 206) {
+						throw new Error(`Expected 206 for ${url} ${rangeHeader}, received ${response.status}`);
+					}
+
+					let buffer = await response.arrayBuffer();
+					if (Number.isFinite(expectedLength) && buffer.byteLength !== expectedLength) {
+						throw new Error(`Expected ${expectedLength} bytes for ${url} ${rangeHeader}, received ${buffer.byteLength}`);
+					}
+
+					return buffer;
+				} catch (e) {
+					lastError = e;
+					if (attempt < 2) {
+						await new Promise(resolve => setTimeout(resolve, 150 * (attempt + 1)));
+					}
+				}
+			}
+
+			throw lastError;
+		}
+
 		async load(node) {
 
 			if (node.loaded || node.loading) {
@@ -66422,13 +66457,8 @@ void main() {
 					buffer = new ArrayBuffer(0);
 					console.warn(`loaded node with 0 bytes: ${node.name}`);
 				} else {
-					let response = await fetch(urlOctree, {
-						headers: {
-							'Range': `bytes=${first}-${last}`,
-						},
-					});
-
-					buffer = await response.arrayBuffer();
+					const priority = node.level <= 1 ? "high" : "auto";
+					buffer = await this.loadRangeBuffer(urlOctree, first, last, byteSize, priority);
 				}
 
 				let workerPath;
@@ -66635,15 +66665,7 @@ void main() {
 			let first = hierarchyByteOffset;
 			let last = first + hierarchyByteSize - 1n;
 
-			let response = await fetch(hierarchyPath, {
-				headers: {
-					'Range': `bytes=${first}-${last}`,
-				},
-			});
-
-
-
-			let buffer = await response.arrayBuffer();
+			let buffer = await this.loadRangeBuffer(hierarchyPath, first, last, hierarchyByteSize, "high");
 
 			this.parseHierarchy(node, buffer);
 
@@ -90586,17 +90608,6 @@ ENDSEC
 							aPosition.range[1][2],
 						];
 
-						// loaded(pointcloud);
-						resolve({ type: 'pointcloud_loaded', pointcloud: pointcloud });
-					}
-				});
-
-				OctreeLoader.load(path, function (geometry) {
-					if (!geometry) {
-						//callback({type: 'loading_failed'});
-						console.error(new Error(`failed to load point cloud from URL: ${path}`));
-					} else {
-						let pointcloud = new PointCloudOctree(geometry);
 						// loaded(pointcloud);
 						resolve({ type: 'pointcloud_loaded', pointcloud: pointcloud });
 					}
