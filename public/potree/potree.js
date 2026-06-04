@@ -81448,16 +81448,28 @@ ENDSEC
 
 			e.preventDefault();
 
-			let delta = 0;
-			if (e.wheelDelta !== undefined) { // WebKit / Opera / Explorer 9
-				delta = e.wheelDelta;
+			let ndelta = 0;
+			if (e.deltaY !== undefined) {
+				let modeScale = 1;
+				if (e.deltaMode === 1) {
+					modeScale = 40;
+				} else if (e.deltaMode === 2) {
+					modeScale = this.domElement.clientHeight;
+				}
+				ndelta = (-e.deltaY * modeScale) / 120;
+			} else if (e.wheelDelta !== undefined) { // WebKit / Opera / Explorer 9
+				ndelta = e.wheelDelta / 120;
 			} else if (e.detail !== undefined) { // Firefox
-				delta = -e.detail;
+				ndelta = -e.detail / 3;
 			}
 
-			let ndelta = Math.sign(delta);
+			if (!Number.isFinite(ndelta) || ndelta === 0) {
+				return;
+			}
 
-			// this.wheelDelta += Math.sign(delta);
+			// Preserve high-resolution trackpad movement instead of turning every
+			// tiny delta into a full mouse-wheel notch.
+			ndelta = Math.max(-4, Math.min(4, ndelta));
 
 			if (this.hoveredElement) {
 				this.hoveredElement.object.dispatchEvent({
