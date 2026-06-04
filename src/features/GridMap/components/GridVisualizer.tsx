@@ -9,6 +9,7 @@ import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
 
 const GRID_SOURCE_ID = 'lidar-grid';
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+const DARK_WATER_COLOR = '#2b8cff';
 
 const darkenLibertyStyle = (style: StyleSpecification): StyleSpecification => ({
     ...style,
@@ -21,17 +22,33 @@ const darkenLibertyStyle = (style: StyleSpecification): StyleSpecification => ({
         }
 
         if (layer.type === 'fill') {
-            if (id.includes('water')) {
-                Object.assign(paint, { 'fill-color': '#123a78', 'fill-opacity': 0.52 });
+            if (id.includes('building')) {
+                Object.assign(paint, {
+                    'fill-color': '#131715',
+                    'fill-outline-color': '#2b332f',
+                    'fill-opacity': 0.72,
+                });
+            } else if (id.includes('road')) {
+                Object.assign(paint, { 'fill-color': '#1b1711', 'fill-opacity': 0.36 });
+            } else if (id.includes('water')) {
+                Object.assign(paint, { 'fill-color': DARK_WATER_COLOR, 'fill-opacity': 0.58 });
             } else if (
                 id.includes('park') ||
                 id.includes('wood') ||
                 id.includes('grass') ||
                 id.includes('landcover')
             ) {
-                Object.assign(paint, { 'fill-color': '#153d1b', 'fill-opacity': 0.42 });
+                Object.assign(paint, {
+                    'fill-color': '#0b2410',
+                    'fill-outline-color': '#1f6a2a',
+                    'fill-opacity': 0.62,
+                });
             } else if (id.includes('landuse')) {
-                Object.assign(paint, { 'fill-color': '#11150f', 'fill-opacity': 0.46 });
+                Object.assign(paint, {
+                    'fill-color': '#0f150d',
+                    'fill-outline-color': '#1c2419',
+                    'fill-opacity': 0.72,
+                });
             } else {
                 Object.assign(paint, { 'fill-color': '#0d100c' });
             }
@@ -39,9 +56,9 @@ const darkenLibertyStyle = (style: StyleSpecification): StyleSpecification => ({
 
         if (layer.type === 'line') {
             if (id.includes('water')) {
-                Object.assign(paint, { 'line-color': '#24598f', 'line-opacity': 0.58 });
+                Object.assign(paint, { 'line-color': DARK_WATER_COLOR, 'line-opacity': 0.98 });
             } else if (id.includes('road') || id.includes('highway') || id.includes('rail')) {
-                Object.assign(paint, { 'line-color': '#754719', 'line-opacity': 0.6 });
+                Object.assign(paint, { 'line-color': '#3e3325', 'line-opacity': 0.28 });
             } else if (id.includes('boundary')) {
                 Object.assign(paint, { 'line-color': '#6f756e', 'line-opacity': 0.56 });
             } else {
@@ -57,9 +74,16 @@ const darkenLibertyStyle = (style: StyleSpecification): StyleSpecification => ({
             });
         }
 
+        if (layer.type === 'fill-extrusion' && id.includes('building')) {
+            Object.assign(paint, {
+                'fill-extrusion-color': '#18201d',
+                'fill-extrusion-opacity': 0.42,
+            });
+        }
+
         if (layer.type === 'raster') {
             Object.assign(paint, {
-                'raster-opacity': 0.15,
+                'raster-opacity': 0,
                 'raster-saturation': -0.6,
                 'raster-brightness-max': 0.35,
             });
