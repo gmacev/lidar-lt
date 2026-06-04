@@ -8,7 +8,8 @@
     "home": {
         "title": "LITHUANIA LIDAR MAP",
         "subtitle": "Select a sector to view",
-        "footer": "Data source: geoportal.lt"
+        "footer": "Data source: geoportal.lt",
+        "mapAttribution": "OpenFreeMap © OpenMapTiles Data from OpenStreetMap"
     },
     "sidebar": {
         "visualization": "Visualization",

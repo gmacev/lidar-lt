@@ -13,7 +13,6 @@ import {
     type ElevationPalette,
 } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
-import { getPointSizeModeEnumValue } from '@/features/Viewer/utils/pointSizeModeUtils';
 
 type ElevationRangeMode = 'auto' | 'manual';
 
@@ -95,6 +94,9 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         if (!viewer?.scene?.pointclouds?.length || !PotreeLib) return;
 
         const pointcloud = viewer.scene.pointclouds[0];
+        const currentPointSize = pointcloud.material.size;
+        const currentPointSizeType = pointcloud.material.pointSizeType;
+        const currentPointShape = pointcloud.material.shape;
 
         if (mode === 'elevation') {
             configureMaterialForElevation(pointcloud, PotreeLib, {
@@ -115,10 +117,11 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
             configureMaterialForReturnNumber(pointcloud, PotreeLib);
         }
 
-        pointcloud.material.pointSizeType = getPointSizeModeEnumValue(
-            initialState.psm ?? 'adaptive',
-            PotreeLib
-        );
+        pointcloud.material.size = currentPointSize;
+        pointcloud.material.pointSizeType = currentPointSizeType;
+        pointcloud.material.shape = currentPointShape;
+        pointcloud.material.needsUpdate = true;
+
         setColorMode(mode);
         updateUrl({ colorMode: mode });
     };

@@ -28,7 +28,7 @@ function HomePage() {
                 </main>
 
                 <footer className="shrink-0 border-t border-glass-border p-2 text-center text-xs text-white/30">
-                    {t('home.footer')}
+                    {t('home.footer')} · {t('home.mapAttribution')}
                 </footer>
             </div>
         </>
