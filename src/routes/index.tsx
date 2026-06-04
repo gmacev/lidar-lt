@@ -14,11 +14,23 @@ function HomePage() {
         <>
             <SEOHead title={t('seo.homeTitle')} description={t('seo.homeDescription')} path="/" />
             <div className="flex h-screen flex-col overflow-hidden bg-void-black">
-                <header className="shrink-0 border-b border-glass-border p-4">
-                    <h1 className="text-center text-2xl font-bold tracking-widest text-neon-amber">
-                        {t('home.title')}
-                    </h1>
-                    <p className="text-center text-sm text-white/40">{t('home.subtitle')}</p>
+                <header className="flex shrink-0 justify-center border-b border-glass-border p-4">
+                    <div className="flex max-w-full items-center justify-center gap-3 sm:gap-4">
+                        <img
+                            src="/lidar-icon.svg"
+                            alt=""
+                            aria-hidden="true"
+                            className="size-10 shrink-0 sm:size-12"
+                        />
+                        <div className="min-w-0">
+                            <h1 className="text-center text-lg font-bold tracking-widest text-neon-amber sm:text-2xl">
+                                {t('home.title')}
+                            </h1>
+                            <p className="text-center text-sm text-white/40">
+                                {t('home.subtitle')}
+                            </p>
+                        </div>
+                    </div>
                 </header>
 
                 <main className="min-h-0 flex-1">
