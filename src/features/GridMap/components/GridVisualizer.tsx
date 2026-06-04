@@ -170,17 +170,17 @@ export function GridVisualizer() {
             'fill-color': [
                 'case',
                 ['boolean', ['feature-state', 'matched'], false],
-                '#00ff66', // Matched: Neon Green
+                '#ff5a00', // Matched: Neon Orange
                 ['boolean', ['feature-state', 'hover'], false],
-                '#0066ff', // Hover: Neon Blue
+                '#d28a24', // Hover: Amber
                 '#000000', // Default: Black
             ],
             'fill-opacity': [
                 'case',
                 ['boolean', ['feature-state', 'matched'], false],
-                0.9, // Matched opacity
+                0.92, // Matched opacity
                 ['boolean', ['feature-state', 'hover'], false],
-                0.24, // Hover opacity
+                0.38, // Hover opacity
                 0, // Default: Invisible
             ],
         },
@@ -190,9 +190,9 @@ export function GridVisualizer() {
         id: 'grid-line',
         type: 'line',
         paint: {
-            'line-color': '#008899',
+            'line-color': '#b8842a',
             'line-width': 1,
-            'line-opacity': 0.52,
+            'line-opacity': 0.45,
         },
     };
 
