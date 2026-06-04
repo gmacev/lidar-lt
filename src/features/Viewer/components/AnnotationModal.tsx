@@ -77,7 +77,7 @@ export function AnnotationModal({ onClose, onConfirm }: ModalContentProps<Annota
                     <button
                         type="submit"
                         disabled={!isValid}
-                        className="rounded-lg border border-neon-cyan/30 bg-neon-cyan/20 px-4 py-2 text-sm font-medium text-neon-cyan transition-all hover:bg-neon-cyan/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-neon-cyan/20"
+                        className="rounded-lg border border-neon-cyan/30 bg-neon-cyan/20 px-4 py-2 text-sm font-medium text-neon-cyan transition-all hover:bg-neon-cyan/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-neon-cyan/20"
                     >
                         {t('annotation.save')}
                     </button>

@@ -274,13 +274,13 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             />
 
             {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-void-black/80">
+                <div className="absolute inset-0 flex items-center justify-center bg-void-black/90">
                     <DataLoader message={t('viewer.loading')} />
                 </div>
             )}
 
             {error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-void-black/80">
+                <div className="absolute inset-0 flex items-center justify-center bg-void-black/90">
                     <GlassPanel className="max-w-md text-center">
                         <p className="text-plasma-red mb-4">
                             {t('viewer.error')}: {error}
@@ -313,7 +313,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         <LanguageSwitcher />
                         <button
                             onClick={() => setUiVisible(!uiVisible)}
-                            className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-void-black/60 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10"
+                            className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-void-black/90 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10"
                             title={uiVisible ? t('viewer.hideControls') : t('viewer.showControls')}
                         >
                             <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
@@ -489,7 +489,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             {!uiVisible && (
                 <button
                     onClick={() => setUiVisible(!uiVisible)}
-                    className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-neon-cyan/30 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)] xl:right-4 xl:top-4"
+                    className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-neon-cyan/40 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)] xl:right-4 xl:top-4"
                     title={t('viewer.showControls')}
                 >
                     <Icon name="eye" size={20} />

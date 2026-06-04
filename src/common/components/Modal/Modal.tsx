@@ -63,7 +63,7 @@ export function Modal({
         >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/70"
+                className="absolute inset-0 bg-black/85"
                 onClick={handleBackdropClick}
                 aria-hidden="true"
             />

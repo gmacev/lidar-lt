@@ -25,7 +25,7 @@ export function GridSearchControl({
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={t('search.gridPlaceholder')}
-                        className="w-full rounded border border-neon-cyan/30 bg-black/60 px-3 py-1.5 text-sm text-neon-cyan placeholder-gray-500 transition-colors focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan"
+                        className="w-full rounded border border-neon-cyan/30 bg-black/80 px-3 py-1.5 text-sm text-neon-cyan placeholder-gray-500 transition-colors focus:border-neon-cyan focus:outline-none focus:ring-1 focus:ring-neon-cyan"
                     />
                     {value && (
                         <button

@@ -31,7 +31,7 @@ export function FpsCounter() {
     return (
         <div
             ref={labelRef}
-            className="pointer-events-none absolute bottom-3 left-[20.5rem] z-20 rounded border border-white/10 bg-black/45 px-1.5 py-0.5 font-mono text-[10px] leading-none text-white/45"
+            className="pointer-events-none absolute bottom-3 left-[20.5rem] z-20 rounded border border-white/10 bg-black/75 px-1.5 py-0.5 font-mono text-[10px] leading-none text-white/45"
         >
             -- FPS
         </div>

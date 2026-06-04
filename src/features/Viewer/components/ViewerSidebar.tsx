@@ -160,7 +160,7 @@ export function ViewerSidebar({
                 aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
                 <div className="flex flex-col items-center gap-0.5">
-                    <div className="h-4 w-0.5 rounded-full bg-white/10 transition-colors group-hover:bg-neon-cyan/30" />
+                    <div className="h-4 w-0.5 rounded-full bg-white/10 transition-colors group-hover:bg-neon-cyan/40" />
                     <Icon
                         name={isCollapsed ? 'chevronRight' : 'chevronLeft'}
                         size={12}
@@ -168,7 +168,7 @@ export function ViewerSidebar({
                             isCollapsed ? 'translate-x-0.5' : ''
                         }`}
                     />
-                    <div className="h-4 w-0.5 rounded-full bg-white/10 transition-colors group-hover:bg-neon-cyan/30" />
+                    <div className="h-4 w-0.5 rounded-full bg-white/10 transition-colors group-hover:bg-neon-cyan/40" />
                 </div>
             </button>
         </div>
