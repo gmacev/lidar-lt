@@ -44,6 +44,12 @@ body,
     border-top-color: rgba(255, 184, 0, 0.5) !important;
 }
 
+.grid-map .maplibregl-canvas,
+.grid-map canvas {
+    background: #111111;
+    filter: invert(0.9) hue-rotate(180deg) saturate(1.02) contrast(1.24) brightness(0.7) !important;
+}
+
 /* Custom Scrollbar Styling */
 .custom-scrollbar {
     scrollbar-width: thin;

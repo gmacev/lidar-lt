@@ -6,6 +6,7 @@ import { GridSearchControl } from './GridSearchControl';
 import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
 
 const GRID_SOURCE_ID = 'lidar-grid';
+const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 export function GridVisualizer() {
     const { t } = useTranslation();
@@ -27,9 +28,9 @@ export function GridVisualizer() {
             'fill-opacity': [
                 'case',
                 ['boolean', ['feature-state', 'matched'], false],
-                0.5, // Matched opacity
+                0.42, // Matched opacity
                 ['boolean', ['feature-state', 'hover'], false],
-                0.3, // Hover opacity
+                0.24, // Hover opacity
                 0, // Default: Invisible
             ],
         },
@@ -39,9 +40,9 @@ export function GridVisualizer() {
         id: 'grid-line',
         type: 'line',
         paint: {
-            'line-color': '#00f3ff',
+            'line-color': '#008899',
             'line-width': 1,
-            'line-opacity': 0.2,
+            'line-opacity': 0.52,
         },
     };
 
@@ -51,7 +52,7 @@ export function GridVisualizer() {
     const totalCount = data.features.length;
 
     return (
-        <div className="relative h-full w-full">
+        <div className="grid-map relative h-full w-full">
             <GridSearchControl
                 value={search.query}
                 onChange={search.setQuery}
@@ -72,7 +73,7 @@ export function GridVisualizer() {
                     zoom: 6.5,
                 }}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+                mapStyle={MAP_STYLE_URL}
                 interactiveLayerIds={['grid-fill']}
                 onClick={handlers.onClick}
                 onMouseMove={handlers.onMouseMove}
