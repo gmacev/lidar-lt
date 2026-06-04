@@ -178,7 +178,7 @@ export function GridVisualizer() {
             'fill-opacity': [
                 'case',
                 ['boolean', ['feature-state', 'matched'], false],
-                0.92, // Matched opacity
+                0.46, // Matched opacity
                 ['boolean', ['feature-state', 'hover'], false],
                 0.38, // Hover opacity
                 0, // Default: Invisible
@@ -192,7 +192,22 @@ export function GridVisualizer() {
         paint: {
             'line-color': '#b8842a',
             'line-width': 1,
-            'line-opacity': 0.45,
+            'line-opacity': search.matchedIds.size > 0 ? 0.18 : 0.32,
+        },
+    };
+
+    const matchedLineLayer: LayerProps = {
+        id: 'grid-matched-line',
+        type: 'line',
+        paint: {
+            'line-color': [
+                'case',
+                ['boolean', ['feature-state', 'matched'], false],
+                '#ffb347',
+                'rgba(0, 0, 0, 0)',
+            ],
+            'line-width': ['case', ['boolean', ['feature-state', 'matched'], false], 2, 0],
+            'line-opacity': ['case', ['boolean', ['feature-state', 'matched'], false], 0.82, 0],
         },
     };
 
@@ -233,6 +248,7 @@ export function GridVisualizer() {
                 <Source id={GRID_SOURCE_ID} type="geojson" data={data} promoteId="id">
                     <Layer {...fillLayer} />
                     <Layer {...lineLayer} />
+                    <Layer {...matchedLineLayer} />
                 </Source>
             </Map>
 
