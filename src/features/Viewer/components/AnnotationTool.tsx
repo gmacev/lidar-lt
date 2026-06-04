@@ -53,7 +53,7 @@ export function AnnotationTool({
                 anchorRef={buttonRef}
                 isOpen={isPanelOpen}
                 width={280}
-                className="flex flex-col gap-2 rounded-lg border border-white/10 bg-void-black/90 p-3"
+                className="flex flex-col gap-2 rounded-lg border border-white/10 bg-glass-bg p-3"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -160,7 +160,7 @@ export function AnnotationTool({
                 className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
                     isPanelOpen || isPlacing
                         ? 'bg-neon-amber/30 border-neon-amber text-neon-amber shadow-[0_0_12px_rgba(255,191,0,0.3)]'
-                        : 'bg-void-black/90 border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-white/10'
+                        : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
                 }`}
                 title={t('annotation.annotations')}
             >

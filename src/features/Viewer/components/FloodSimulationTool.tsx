@@ -80,7 +80,7 @@ export function FloodSimulationTool({
                 anchorRef={buttonRef}
                 isOpen={isActive}
                 width={220}
-                className="flex flex-col gap-3 rounded-lg border border-white/10 bg-void-black/90 p-3"
+                className="flex flex-col gap-3 rounded-lg border border-white/10 bg-glass-bg p-3"
             >
                 {/* Header row */}
                 <div className="flex items-center justify-between">
@@ -139,7 +139,7 @@ export function FloodSimulationTool({
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => onPrecisionChange(Math.max(0.01, precision / 2))}
-                            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-black/95 transition-all"
                             title={t('flood.decreaseStep')}
                         >
                             <Icon name="minus" size={10} strokeWidth={3} />
@@ -154,7 +154,7 @@ export function FloodSimulationTool({
                         </span>
                         <button
                             onClick={() => onPrecisionChange(Math.min(100, precision * 2))}
-                            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-black/95 transition-all"
                             title={t('flood.increaseStep')}
                         >
                             <Icon name="plus" size={10} strokeWidth={3} />
@@ -170,7 +170,7 @@ export function FloodSimulationTool({
                 className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
                     isActive
                         ? 'bg-blue-500/30 border-blue-400 text-blue-300 shadow-[0_0_12px_rgba(0,136,255,0.3)]'
-                        : 'bg-void-black/90 border-white/10 text-white/70 hover:text-blue-300 hover:border-blue-400/50 hover:bg-white/10'
+                        : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
                 }`}
                 title={isActive ? t('flood.simulationActive') : t('flood.simulation')}
             >

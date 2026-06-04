@@ -26,7 +26,6 @@ import type { MeasurementType } from '@/features/Viewer/types/measurement';
 import { ViewerSidebar } from './ViewerSidebar';
 import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
-import { FpsCounter } from './FpsCounter';
 import { GoogleMapsButton } from './GoogleMapsButton';
 import { RecenterButton } from './RecenterButton';
 
@@ -306,14 +305,12 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         </div>
                     )}
 
-                    {!isLoading && !error && <FpsCounter />}
-
                     {/* Language switcher, UI toggle, and Controls - top right corner */}
                     <div className="absolute right-2 top-2 flex items-start gap-2 xl:right-4 xl:top-4">
                         <LanguageSwitcher />
                         <button
                             onClick={() => setUiVisible(!uiVisible)}
-                            className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-void-black/90 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10"
+                            className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95"
                             title={uiVisible ? t('viewer.hideControls') : t('viewer.showControls')}
                         >
                             <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
@@ -489,7 +486,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             {!uiVisible && (
                 <button
                     onClick={() => setUiVisible(!uiVisible)}
-                    className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-neon-cyan/40 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)] xl:right-4 xl:top-4"
+                    className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95 xl:right-4 xl:top-4"
                     title={t('viewer.showControls')}
                 >
                     <Icon name="eye" size={20} />

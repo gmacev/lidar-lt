@@ -51,7 +51,7 @@ export function GoogleMapsButton({ viewerRef }: GoogleMapsButtonProps) {
             className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
                 copied
                     ? 'bg-neon-green/30 border-neon-green text-neon-green shadow-[0_0_12px_rgba(0,255,0,0.3)]'
-                    : 'bg-void-black/90 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10'
+                    : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
             }`}
             title={copied ? t('googleMaps.copied') : t('googleMaps.copyLink')}
         >

@@ -31,7 +31,7 @@ export function AreaMeasurement({ onClick, isActive, totalArea }: AreaMeasuremen
         <div className="flex items-center gap-1">
             {/* Total area display - only show when there are measurements */}
             {totalArea > 0 && (
-                <div className="flex h-10 items-center px-3 rounded-lg bg-void-black/90 border border-white/10 text-white/90 text-sm font-medium">
+                <div className="flex h-10 items-center px-3 rounded-lg bg-glass-bg border border-white/10 text-white/90 text-sm font-medium">
                     <span className="text-white/50 mr-1.5">A</span>
                     {formatArea(totalArea)}
                 </div>
@@ -42,7 +42,7 @@ export function AreaMeasurement({ onClick, isActive, totalArea }: AreaMeasuremen
                 className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
                     isActive
                         ? 'bg-neon-cyan/40 border-neon-cyan text-neon-cyan shadow-[0_0_12px_rgba(0,255,255,0.3)]'
-                        : 'bg-void-black/90 border-white/10 text-white/70 hover:text-neon-cyan hover:border-neon-cyan/50 hover:bg-white/10'
+                        : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
                 }`}
                 title={t('measurement.area')}
             >
