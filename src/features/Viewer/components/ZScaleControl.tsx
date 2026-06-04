@@ -5,6 +5,7 @@ import type { PotreeViewer } from '@/common/types/potree';
 import { Z_SCALE_DEFAULTS } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { updateElevationRangeForZScale } from '@/features/Viewer/config/potreeMaterialConfig';
+import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 
 interface ZScaleControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -15,6 +16,7 @@ interface ZScaleControlProps {
 export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleControlProps) {
     const { t } = useTranslation();
     const [zScale, setZScale] = useState(initialState.zScale ?? Z_SCALE_DEFAULTS.scale);
+    const commitZScale = useCommittedRange(zScale, (scale) => updateUrl({ zScale: scale }));
 
     const handleZScaleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const scale = parseFloat(e.target.value);
@@ -32,7 +34,6 @@ export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleCont
                 updateElevationRangeForZScale(pointcloud, scale);
             }
         }
-        updateUrl({ zScale: scale });
     };
 
     return (
@@ -56,6 +57,7 @@ export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleCont
                 step="0.1"
                 value={zScale}
                 onChange={handleZScaleChange}
+                {...commitZScale}
                 className="w-full accent-laser-green"
             />
         </div>

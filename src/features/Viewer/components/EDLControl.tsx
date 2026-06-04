@@ -5,6 +5,7 @@ import { HelpHint, Icon } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { EDL_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 
 interface EDLControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -19,6 +20,12 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
         initialState.edlStrength ?? EDL_DEFAULTS.strength
     );
     const [edlRadius, setEdlRadius] = useState(initialState.edlRadius ?? EDL_DEFAULTS.radius);
+    const commitEdlStrength = useCommittedRange(edlStrength, (value) =>
+        updateUrl({ edlStrength: value })
+    );
+    const commitEdlRadius = useCommittedRange(edlRadius, (value) =>
+        updateUrl({ edlRadius: value })
+    );
 
     const handleStrengthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value);
@@ -27,7 +34,6 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
         if (viewer) {
             viewer.setEDLStrength(value);
         }
-        updateUrl({ edlStrength: value });
     };
 
     const handleRadiusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +43,6 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
         if (viewer) {
             viewer.setEDLRadius(value);
         }
-        updateUrl({ edlRadius: value });
     };
 
     return (
@@ -85,6 +90,7 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
                     step="0.1"
                     value={edlStrength}
                     onChange={handleStrengthChange}
+                    {...commitEdlStrength}
                     disabled={!edlEnabled}
                     className="w-full accent-laser-green disabled:cursor-not-allowed"
                 />
@@ -106,6 +112,7 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
                     step="0.1"
                     value={edlRadius}
                     onChange={handleRadiusChange}
+                    {...commitEdlRadius}
                     disabled={!edlEnabled}
                     className="w-full accent-laser-green disabled:cursor-not-allowed"
                 />

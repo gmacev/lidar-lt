@@ -82,11 +82,16 @@ body,
     --range-thumb-size: 18px;
     --range-thumb-fill: #4f4f5f;
     --range-thumb-border: rgba(255, 255, 255, 0.92);
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
     pointer-events: none;
 }
 
 .range-thumb::-webkit-slider-runnable-track {
+    height: 18px;
     background: transparent;
+    border: 0;
 }
 
 .range-thumb::-webkit-slider-thumb {
@@ -94,6 +99,7 @@ body,
     width: var(--range-thumb-size);
     height: var(--range-thumb-size);
     appearance: none;
+    -webkit-appearance: none;
     border: 2px solid var(--range-thumb-border);
     border-radius: 9999px;
     background: var(--range-thumb-fill);
@@ -102,7 +108,14 @@ body,
 }
 
 .range-thumb::-moz-range-track {
+    height: 18px;
     background: transparent;
+    border: 0;
+}
+
+.range-thumb::-moz-range-progress {
+    background: transparent;
+    border: 0;
 }
 
 .range-thumb::-moz-range-thumb {

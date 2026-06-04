@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { PERFORMANCE_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 
 interface FOVControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -14,6 +15,7 @@ interface FOVControlProps {
 export function FOVControl({ viewerRef, initialState, updateUrl, disabled }: FOVControlProps) {
     const { t } = useTranslation();
     const [fov, setFov] = useState<number>(initialState.fov ?? PERFORMANCE_DEFAULTS.fov);
+    const commitFov = useCommittedRange(fov, (value) => updateUrl({ fov: value }));
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseInt(e.target.value, 10);
@@ -23,7 +25,6 @@ export function FOVControl({ viewerRef, initialState, updateUrl, disabled }: FOV
         if (viewer) {
             viewer.setFOV(value);
         }
-        updateUrl({ fov: value });
     };
 
     return (
@@ -41,6 +42,7 @@ export function FOVControl({ viewerRef, initialState, updateUrl, disabled }: FOV
                 step="5"
                 value={fov}
                 onChange={handleChange}
+                {...commitFov}
                 disabled={disabled}
                 className="w-full accent-laser-green"
             />

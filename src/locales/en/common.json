@@ -80,6 +80,11 @@
             "fixed": "Fixed",
             "adaptive": "Adaptive"
         },
+        "pointQuality": "Point Quality",
+        "qualities": {
+            "standard": "Standard",
+            "high": "High"
+        },
         "pointShape": "Point Shape",
         "shapes": {
             "square": "Squares",

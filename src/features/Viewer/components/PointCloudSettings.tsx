@@ -5,6 +5,7 @@ import { PointSizeControl } from './PointSizeControl';
 import { PointSizeModeControl } from './PointSizeModeControl';
 import { PointBudgetControl } from './PointBudgetControl';
 import { NodeSizeControl } from './NodeSizeControl';
+import { PointQualityControl } from './PointQualityControl';
 import { PointShapeControl } from './PointShapeControl';
 import { ZScaleControl } from './ZScaleControl';
 
@@ -21,6 +22,11 @@ export function PointCloudSettings({
 }: PointCloudSettingsProps) {
     return (
         <div className="flex flex-col gap-3">
+            <PointQualityControl
+                viewerRef={viewerRef}
+                initialState={initialState}
+                updateUrl={updateUrl}
+            />
             <PointShapeControl
                 viewerRef={viewerRef}
                 initialState={initialState}

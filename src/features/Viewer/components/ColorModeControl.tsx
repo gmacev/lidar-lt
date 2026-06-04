@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer, Potree } from '@/common/types/potree';
 import {
@@ -13,10 +13,12 @@ import {
     type ElevationPalette,
 } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 
 type ElevationRangeMode = 'auto' | 'manual';
 
 const ELEVATION_PALETTES: ElevationPalette[] = ['custom', 'terrain', 'grayscale'];
+const COMMIT_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']);
 
 const ELEVATION_PALETTE_GRADIENTS: Record<ElevationPalette, string> = {
     custom: 'linear-gradient(to right,#440154 0%,#31688e 30%,#35b779 58%,#fde725 78%,#ff9800 90%,#ff2600 100%)',
@@ -86,6 +88,23 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
               }
             : null
     );
+    const elevationRangeRef = useRef<ElevationRangeState | null>(elevationRange);
+    const lastCommittedElevationRangeRef = useRef<[number, number] | null>(
+        elevationRange?.range ?? null
+    );
+    const commitIntensityMax = useCommittedRange(intensityMax, (value) =>
+        updateUrl({ intensityMax: value })
+    );
+    const commitIntensityGamma = useCommittedRange(intensityGamma, (value) =>
+        updateUrl({ ig: value })
+    );
+    const commitIntensityBrightness = useCommittedRange(intensityBrightness, (value) =>
+        updateUrl({ ib: value })
+    );
+
+    useEffect(() => {
+        elevationRangeRef.current = elevationRange;
+    }, [elevationRange]);
 
     const handleModeChange = (mode: ColorMode) => {
         const viewer = viewerRef.current;
@@ -198,8 +217,6 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         const material = viewer.scene.pointclouds[0].material;
         material.intensityRange = [0, maxVal];
         material.needsUpdate = true;
-
-        updateUrl({ intensityMax: maxVal });
     };
 
     const handleIntensityGammaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,8 +229,6 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         const material = viewer.scene.pointclouds[0].material;
         material.intensityGamma = value;
         material.needsUpdate = true;
-
-        updateUrl({ ig: value });
     };
 
     const handleIntensityBrightnessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,11 +241,32 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         const material = viewer.scene.pointclouds[0].material;
         material.intensityBrightness = value;
         material.needsUpdate = true;
-
-        updateUrl({ ib: value });
     };
 
-    const applyManualElevationRange = (range: [number, number]) => {
+    const commitElevationRangeUrl = () => {
+        const range = elevationRangeRef.current?.range;
+        if (!range) return;
+
+        const lastCommitted = lastCommittedElevationRangeRef.current;
+        if (
+            lastCommitted &&
+            Object.is(lastCommitted[0], range[0]) &&
+            Object.is(lastCommitted[1], range[1])
+        ) {
+            return;
+        }
+
+        lastCommittedElevationRangeRef.current = [range[0], range[1]];
+        updateUrl({ elevationMin: range[0], elevationMax: range[1] });
+    };
+
+    const handleElevationRangeKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (COMMIT_KEYS.has(event.key)) {
+            commitElevationRangeUrl();
+        }
+    };
+
+    const applyManualElevationRange = (range: [number, number], commitUrl = true) => {
         setElevationRange((previous) => ({
             range,
             bounds: previous?.bounds ?? range,
@@ -242,7 +278,10 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
             setManualElevationRange(pointcloud, range);
         }
 
-        updateUrl({ elevationMin: range[0], elevationMax: range[1] });
+        if (commitUrl) {
+            lastCommittedElevationRangeRef.current = [range[0], range[1]];
+            updateUrl({ elevationMin: range[0], elevationMax: range[1] });
+        }
     };
 
     const handleElevationModeChange = (mode: ElevationRangeMode) => {
@@ -286,7 +325,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
             return;
         }
 
-        applyManualElevationRange(nextRange);
+        applyManualElevationRange(nextRange, false);
     };
 
     const handleResetElevationRange = () => {
@@ -422,6 +461,10 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                     onChange={(event) =>
                                         handleElevationRangeSliderChange(0, event.target.value)
                                     }
+                                    onBlur={commitElevationRangeUrl}
+                                    onKeyUp={handleElevationRangeKeyUp}
+                                    onPointerCancel={commitElevationRangeUrl}
+                                    onPointerUp={commitElevationRangeUrl}
                                     className="range-thumb absolute inset-x-0 top-1/2 w-full -translate-y-1/2 bg-transparent accent-laser-green"
                                 />
                                 <input
@@ -434,6 +477,10 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                     onChange={(event) =>
                                         handleElevationRangeSliderChange(1, event.target.value)
                                     }
+                                    onBlur={commitElevationRangeUrl}
+                                    onKeyUp={handleElevationRangeKeyUp}
+                                    onPointerCancel={commitElevationRangeUrl}
+                                    onPointerUp={commitElevationRangeUrl}
                                     className="range-thumb absolute inset-x-0 top-1/2 w-full -translate-y-1/2 bg-transparent accent-laser-green"
                                 />
                             </div>
@@ -472,6 +519,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         step="50"
                         value={intensityMax}
                         onChange={handleIntensityRangeChange}
+                        {...commitIntensityMax}
                         className="w-full accent-laser-green"
                     />
                     <label className="flex justify-between text-xs text-white/70">
@@ -485,6 +533,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         step="0.05"
                         value={intensityGamma}
                         onChange={handleIntensityGammaChange}
+                        {...commitIntensityGamma}
                         className="w-full accent-laser-green"
                     />
 
@@ -499,6 +548,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         step="0.05"
                         value={intensityBrightness}
                         onChange={handleIntensityBrightnessChange}
+                        {...commitIntensityBrightness}
                         className="w-full accent-laser-green"
                     />
                 </div>

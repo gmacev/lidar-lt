@@ -4,6 +4,7 @@ import { HelpHint } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { PERFORMANCE_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 
 interface NodeSizeControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -16,6 +17,7 @@ export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSize
     const [minNodeSize, setMinNodeSize] = useState<number>(
         initialState.mns ?? PERFORMANCE_DEFAULTS.minNodeSize
     );
+    const commitMinNodeSize = useCommittedRange(minNodeSize, (size) => updateUrl({ mns: size }));
 
     const handleNodeSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const size = parseInt(e.target.value, 10);
@@ -26,7 +28,6 @@ export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSize
         if (viewer) {
             viewer.setMinNodeSize(size);
         }
-        updateUrl({ mns: size });
     };
 
     return (
@@ -50,6 +51,7 @@ export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSize
                 step="5"
                 value={minNodeSize}
                 onChange={handleNodeSizeChange}
+                {...commitMinNodeSize}
                 className="w-full accent-laser-green dir-rtl"
             />
         </div>

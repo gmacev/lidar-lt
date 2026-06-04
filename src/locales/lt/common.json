@@ -81,6 +81,11 @@
             "fixed": "Fiksuotas",
             "adaptive": "Adaptyvus"
         },
+        "pointQuality": "Taškų kokybė",
+        "qualities": {
+            "standard": "Standartinė",
+            "high": "Aukšta"
+        },
         "shapes": {
             "square": "Kvadratai",
             "circle": "Apskritimai",

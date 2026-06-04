@@ -4,6 +4,7 @@ import { HelpHint } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { POINT_SIZE_DEFAULTS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 
 interface PointSizeControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -14,6 +15,7 @@ interface PointSizeControlProps {
 export function PointSizeControl({ viewerRef, initialState, updateUrl }: PointSizeControlProps) {
     const { t } = useTranslation();
     const [pointSize, setPointSize] = useState(initialState.ps ?? POINT_SIZE_DEFAULTS.size);
+    const commitPointSize = useCommittedRange(pointSize, (size) => updateUrl({ ps: size }));
 
     const handlePointSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const size = parseFloat(e.target.value);
@@ -28,7 +30,6 @@ export function PointSizeControl({ viewerRef, initialState, updateUrl }: PointSi
                 material.size = size;
             }
         }
-        updateUrl({ ps: size });
     };
 
     return (
@@ -52,6 +53,7 @@ export function PointSizeControl({ viewerRef, initialState, updateUrl }: PointSi
                 step="0.1"
                 value={pointSize}
                 onChange={handlePointSizeChange}
+                {...commitPointSize}
                 className="w-full accent-laser-green"
             />
         </div>

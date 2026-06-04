@@ -300,7 +300,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             }
 
             // Apply URL state overrides for rendering settings
-            const { ps, psm, mns, pb, fov, edlEnabled, edlStrength, edlRadius, psh, zScale } =
+            const { ps, psm, pq, mns, pb, fov, edlEnabled, edlStrength, edlRadius, psh, zScale } =
                 initialStateRef.current;
 
             // Point size from URL overrides the default
@@ -312,6 +312,8 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
                 psm ?? POINT_APPEARANCE_DEFAULTS.sizeMode,
                 PotreeLib
             );
+
+            viewer.useHQ = (pq ?? POINT_APPEARANCE_DEFAULTS.quality) === 'high';
 
             // Min node size from URL
             if (typeof mns === 'number') {
@@ -435,7 +437,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
         viewer.setFOV(PERFORMANCE_DEFAULTS.fov);
         viewer.setPointBudget(getDefaultPointBudget());
         viewer.setMinNodeSize(PERFORMANCE_DEFAULTS.minNodeSize);
-        viewer.useHQ = PERFORMANCE_DEFAULTS.highQualitySplats;
+        viewer.useHQ = (initialStateRef.current.pq ?? POINT_APPEARANCE_DEFAULTS.quality) === 'high';
 
         // Enable EDL
         viewer.setEDLEnabled(EDL_DEFAULTS.enabled);

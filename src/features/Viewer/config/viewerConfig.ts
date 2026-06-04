@@ -29,7 +29,7 @@ export function getDefaultPointBudget(): number {
 }
 
 export const POINT_SIZE_DEFAULTS: { size: number } = {
-    size: 0.5,
+    size: 1.0,
 };
 
 export const Z_SCALE_DEFAULTS: { scale: number } = {
@@ -74,6 +74,9 @@ export type PointShape = z.infer<typeof PointShapeSchema>;
 export const PointSizeModeSchema = z.enum(['fixed', 'adaptive']);
 export type PointSizeMode = z.infer<typeof PointSizeModeSchema>;
 
+export const PointQualitySchema = z.enum(['standard', 'high']);
+export type PointQuality = z.infer<typeof PointQualitySchema>;
+
 export const ElevationPaletteSchema = z.enum(['custom', 'terrain', 'grayscale']);
 export type ElevationPalette = z.infer<typeof ElevationPaletteSchema>;
 
@@ -83,6 +86,7 @@ export type Projection = z.infer<typeof ProjectionSchema>;
 export const POINT_APPEARANCE_DEFAULTS = {
     shape: 'circle' as PointShape,
     sizeMode: 'adaptive' as PointSizeMode,
+    quality: 'standard' as PointQuality,
     elevationPalette: 'custom' as ElevationPalette,
 } as const;
 
@@ -115,6 +119,7 @@ export const ViewerStateSchema = z.object({
     // Rendering settings (short names to avoid Potree URL conflicts)
     ps: optionalSearchNumber, // point size
     psm: PointSizeModeSchema.optional(), // point size mode
+    pq: PointQualitySchema.optional(), // point quality
     mns: optionalSearchNumber, // min node size
     psh: PointShapeSchema.optional(), // point shape
     zScale: optionalSearchNumber, // vertical exaggeration

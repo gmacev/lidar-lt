@@ -4,6 +4,7 @@ import { HelpHint } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { getDefaultPointBudget } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 
 interface PointBudgetControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
@@ -25,6 +26,7 @@ export function PointBudgetControl({
     const [pointBudget, setPointBudget] = useState<number>(
         initialState.pb ?? getDefaultPointBudget()
     );
+    const commitPointBudget = useCommittedRange(pointBudget, (value) => updateUrl({ pb: value }));
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseInt(e.target.value, 10);
@@ -34,7 +36,6 @@ export function PointBudgetControl({
         if (viewer) {
             viewer.setPointBudget(value);
         }
-        updateUrl({ pb: value });
     };
 
     return (
@@ -58,6 +59,7 @@ export function PointBudgetControl({
                 step="500000"
                 value={pointBudget}
                 onChange={handleChange}
+                {...commitPointBudget}
                 className="w-full accent-laser-green"
             />
         </div>
