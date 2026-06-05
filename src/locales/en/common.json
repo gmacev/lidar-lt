@@ -121,6 +121,7 @@
         "controlLeftClick": "🖱️ Left click: Pan",
         "controlRightClick": "🖱️ Right click: Rotate",
         "controlScroll": "🖲️ Scroll: Zoom in / out",
+        "controlAddMarker": "Ctrl/Cmd + left click: Add marker",
         "recenter": "Recenter view",
         "orientNorth": "North up",
         "background": "Background",

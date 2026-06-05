@@ -13,6 +13,7 @@ import {
     useCircleMeasurementTool,
     useFloodSimulation,
 } from '@/features/Viewer/hooks';
+import { useMarkers } from '@/features/Viewer/hooks/useMarkers';
 import { useVolumeMeasurementTool } from '@/features/Viewer/hooks/useVolumeMeasurementTool';
 import { useVolumeMeasurementData } from '@/features/Viewer/hooks/useVolumeMeasurementData';
 import { useDistanceMeasurementData } from '@/features/Viewer/hooks/useDistanceMeasurementData';
@@ -28,6 +29,7 @@ import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
 import { GoogleMapsButton } from './GoogleMapsButton';
 import { RecenterButton } from './RecenterButton';
+import { MarkerOverlay } from './MarkerOverlay';
 
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
@@ -116,6 +118,11 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         dataUrl,
         initialState,
         updateUrl: updateUrlDebounced,
+    });
+    const { markers, deleteMarker } = useMarkers({
+        viewerRef,
+        markerParam: initialState.mk,
+        onSearchChange: updateUrl,
     });
 
     // Get profile data for CSV export
@@ -272,7 +279,10 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         void navigate({
             to: '/viewer/$cellId',
             params: { cellId },
-            search: initialState.sectorName ? { sectorName: initialState.sectorName } : {},
+            search: {
+                ...(initialState.sectorName ? { sectorName: initialState.sectorName } : {}),
+                ...(initialState.mk ? { mk: initialState.mk } : {}),
+            },
             replace: true,
         });
     };
@@ -284,6 +294,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         resetPotreeViewerDisplayDefaults(viewerRef.current);
         const resetState = {
             ...(initialState.sectorName ? { sectorName: initialState.sectorName } : {}),
+            ...(initialState.mk ? { mk: initialState.mk } : {}),
             ...cameraState,
         };
         setResetSidebarInitialState({ cellId, state: resetState });
@@ -302,6 +313,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 ref={containerRef}
                 className={`h-full w-full ${isAnnotationPlacing ? '!cursor-pointer' : ''}`}
             />
+            <MarkerOverlay markers={markers} onDelete={deleteMarker} />
 
             {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-void-black/90">
@@ -355,6 +367,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                 <li>{t('viewer.controlLeftClick')}</li>
                                 <li>{t('viewer.controlRightClick')}</li>
                                 <li>{t('viewer.controlScroll')}</li>
+                                <li>{t('viewer.controlAddMarker')}</li>
                             </ul>
                         </GlassPanel>
                     </div>

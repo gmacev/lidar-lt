@@ -129,6 +129,8 @@ export const ViewerStateSchema = z.object({
     hiddenClasses: optionalSearchNumberArray,
     // Sector metadata
     sectorName: z.string().optional(),
+    // Shareable point markers encoded as x,y,z;x,y,z
+    mk: z.string().optional(),
     // Camera Projection
     projection: ProjectionSchema.optional(),
     // Background
