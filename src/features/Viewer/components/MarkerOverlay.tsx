@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Marker } from '@/features/Viewer/hooks/useMarkers';
 
 interface MarkerOverlayProps {
@@ -13,6 +14,8 @@ interface MarkerOverlayProps {
 }
 
 export function MarkerOverlay({ markers, onDelete }: MarkerOverlayProps) {
+    const { t } = useTranslation();
+
     return (
         <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
             {markers.map((marker) => {
@@ -46,8 +49,8 @@ export function MarkerOverlay({ markers, onDelete }: MarkerOverlayProps) {
                         </svg>
                         <button
                             type="button"
-                            aria-label="Delete marker"
-                            title="Delete marker"
+                            aria-label={t('marker.delete')}
+                            title={t('marker.delete')}
                             onClick={() => onDelete(marker.id)}
                             className="pointer-events-auto absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-white/80 bg-black/85 text-white shadow-[0_1px_4px_rgba(0,0,0,0.7)] transition hover:border-plasma-red hover:text-plasma-red"
                         >

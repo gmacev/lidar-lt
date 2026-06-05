@@ -182,6 +182,9 @@
         "annotation": "Anotacija",
         "newAnnotation": "Nauja anotacija"
     },
+    "marker": {
+        "delete": "Ištrinti žymeklį"
+    },
     "common": {
         "cancel": "Atšaukti",
         "confirm": "Patvirtinti"

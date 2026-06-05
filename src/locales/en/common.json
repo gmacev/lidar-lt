@@ -182,6 +182,9 @@
         "annotation": "Annotation",
         "newAnnotation": "New Annotation"
     },
+    "marker": {
+        "delete": "Delete marker"
+    },
     "common": {
         "cancel": "Cancel",
         "confirm": "Confirm"
