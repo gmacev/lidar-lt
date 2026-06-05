@@ -28,16 +28,12 @@ import { ViewerSidebar } from './ViewerSidebar';
 import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
 import { GoogleMapsButton } from './GoogleMapsButton';
-import { RecenterButton } from './RecenterButton';
 import { MarkerOverlay } from './MarkerOverlay';
 
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
-import {
-    getCurrentCameraState,
-    resetPotreeViewerDisplayDefaults,
-} from '@/features/Viewer/utils/viewerDefaults';
+import { resetPotreeViewerDisplayDefaults } from '@/features/Viewer/utils/viewerDefaults';
 import { Route } from '@/routes/viewer.$cellId';
 
 interface ViewerPageProps {
@@ -273,29 +269,14 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleAzimuth = createHandler('azimuth', _toggleAzimuthMeasurement);
     const handleToggleCircle = createHandler('circle', _toggleCircleMeasurement);
     const handleToggleAnnotationPanel = createHandler('annotation', toggleAnnotationPanel);
-    const handleRecenter = () => {
-        updateUrlDebounced.cancel();
-        recenterView();
-        void navigate({
-            to: '/viewer/$cellId',
-            params: { cellId },
-            search: {
-                ...(initialState.sectorName ? { sectorName: initialState.sectorName } : {}),
-                ...(initialState.mk ? { mk: initialState.mk } : {}),
-            },
-            replace: true,
-        });
-    };
-
     const handleResetDefaults = () => {
         updateUrlDebounced.cancel();
 
-        const cameraState = getCurrentCameraState(viewerRef.current);
         resetPotreeViewerDisplayDefaults(viewerRef.current);
+        recenterView();
         const resetState = {
             ...(initialState.sectorName ? { sectorName: initialState.sectorName } : {}),
             ...(initialState.mk ? { mk: initialState.mk } : {}),
-            ...cameraState,
         };
         setResetSidebarInitialState({ cellId, state: resetState });
         setSidebarResetKey((value) => value + 1);
@@ -419,7 +400,6 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
                             <div className="flex shrink-0 flex-col items-center gap-2">
                                 <GoogleMapsButton viewerRef={viewerRef} />
-                                <RecenterButton onRecenter={handleRecenter} />
                                 <Compass viewerRef={viewerRef} onOrientNorth={orientNorth} />
                             </div>
                         </div>
