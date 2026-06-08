@@ -116,7 +116,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         initialState,
         updateUrl: updateUrlDebounced,
     });
-    const { markers, deleteMarker } = useMarkers({
+    const { markers, addMarker, deleteMarker } = useMarkers({
         viewerRef,
         markerParam: initialState.mk,
         onSearchChange: updateUrl,
@@ -346,6 +346,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                 viewerRef={viewerRef}
                                 sectorName={initialState.sectorName}
                                 cellId={cellId}
+                                onAddMarker={addMarker}
                             />
                             <SectorNavigation cellId={cellId} onNavigate={handleSectorNavigate} />
                         </div>

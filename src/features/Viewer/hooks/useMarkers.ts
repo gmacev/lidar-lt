@@ -151,6 +151,22 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
         commitMarkers(markersRef.current.filter((marker) => marker.id !== id));
     };
 
+    const addMarker = (position: [number, number, number]) => {
+        const roundedPosition: [number, number, number] = position.map(roundCoordinate) as [
+            number,
+            number,
+            number,
+        ];
+        const nextMarkers = [
+            ...markersRef.current,
+            {
+                id: createMarkerId(roundedPosition, markersRef.current.length),
+                position: roundedPosition,
+            },
+        ];
+        commitMarkers(nextMarkers);
+    };
+
     useEffect(() => {
         const viewer = viewerRef.current;
         const rendererElement = viewer?.renderer?.domElement;
@@ -166,14 +182,7 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            const nextMarkers = [
-                ...markersRef.current,
-                {
-                    id: createMarkerId(position, markersRef.current.length),
-                    position,
-                },
-            ];
-            commitMarkers(nextMarkers);
+            addMarker(position);
         };
 
         rendererElement.addEventListener('mousedown', handleMouseDown, { capture: true });
@@ -208,6 +217,7 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
 
     return {
         markers: screenMarkers,
+        addMarker,
         deleteMarker,
     };
 }
