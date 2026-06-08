@@ -128,7 +128,7 @@ export function SectorNavigation({ cellId, onNavigate }: SectorNavigationProps) 
     return (
         <GlassPanel
             ref={navigationRef}
-            className="grid h-[72px] w-[72px] shrink-0 grid-cols-[18px_1fr_18px] grid-rows-[18px_1fr_18px] place-items-center !rounded-lg !p-1"
+            className="grid h-[76px] w-[76px] shrink-0 grid-cols-3 grid-rows-3 place-items-center !rounded-lg !p-1"
             aria-label={t('sectorNavigation.label')}
             role="group"
         >

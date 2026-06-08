@@ -42,7 +42,7 @@ export function CoordinateSearchControl({
     };
 
     return (
-        <GlassPanel className="flex flex-col gap-1.5">
+        <GlassPanel className="flex h-[76px] flex-col gap-1.5">
             <div className="flex items-center justify-center gap-2">
                 {sectorName && (
                     <span className="text-sm font-medium text-neon-amber">{sectorName}</span>
