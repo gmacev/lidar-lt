@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/common/components';
 import { ToolPopover } from './ToolPopover';
+import { ToolbarToolButton } from './ToolbarToolButton';
 
 interface FloodSimulationToolProps {
     isActive: boolean;
@@ -164,18 +165,13 @@ export function FloodSimulationTool({
             </ToolPopover>
 
             {/* Main flood button */}
-            <button
+            <ToolbarToolButton
                 ref={buttonRef}
                 onClick={isActive ? onReset : onStart}
-                className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
-                    isActive
-                        ? 'bg-neon-amber/30 border-neon-amber text-neon-amber shadow-[0_0_6px_rgba(255,191,0,0.22)]'
-                        : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
-                }`}
-                title={isActive ? t('flood.simulationActive') : t('flood.simulation')}
-            >
-                <Icon name="waves" size={20} />
-            </button>
+                isActive={isActive}
+                label={isActive ? t('flood.simulationActive') : t('flood.simulation')}
+                icon={<Icon name="waves" size={20} />}
+            />
         </div>
     );
 }

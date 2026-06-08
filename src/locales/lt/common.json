@@ -161,6 +161,12 @@
     "grid": {
         "sectorId": "SEKTORIAUS ID"
     },
+    "sectorNavigation": {
+        "label": "Gretimų sektorių navigacija",
+        "navigate": "Atverti sektorių {{name}}, {{id}}",
+        "unavailable": "Šia kryptimi sektoriaus nėra",
+        "unnamed": "Sektorius be pavadinimo"
+    },
     "language": {
         "lt": "LT",
         "en": "EN"

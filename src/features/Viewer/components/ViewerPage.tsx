@@ -29,6 +29,7 @@ import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
 import { GoogleMapsButton } from './GoogleMapsButton';
 import { MarkerOverlay } from './MarkerOverlay';
+import { SectorNavigation } from './SectorNavigation';
 
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
@@ -269,6 +270,26 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleAzimuth = createHandler('azimuth', _toggleAzimuthMeasurement);
     const handleToggleCircle = createHandler('circle', _toggleCircleMeasurement);
     const handleToggleAnnotationPanel = createHandler('annotation', toggleAnnotationPanel);
+    const handleSectorNavigate = (sector: { id: string; name: string | null }) => {
+        updateUrlDebounced.cancel();
+
+        const portableState = Object.fromEntries(
+            Object.entries(initialState).filter(
+                ([key]) =>
+                    !['x', 'y', 'z', 'yaw', 'pitch', 'radius', 'mk', 'sectorName'].includes(key)
+            )
+        ) as ViewerState;
+
+        void navigate({
+            to: '/viewer/$cellId',
+            params: { cellId: sector.id.replaceAll('/', '_') },
+            search: {
+                ...portableState,
+                ...(sector.name ? { sectorName: sector.name } : {}),
+            },
+        });
+    };
+
     const handleResetDefaults = () => {
         updateUrlDebounced.cancel();
 
@@ -320,12 +341,13 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 <>
                     {/* Sector info + Coordinate Search - bottom center, always */}
                     {!isLoading && !error && (
-                        <div className="absolute bottom-2 left-1/2 z-20 -translate-x-1/2 xl:bottom-4">
+                        <div className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-stretch gap-2 xl:bottom-4">
                             <CoordinateSearchControl
                                 viewerRef={viewerRef}
                                 sectorName={initialState.sectorName}
                                 cellId={cellId}
                             />
+                            <SectorNavigation cellId={cellId} onNavigate={handleSectorNavigate} />
                         </div>
                     )}
 

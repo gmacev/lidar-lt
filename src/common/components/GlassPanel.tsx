@@ -1,13 +1,17 @@
-import type { ReactNode } from 'react';
+import { forwardRef, type ReactNode } from 'react';
 
 interface GlassPanelProps extends React.HTMLAttributes<HTMLDivElement> {
     children: ReactNode;
     className?: string;
 }
 
-export function GlassPanel({ children, className = '', ...props }: GlassPanelProps) {
+export const GlassPanel = forwardRef<HTMLDivElement, GlassPanelProps>(function GlassPanel(
+    { children, className = '', ...props },
+    ref
+) {
     return (
         <div
+            ref={ref}
             className={`
         rounded-lg
         border border-glass-border
@@ -20,4 +24,4 @@ export function GlassPanel({ children, className = '', ...props }: GlassPanelPro
             {children}
         </div>
     );
-}
+});

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '@/common/components';
 import type { StoredAnnotation } from '../utils/annotationStorage';
 import { ToolPopover } from './ToolPopover';
+import { ToolbarToolButton } from './ToolbarToolButton';
 
 interface AnnotationToolProps {
     annotations: StoredAnnotation[];
@@ -154,18 +155,13 @@ export function AnnotationTool({
             </ToolPopover>
 
             {/* Main button */}
-            <button
+            <ToolbarToolButton
                 ref={buttonRef}
                 onClick={onTogglePanel}
-                className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
-                    isPanelOpen || isPlacing
-                        ? 'bg-neon-amber/30 border-neon-amber text-neon-amber shadow-[0_0_6px_rgba(255,191,0,0.22)]'
-                        : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
-                }`}
-                title={t('annotation.annotations')}
-            >
-                <Icon name="messageSquare" size={20} />
-            </button>
+                isActive={isPanelOpen || isPlacing}
+                label={t('annotation.annotations')}
+                icon={<Icon name="messageSquare" size={20} />}
+            />
         </div>
     );
 }

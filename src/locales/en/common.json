@@ -161,6 +161,12 @@
     "grid": {
         "sectorId": "SECTOR ID"
     },
+    "sectorNavigation": {
+        "label": "Adjacent sector navigation",
+        "navigate": "Navigate to {{name}}, sector {{id}}",
+        "unavailable": "No sector available in this direction",
+        "unnamed": "Unnamed sector"
+    },
     "language": {
         "lt": "LT",
         "en": "EN"

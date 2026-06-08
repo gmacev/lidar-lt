@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
-import { FloatingPopover } from '@/common/components';
+import { Popover } from '@/common/components';
 
 interface ToolPopoverProps {
     anchorRef: RefObject<HTMLElement | null>;
@@ -17,7 +17,7 @@ export function ToolPopover({
     width,
 }: ToolPopoverProps) {
     return (
-        <FloatingPopover
+        <Popover
             anchorRef={anchorRef}
             isOpen={isOpen}
             width={width}
@@ -26,6 +26,6 @@ export function ToolPopover({
             className={className}
         >
             {children}
-        </FloatingPopover>
+        </Popover>
     );
 }

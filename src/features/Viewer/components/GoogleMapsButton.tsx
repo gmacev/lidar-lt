@@ -2,6 +2,7 @@ import { useState, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
+import { ToolbarToolButton } from './ToolbarToolButton';
 
 // LKS94 projection definition (EPSG:3346)
 const LKS94_PROJ =
@@ -46,20 +47,18 @@ export function GoogleMapsButton({ viewerRef }: GoogleMapsButtonProps) {
     };
 
     return (
-        <button
+        <ToolbarToolButton
             onClick={() => void handleClick()}
-            className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
-                copied
-                    ? 'bg-neon-green/30 border-neon-green text-neon-green shadow-[0_0_12px_rgba(0,255,0,0.3)]'
-                    : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
-            }`}
-            title={copied ? t('googleMaps.copied') : t('googleMaps.copyLink')}
-        >
-            {copied ? (
-                <Icon name="check" size={18} />
-            ) : (
-                <Icon name="mapPin" size={18} fill="currentColor" stroke="none" />
-            )}
-        </button>
+            isActive={copied}
+            activeClassName="bg-neon-green/30 border-neon-green text-neon-green shadow-[0_0_12px_rgba(0,255,0,0.3)]"
+            label={copied ? t('googleMaps.copied') : t('googleMaps.copyLink')}
+            icon={
+                copied ? (
+                    <Icon name="check" size={18} />
+                ) : (
+                    <Icon name="mapPin" size={18} fill="currentColor" stroke="none" />
+                )
+            }
+        />
     );
 }

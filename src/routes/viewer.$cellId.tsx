@@ -25,6 +25,7 @@ function ViewerRoute() {
                 path={`/viewer/${cellId}${searchParams.sectorName ? `?sectorName=${encodeURIComponent(searchParams.sectorName)}` : ''}`}
             />
             <ViewerPage
+                key={cellId}
                 cellId={cellId}
                 onBack={() =>
                     void router.navigate({
