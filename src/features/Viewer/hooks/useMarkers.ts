@@ -25,6 +25,9 @@ interface ScreenMarker extends Marker {
 const MARKER_PRECISION = 3;
 const MIN_MARKER_SIZE = 18;
 const MAX_MARKER_SIZE = 42;
+const CENTER_PICK_DELAY_FRAMES = 2;
+const CENTER_PICK_MAX_FRAMES = 300;
+const centerPickRequestIds = new WeakMap<PotreeViewer, number>();
 
 function roundCoordinate(value: number): number {
     return Number(value.toFixed(MARKER_PRECISION));
@@ -60,13 +63,8 @@ function serializeMarkers(markers: Marker[]): string | undefined {
 
 function getPickedPosition(
     viewer: PotreeViewer,
-    event: MouseEvent
+    mouse: { x: number; y: number }
 ): [number, number, number] | null {
-    const rect = viewer.renderer.domElement.getBoundingClientRect();
-    const mouse = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-    };
     const camera = viewer.scene.getActiveCamera();
     const intersection = window.Potree.Utils.getMousePointCloudIntersection(
         mouse,
@@ -167,6 +165,46 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
         commitMarkers(nextMarkers);
     };
 
+    const addMarkerAtViewCenter = () => {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+
+        const requestId = (centerPickRequestIds.get(viewer) ?? 0) + 1;
+        centerPickRequestIds.set(viewer, requestId);
+        let frameCount = 0;
+
+        const tryPick = () => {
+            if (requestId !== centerPickRequestIds.get(viewer) || viewerRef.current !== viewer) {
+                return;
+            }
+
+            frameCount += 1;
+            if (frameCount <= CENTER_PICK_DELAY_FRAMES) {
+                requestAnimationFrame(tryPick);
+                return;
+            }
+
+            const rendererElement = viewer.renderer?.domElement;
+            if (!rendererElement) return;
+
+            const position = getPickedPosition(viewer, {
+                x: rendererElement.clientWidth / 2,
+                y: rendererElement.clientHeight / 2,
+            });
+
+            if (position) {
+                addMarker(position);
+                return;
+            }
+
+            if (frameCount < CENTER_PICK_MAX_FRAMES) {
+                requestAnimationFrame(tryPick);
+            }
+        };
+
+        requestAnimationFrame(tryPick);
+    };
+
     useEffect(() => {
         const viewer = viewerRef.current;
         const rendererElement = viewer?.renderer?.domElement;
@@ -175,7 +213,11 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
         const handleMouseDown = (event: MouseEvent) => {
             if (event.button !== 0 || (!event.ctrlKey && !event.metaKey)) return;
 
-            const position = getPickedPosition(viewer, event);
+            const rect = rendererElement.getBoundingClientRect();
+            const position = getPickedPosition(viewer, {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top,
+            });
             if (!position) return;
 
             event.preventDefault();
@@ -217,7 +259,7 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
 
     return {
         markers: screenMarkers,
-        addMarker,
+        addMarkerAtViewCenter,
         deleteMarker,
     };
 }

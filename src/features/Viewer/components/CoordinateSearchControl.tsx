@@ -8,14 +8,14 @@ interface CoordinateSearchControlProps {
     viewerRef: RefObject<PotreeViewer | null>;
     sectorName?: string;
     cellId: string;
-    onAddMarker: (position: [number, number, number]) => void;
+    onAddMarkerAtViewCenter: () => void;
 }
 
 export function CoordinateSearchControl({
     viewerRef,
     sectorName,
     cellId,
-    onAddMarker,
+    onAddMarkerAtViewCenter,
 }: CoordinateSearchControlProps) {
     const { t } = useTranslation();
     const { query, setQuery, isValid, coordinates, defaultHeight } = useCoordinateSearch();
@@ -35,7 +35,7 @@ export function CoordinateSearchControl({
 
         // Also look at the point to center it
         viewer.scene.view.lookAt(new THREE.Vector3(coordinates.x, coordinates.y, 0));
-        onAddMarker([coordinates.x, coordinates.y, 0]);
+        onAddMarkerAtViewCenter();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
