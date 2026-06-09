@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HelpHint } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
-import { getDefaultPointBudget } from '@/features/Viewer/config';
+import { getDefaultPointBudget, POINT_BUDGET_LIMITS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 
@@ -54,14 +54,19 @@ export function PointBudgetControl({
             </label>
             <input
                 type="range"
-                min="500000"
-                max="20000000"
-                step="500000"
+                min={POINT_BUDGET_LIMITS.min}
+                max={POINT_BUDGET_LIMITS.max}
+                step={POINT_BUDGET_LIMITS.step}
                 value={pointBudget}
                 onChange={handleChange}
                 {...commitPointBudget}
                 className="w-full accent-laser-green"
             />
+            {pointBudget > POINT_BUDGET_LIMITS.warning && (
+                <p className="mt-1 text-[11px] leading-snug text-neon-amber" role="status">
+                    {t('pointCloud.pointBudgetWarning')}
+                </p>
+            )}
         </div>
     );
 }

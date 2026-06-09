@@ -18,6 +18,13 @@ export const PERFORMANCE_DEFAULTS = {
     fov: 60,
 } as const;
 
+export const POINT_BUDGET_LIMITS = {
+    min: 500_000,
+    max: 100_000_000,
+    step: 500_000,
+    warning: 10_000_000,
+} as const;
+
 import { isMobile } from '@/common/utils/screenSize';
 
 /**
@@ -43,6 +50,15 @@ const optionalSearchNumber = z.preprocess((value) => {
 
     const parsed = typeof value === 'number' ? value : Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
+}, z.number().optional());
+
+const optionalPointBudget = z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+
+    const parsed = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(parsed)) return undefined;
+
+    return Math.min(POINT_BUDGET_LIMITS.max, Math.max(POINT_BUDGET_LIMITS.min, parsed));
 }, z.number().optional());
 
 const optionalSearchBoolean = z.preprocess((value) => {
@@ -123,7 +139,7 @@ export const ViewerStateSchema = z.object({
     mns: optionalSearchNumber, // min node size
     psh: PointShapeSchema.optional(), // point shape
     zScale: optionalSearchNumber, // vertical exaggeration
-    pb: optionalSearchNumber, // point budget
+    pb: optionalPointBudget, // point budget
     fov: optionalSearchNumber, // field of view
     // Classifications (array of hidden class IDs)
     hiddenClasses: optionalSearchNumberArray,

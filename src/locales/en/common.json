@@ -100,6 +100,7 @@
         "pointBudget": "Point Budget",
         "pointBudgetHelpAria": "Explain point budget",
         "pointBudgetHelp": "Sets the maximum number of points displayed at once. More points look sharper but need more GPU power.",
+        "pointBudgetWarning": "Higher values may slow down your device or crash this browser tab.",
         "fov": "Field of View",
         "projection": "Camera Projection",
         "projections": {
