@@ -60489,27 +60489,55 @@ void main() {
 
 			if (Potree.measureTimings) performance.mark("computeVisibilityTextureData-start");
 
-			let data = new Uint8Array(nodes.length * 4);
-			let visibleNodeTextureOffsets = new Map();
+			if (!this._visibilityTextureScratch) {
+				const data = new Uint8Array(0);
+				const visibleNodeTextureOffsets = new Map();
+				this._visibilityTextureScratch = {
+					data,
+					nodes: [],
+					nodeMap: new Map(),
+					offsetsToChild: [],
+					visibleNodeTextureOffsets,
+					result: {
+						data,
+						offsets: visibleNodeTextureOffsets
+					},
+					sort: function (a, b) {
+						let na = a.geometryNode.name;
+						let nb = b.geometryNode.name;
+						if (na.length !== nb.length) return na.length - nb.length;
+						if (na < nb) return -1;
+						if (na > nb) return 1;
+						return 0;
+					}
+				};
+			}
 
-			// copy array
-			nodes = nodes.slice();
+			const scratch = this._visibilityTextureScratch;
+			const requiredDataLength = nodes.length * 4;
+			if (scratch.data.length < requiredDataLength) {
+				scratch.data = new Uint8Array(requiredDataLength);
+				scratch.result.data = scratch.data;
+			} else {
+				scratch.data.fill(0);
+			}
 
-			// sort by level and index, e.g. r, r0, r3, r4, r01, r07, r30, ...
-			let sort = function (a, b) {
-				let na = a.geometryNode.name;
-				let nb = b.geometryNode.name;
-				if (na.length !== nb.length) return na.length - nb.length;
-				if (na < nb) return -1;
-				if (na > nb) return 1;
-				return 0;
-			};
-			nodes.sort(sort);
+			scratch.nodes.length = nodes.length;
+			for (let i = 0; i < nodes.length; i++) {
+				scratch.nodes[i] = nodes[i];
+			}
+			nodes = scratch.nodes;
+			nodes.sort(scratch.sort);
 
-			let worldDir = new Vector3();
+			const data = scratch.data;
+			const visibleNodeTextureOffsets = scratch.visibleNodeTextureOffsets;
+			const nodeMap = scratch.nodeMap;
+			const offsetsToChild = scratch.offsetsToChild;
 
-			let nodeMap = new Map();
-			let offsetsToChild = new Array(nodes.length).fill(Infinity);
+			visibleNodeTextureOffsets.clear();
+			nodeMap.clear();
+			offsetsToChild.length = nodes.length;
+			offsetsToChild.fill(Infinity);
 
 			for (let i = 0; i < nodes.length; i++) {
 				let node = nodes[i];
@@ -60551,10 +60579,7 @@ void main() {
 				performance.measure("render.computeVisibilityTextureData", "computeVisibilityTextureData-start", "computeVisibilityTextureData-end");
 			}
 
-			return {
-				data: data,
-				offsets: visibleNodeTextureOffsets
-			};
+			return scratch.result;
 		}
 
 		nodeIntersectsProfile(node, profile) {
@@ -61446,26 +61471,33 @@ void main() {
 
 			// frustum in object space
 			camera.updateMatrixWorld();
-			let frustum = new Frustum();
+			if (!pointcloud._visibilityScratch) {
+				pointcloud._visibilityScratch = {
+					frustum: new Frustum(),
+					frustumMatrix: new Matrix4(),
+					worldInverse: new Matrix4(),
+					cameraMatrixObject: new Matrix4(),
+					cameraPositionObject: new Vector3(),
+				};
+			}
+
+			const scratch = pointcloud._visibilityScratch;
+			let frustum = scratch.frustum;
 			let viewI = camera.matrixWorldInverse;
 			let world = pointcloud.matrixWorld;
 
-			// use close near plane for frustum intersection
-			let frustumCam = camera.clone();
-			frustumCam.near = Math.min(camera.near, 0.1);
-			frustumCam.updateProjectionMatrix();
 			let proj = camera.projectionMatrix;
 
-			let fm = new Matrix4().multiply(proj).multiply(viewI).multiply(world);
+			let fm = scratch.frustumMatrix.copy(proj).multiply(viewI).multiply(world);
 			frustum.setFromProjectionMatrix(fm);
-			frustums.push(frustum);
+			frustums[i] = frustum;
 
 			// camera position in object space
 			let view = camera.matrixWorld;
-			let worldI = world.clone().invert();
-			let camMatrixObject = new Matrix4().multiply(worldI).multiply(view);
-			let camObjPos = new Vector3().setFromMatrixPosition(camMatrixObject);
-			camObjPositions.push(camObjPos);
+			let worldI = scratch.worldInverse.copy(world).invert();
+			let camMatrixObject = scratch.cameraMatrixObject.copy(worldI).multiply(view);
+			let camObjPos = scratch.cameraPositionObject.setFromMatrixPosition(camMatrixObject);
+			camObjPositions[i] = camObjPos;
 
 			if (pointcloud.visible && pointcloud.root !== null) {
 				priorityQueue.push({ pointcloud: i, node: pointcloud.root, weight: Number.MAX_VALUE });
@@ -62561,11 +62593,20 @@ void main() {
 			this.uniformBlockIndices = {};
 			this.uniformBlocks = {};
 			this.uniforms = {};
+			this.matrix4Buffer = new Float32Array(16);
 
 			this.update(vsSource, fsSource);
 		}
 
 		update(vsSource, fsSource) {
+			if (
+				this.program !== null
+				&& this.vsSource === vsSource
+				&& this.fsSource === fsSource
+			) {
+				return;
+			}
+
 			this.vsSource = vsSource;
 			this.fsSource = fsSource;
 
@@ -62730,8 +62771,8 @@ void main() {
 				return;
 			}
 
-			let tmp = new Float32Array(value.elements);
-			gl.uniformMatrix4fv(location, false, tmp);
+			this.matrix4Buffer.set(value.elements);
+			gl.uniformMatrix4fv(location, false, this.matrix4Buffer);
 		}
 
 		setUniform1f(name, value) {
@@ -62779,26 +62820,52 @@ void main() {
 			gl.uniform1i(location, value);
 		}
 
-		setUniform2f(name, value) {
+		setUniform2f(name, x, y) {
 			const gl = this.gl;
-			const location = this.uniformLocations[name];
+			const uniform = this.uniforms[name];
 
-			if (location == null) {
+			if (uniform === undefined) {
 				return;
 			}
 
-			gl.uniform2f(location, value[0], value[1]);
+			if (y === undefined) {
+				y = x[1];
+				x = x[0];
+			}
+
+			if (uniform.value0 === x && uniform.value1 === y) {
+				return;
+			}
+
+			uniform.value0 = x;
+			uniform.value1 = y;
+
+			gl.uniform2f(uniform.location, x, y);
 		}
 
-		setUniform3f(name, value) {
+		setUniform3f(name, x, y, z) {
 			const gl = this.gl;
-			const location = this.uniformLocations[name];
+			const uniform = this.uniforms[name];
 
-			if (location == null) {
+			if (uniform === undefined) {
 				return;
 			}
 
-			gl.uniform3f(location, value[0], value[1], value[2]);
+			if (y === undefined && z === undefined) {
+				z = x[2];
+				y = x[1];
+				x = x[0];
+			}
+
+			if (uniform.value0 === x && uniform.value1 === y && uniform.value2 === z) {
+				return;
+			}
+
+			uniform.value0 = x;
+			uniform.value1 = y;
+			uniform.value2 = z;
+
+			gl.uniform3f(uniform.location, x, y, z);
 		}
 
 		setUniform(name, value) {
@@ -62952,9 +63019,10 @@ void main() {
 			let gl = this.gl;
 			let webglBuffer = this.buffers.get(geometry);
 			if (webglBuffer != null) {
-				for (let attributeName in geometry.attributes) {
-					gl.deleteBuffer(webglBuffer.vbos.get(attributeName).handle);
+				for (let vbo of webglBuffer.vbos.values()) {
+					gl.deleteBuffer(vbo.handle);
 				}
+				gl.deleteVertexArray(webglBuffer.vao);
 				this.buffers.delete(geometry);
 			}
 		}
@@ -63395,25 +63463,6 @@ void main() {
 						shader.setUniform1f("uExtraOffset", offset);
 					}
 
-				} else {
-
-					for (const attributeName in geometry.attributes) {
-						const bufferAttribute = geometry.attributes[attributeName];
-						const vbo = webglBuffer.vbos.get(attributeName);
-
-
-						if (attributeLocations[attributeName] !== undefined) {
-							const attributeLocation = attributeLocations[attributeName].location;
-
-							let type = this.glTypeMapping.get(bufferAttribute.array.constructor);
-							let normalized = bufferAttribute.normalized;
-
-							gl.bindBuffer(gl.ARRAY_BUFFER, vbo.handle);
-							gl.vertexAttribPointer(attributeLocation, bufferAttribute.itemSize, type, normalized, 0, 0);
-							gl.enableVertexAttribArray(attributeLocation);
-
-						}
-					}
 				}
 
 				let numPoints = webglBuffer.numElements;
@@ -63696,7 +63745,7 @@ void main() {
 
 
 				//uniform vec3 uColor;
-				shader.setUniform3f("uColor", material.color.toArray());
+				shader.setUniform3f("uColor", material.color.r, material.color.g, material.color.b);
 				//uniform float opacity;
 				shader.setUniform1f("uOpacity", material.opacity);
 
@@ -63704,17 +63753,17 @@ void main() {
 				shader.setUniform2f("intensityRange", material.intensityRange);
 
 
-				shader.setUniform3f("uIntensity_gbc", [
+				shader.setUniform3f("uIntensity_gbc",
 					material.intensityGamma,
 					material.intensityBrightness,
 					material.intensityContrast
-				]);
+				);
 
-				shader.setUniform3f("uRGB_gbc", [
+				shader.setUniform3f("uRGB_gbc",
 					material.rgbGamma,
 					material.rgbBrightness,
 					material.rgbContrast
-				]);
+				);
 
 				shader.setUniform1f("uTransition", material.transition);
 				shader.setUniform1f("wRGB", material.weightRGB);
@@ -70465,6 +70514,7 @@ void main() {
 			this.rtEDL;
 
 			this.gl = viewer.renderer.getContext();
+			this.projectionMatrixBuffer = new Float32Array(16);
 
 			this.shadowMap = new PointCloudSM(this.viewer.pRenderer);
 		}
@@ -70753,14 +70803,13 @@ void main() {
 				uniforms.screenHeight.value = height;
 
 				let proj = camera.projectionMatrix;
-				let projArray = new Float32Array(16);
-				projArray.set(proj.elements);
+				this.projectionMatrixBuffer.set(proj.elements);
 
 				uniforms.uNear.value = camera.near;
 				uniforms.uFar.value = camera.far;
 				uniforms.uEDLColor.value = this.rtEDL.texture;
 				uniforms.uEDLDepth.value = this.rtEDL.depthTexture;
-				uniforms.uProj.value = projArray;
+				uniforms.uProj.value = this.projectionMatrixBuffer;
 
 				uniforms.edlStrength.value = viewer.edlStrength;
 				uniforms.radius.value = viewer.edlRadius;
@@ -73570,6 +73619,7 @@ ENDSEC
 
 					gl.createVertexArray = extVAO.createVertexArrayOES.bind(extVAO);
 					gl.bindVertexArray = extVAO.bindVertexArrayOES.bind(extVAO);
+					gl.deleteVertexArray = extVAO.deleteVertexArrayOES.bind(extVAO);
 				}
 
 			}
@@ -88281,6 +88331,8 @@ ENDSEC
 				this.skybox = null;
 				this.clock = new Clock();
 				this.background = null;
+				this.lightDirection = new Vector3();
+				this.lightTarget = new Vector3();
 
 				this.initThree();
 
@@ -89521,7 +89573,7 @@ ENDSEC
 				stencil: false,
 				antialias: false,
 				//premultipliedAlpha: _premultipliedAlpha,
-				preserveDrawingBuffer: true,
+				preserveDrawingBuffer: false,
 				powerPreference: "high-performance",
 			};
 
@@ -89572,6 +89624,7 @@ ENDSEC
 
 				gl.createVertexArray = extVAO.createVertexArrayOES.bind(extVAO);
 				gl.bindVertexArray = extVAO.bindVertexArrayOES.bind(extVAO);
+				gl.deleteVertexArray = extVAO.deleteVertexArrayOES.bind(extVAO);
 			}
 
 		}
@@ -89738,7 +89791,8 @@ ENDSEC
 
 			Potree.pointLoadLimit = Potree.pointBudget * 1.5; // Reduced from 2x to 1.5x to ease memory pressure
 
-			const lTarget = camera.position.clone().add(camera.getWorldDirection(new Vector3()).multiplyScalar(1000));
+			camera.getWorldDirection(this.lightDirection);
+			const lTarget = this.lightTarget.copy(camera.position).addScaledVector(this.lightDirection, 1000);
 			this.scene.directionalLight.position.copy(camera.position);
 			this.scene.directionalLight.lookAt(lTarget);
 
