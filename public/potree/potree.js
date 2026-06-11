@@ -61833,7 +61833,9 @@ void main() {
 		}
 
 		let loadAttempts = 0;
-		let maxNodesLoading = Potree.memoryPressure ? 1 : Potree.maxNodesLoading;
+		let maxNodesLoading = Potree.memoryPressure || useConservativeChromiumLoading()
+			? 1
+			: Potree.maxNodesLoading;
 		for (let i = 0; i < unloadedGeometry.length && loadAttempts < maxNodesLoading; i++) {
 			let started = unloadedGeometry[i].load();
 			if (started !== false) {
@@ -66402,7 +66404,9 @@ void main() {
 
 		load() {
 
-			let maxNodesLoading = Potree.memoryPressure ? 1 : Potree.maxNodesLoading;
+			let maxNodesLoading = Potree.memoryPressure || useConservativeChromiumLoading()
+				? 1
+				: Potree.maxNodesLoading;
 			if (Potree.numNodesLoading >= maxNodesLoading) {
 				return false;
 			}
@@ -66456,6 +66460,25 @@ void main() {
 	const MEMORY_RECOVERY_BUDGET_STEP = 500 * 1000;
 	const MEMORY_RECOVERY_BASE_DELAY = 5000;
 	const MEMORY_RECOVERY_MAX_DELAY = 60 * 1000;
+	const CHROMIUM_CONSERVATIVE_BUDGET = 8 * 1000 * 1000;
+
+	function isChromiumRuntime() {
+		if (typeof navigator === "undefined") {
+			return false;
+		}
+
+		const brands = navigator.userAgentData && navigator.userAgentData.brands;
+		if (brands) {
+			return brands.some(brand => /Chromium|Google Chrome|Microsoft Edge/i.test(brand.brand));
+		}
+
+		return /(?:Chrome|Chromium|Edg|OPR)\//.test(navigator.userAgent || "");
+	}
+
+	function useConservativeChromiumLoading() {
+		return Potree.isChromiumRuntime
+			&& Potree.pointBudget > CHROMIUM_CONSERVATIVE_BUDGET;
+	}
 
 	function isMemoryAllocationFailure(error) {
 		let errorMessage = error && error.message ? error.message : String(error || "");
@@ -90013,7 +90036,7 @@ ENDSEC
 			const camera = scene.getActiveCamera();
 			const visiblePointClouds = this.scene.pointclouds.filter(pc => pc.visible);
 
-			let cacheHeadroom = Potree.memoryPressure
+			let cacheHeadroom = Potree.memoryPressure || useConservativeChromiumLoading()
 				? 0
 				: Math.min(Potree.pointBudget * 0.5, 10 * 1000 * 1000);
 			Potree.pointLoadLimit = Potree.pointBudget + cacheHeadroom;
@@ -90813,6 +90836,7 @@ ENDSEC
 	let memoryRecoveryFailures = 0;
 	let memoryRecoveryProbeActive = false;
 	let activeNodeWorkers = new Map();
+	let chromiumRuntime = isChromiumRuntime();
 
 	const debug = {};
 
@@ -91105,6 +91129,7 @@ ENDSEC
 	exports.memoryRecoveryFailures = memoryRecoveryFailures;
 	exports.memoryRecoveryProbeActive = memoryRecoveryProbeActive;
 	exports.activeNodeWorkers = activeNodeWorkers;
+	exports.isChromiumRuntime = chromiumRuntime;
 	exports.numNodesLoading = numNodesLoading;
 	exports.pointBudget = pointBudget;
 	exports.requestedPointBudget = pointBudget;

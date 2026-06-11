@@ -2029,38 +2029,46 @@ function BrotliDecodeClosure() {
 
   /**
    * @param {!Int8Array} bytes
+   * @param {number} expectedSize
    * @return {!Int8Array}
    */
-  function decode(bytes) {
+  function decode(bytes, expectedSize) {
     var /** !State */ s = new State();
     initState(s, new InputStream(bytes));
-    var /** !number */ totalOutput = 0;
-    var /** !Array<!Int8Array> */ chunks = [];
-    while (true) {
-      var /** !Int8Array */ chunk = new Int8Array(16384);
-      chunks.push(chunk);
-      s.output = chunk;
+
+    if (!Number.isSafeInteger(expectedSize) || expectedSize < 0) {
+      close(s);
+      throw new RangeError("Invalid Brotli output size");
+    }
+
+    var /** !Int8Array */ result = new Int8Array(expectedSize);
+    s.output = result;
+    s.outputOffset = 0;
+    s.outputLength = expectedSize;
+    s.outputUsed = 0;
+    decompress(s);
+
+    if (s.outputUsed != expectedSize) {
+      var /** number */ actualSize = s.outputUsed;
+      close(s);
+      throw new Error("Unexpected Brotli output size: " + actualSize + " of " + expectedSize);
+    }
+
+    if (s.runningState != 10) {
+      var /** !Int8Array */ overflowProbe = new Int8Array(1);
+      s.output = overflowProbe;
       s.outputOffset = 0;
-      s.outputLength = 16384;
+      s.outputLength = 1;
       s.outputUsed = 0;
       decompress(s);
-      totalOutput += s.outputUsed;
-      if (s.outputUsed < 16384) break;
-    }
-    close(s);
-    var /** !Int8Array */ result = new Int8Array(totalOutput);
-    var /** !number */ offset = 0;
-    for (var /** !number */ i = 0; i < chunks.length; ++i) {
-      var /** !Int8Array */ chunk = chunks[i];
-      var /** !number */ end = min(totalOutput, offset + 16384);
-      var /** !number */ len = end - offset;
-      if (len < 16384) {
-        result.set(chunk.subarray(0, len), offset);
-      } else {
-        result.set(chunk, offset);
+
+      if (s.outputUsed != 0 || s.runningState != 10) {
+        close(s);
+        throw new Error("Brotli output exceeded expected size " + expectedSize);
       }
-      offset += len;
     }
+
+    close(s);
     return result;
   }
 
@@ -2117,7 +2125,19 @@ onmessage = function (event) {
 		buffer = {buffer: new ArrayBuffer(0)};
 	}else {
 		try{
-			buffer = BrotliDecode(new Int8Array(event.data.buffer));
+			let encodedBytesPerPoint = 0;
+			for (let pointAttribute of pointAttributes.attributes) {
+				if(["POSITION_CARTESIAN", "position"].includes(pointAttribute.name)){
+					encodedBytesPerPoint += 16;
+				}else if(["RGBA", "rgba"].includes(pointAttribute.name)){
+					encodedBytesPerPoint += 8;
+				}else{
+					encodedBytesPerPoint += pointAttribute.byteSize;
+				}
+			}
+
+			let expectedByteSize = numPoints * encodedBytesPerPoint;
+			buffer = BrotliDecode(new Int8Array(event.data.buffer), expectedByteSize);
 		}catch(e){
 			postMessage({
 				error: {
