@@ -2119,8 +2119,15 @@ onmessage = function (event) {
 		try{
 			buffer = BrotliDecode(new Int8Array(event.data.buffer));
 		}catch(e){
-			buffer = {buffer: new ArrayBuffer(numPoints * (pointAttributes.byteSize + 12))};
 			console.error(`problem with node ${name}: `, e);
+			postMessage({
+				error: {
+					name: e && e.name ? e.name : "Error",
+					message: e && e.message ? e.message : String(e),
+					memoryAllocationFailed: e instanceof RangeError && /alloc|memory/i.test(e.message || String(e)),
+				},
+			});
+			return;
 		}
 	}
 

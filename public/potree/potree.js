@@ -56604,12 +56604,12 @@
 			return string;
 		}
 
-		freeMemory() {
+		freeMemory(targetPoints = Potree.pointLoadLimit) {
 			if (this.elements <= 1) {
 				return;
 			}
 
-			while (this.numPoints > Potree.pointLoadLimit) {
+			while (this.numPoints > targetPoints) {
 				let element = this.first;
 				let node = element.node;
 				this.disposeDescendants(node);
@@ -61833,7 +61833,8 @@ void main() {
 		}
 
 		let loadAttempts = 0;
-		for (let i = 0; i < unloadedGeometry.length && loadAttempts < Potree.maxNodesLoading; i++) {
+		let maxNodesLoading = Potree.memoryPressure ? 1 : Potree.maxNodesLoading;
+		for (let i = 0; i < unloadedGeometry.length && loadAttempts < maxNodesLoading; i++) {
 			let started = unloadedGeometry[i].load();
 			if (started !== false) {
 				loadAttempts++;
@@ -66401,7 +66402,8 @@ void main() {
 
 		load() {
 
-			if (Potree.numNodesLoading >= Potree.maxNodesLoading) {
+			let maxNodesLoading = Potree.memoryPressure ? 1 : Potree.maxNodesLoading;
+			if (Potree.numNodesLoading >= maxNodesLoading) {
 				return false;
 			}
 
@@ -66529,6 +66531,11 @@ void main() {
 				let workerSettled = false;
 
 				worker.onmessage = function (e) {
+					if (e.data && e.data.error) {
+						handleWorkerError(e.data.error);
+						return;
+					}
+
 					if (workerSettled) {
 						return;
 					}
@@ -66601,7 +66608,20 @@ void main() {
 					node.loaded = false;
 					node.loading = false;
 					node._loadFailures = (node._loadFailures || 0) + 1;
-					let retryDelay = Math.min(1000 * (2 ** (node._loadFailures - 1)), 30_000);
+					let errorMessage = error && error.message ? error.message : String(error || "");
+					let memoryAllocationFailed = Boolean(
+						error && error.memoryAllocationFailed
+						|| /array buffer allocation failed|out of memory/i.test(errorMessage)
+					);
+
+					if (memoryAllocationFailed) {
+						Potree.memoryPressure = true;
+						Potree.pointLoadLimit = Potree.pointBudget;
+						Potree.lru.freeMemory(Potree.pointBudget);
+					}
+
+					let retryBaseDelay = memoryAllocationFailed ? 2000 : 1000;
+					let retryDelay = Math.min(retryBaseDelay * (2 ** (node._loadFailures - 1)), 30_000);
 					node._loadRetryAt = performance.now() + retryDelay;
 					Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
 
@@ -89825,7 +89845,10 @@ ENDSEC
 			const camera = scene.getActiveCamera();
 			const visiblePointClouds = this.scene.pointclouds.filter(pc => pc.visible);
 
-			Potree.pointLoadLimit = Potree.pointBudget * 1.5; // Reduced from 2x to 1.5x to ease memory pressure
+			let cacheHeadroom = Potree.memoryPressure
+				? 0
+				: Math.min(Potree.pointBudget * 0.5, 10 * 1000 * 1000);
+			Potree.pointLoadLimit = Potree.pointBudget + cacheHeadroom;
 
 			camera.getWorldDirection(this.lightDirection);
 			const lTarget = this.lightTarget.copy(camera.position).addScaledVector(this.lightDirection, 1000);
@@ -90617,6 +90640,7 @@ ENDSEC
 	let framenumber = 0;
 	let numNodesLoading = 0;
 	let maxNodesLoading = 2; // Reduced to prevent OOM during Brotli decompression in workers
+	let memoryPressure = false;
 
 	const debug = {};
 
@@ -90904,6 +90928,7 @@ ENDSEC
 	exports.lru = lru;
 	exports.maxNodesLoading = maxNodesLoading;
 	exports.maxVisibleNodes = maxVisibleNodes;
+	exports.memoryPressure = memoryPressure;
 	exports.numNodesLoading = numNodesLoading;
 	exports.pointBudget = pointBudget;
 	exports.resourcePath = resourcePath;
