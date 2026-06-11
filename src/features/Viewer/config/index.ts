@@ -14,7 +14,6 @@ export {
 export {
     configureMaterialForElevation,
     configureMaterialForIntensity,
-    configureMaterialForReturnNumber,
     getAutoElevationRange,
     setElevationPalette,
     setManualElevationRange,

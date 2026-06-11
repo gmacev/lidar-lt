@@ -343,23 +343,6 @@ export function configureMaterialForIntensity(pointcloud: PointCloud, PotreeLib:
     material.needsUpdate = true;
 }
 
-/**
- * Configure point cloud material for return number coloring
- * Shows vegetation penetration layers: 1st return (canopy) to last return (ground)
- * Let Potree handle the color gradient natively
- */
-export function configureMaterialForReturnNumber(pointcloud: PointCloud, PotreeLib: Potree): void {
-    const material = pointcloud.material;
-
-    // Switch to return number attribute - let Potree handle gradient natively
-    material.activeAttributeName = 'return number';
-
-    // Point appearance
-    material.pointSizeType = PotreeLib.PointSizeType.ADAPTIVE;
-    material.shape = PotreeLib.PointShape.CIRCLE;
-    material.needsUpdate = true;
-}
-
 export function updateElevationRangeForZScale(pointcloud: PointCloud, zScale: number): void {
     const pc = pointcloud as PointCloudWithBaseRange;
     const baseRange = pc._baseElevationRange;

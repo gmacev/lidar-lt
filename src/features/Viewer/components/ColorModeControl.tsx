@@ -4,7 +4,6 @@ import type { PotreeViewer, Potree } from '@/common/types/potree';
 import {
     configureMaterialForElevation,
     configureMaterialForIntensity,
-    configureMaterialForReturnNumber,
     getAutoElevationRange,
     POINT_APPEARANCE_DEFAULTS,
     setElevationPalette,
@@ -132,8 +131,6 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
             pointcloud.material.intensityRange = [0, intensityMax];
             pointcloud.material.intensityGamma = intensityGamma;
             pointcloud.material.intensityBrightness = intensityBrightness;
-        } else if (mode === 'return-number') {
-            configureMaterialForReturnNumber(pointcloud, PotreeLib);
         }
 
         pointcloud.material.size = currentPointSize;
@@ -374,13 +371,6 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                     onClick={() => handleModeChange('intensity')}
                 >
                     {t('colorMode.intensity')}
-                </button>
-                <button
-                    className={buttonClass('return-number')}
-                    onClick={() => handleModeChange('return-number')}
-                    title={t('colorMode.returnNumberTooltip')}
-                >
-                    {t('colorMode.returnNumber')}
                 </button>
             </div>
 

@@ -31,8 +31,6 @@
         "label": "Spalvinimas",
         "elevation": "Aukštis",
         "intensity": "Intensyvumas",
-        "returnNumber": "Grįžimai",
-        "returnNumberTooltip": "Rodo lazerio grįžimus: 1-as = viršūnė, paskutinis = žemė",
         "heightRange": "Aukščio intervalas",
         "auto": "Auto",
         "manual": "Rankinis",

@@ -3,7 +3,6 @@ import { Vector3 } from 'three';
 import {
     configureMaterialForElevation,
     configureMaterialForIntensity,
-    configureMaterialForReturnNumber,
     EDL_DEFAULTS,
     PERFORMANCE_DEFAULTS,
     POINT_APPEARANCE_DEFAULTS,
@@ -283,8 +282,6 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
                 if (typeof ib === 'number') {
                     pointcloud.material.intensityBrightness = ib;
                 }
-            } else if (colorMode === 'return-number') {
-                configureMaterialForReturnNumber(pointcloud, PotreeLib);
             } else {
                 const { elevationMin, elevationMax, ep } = initialStateRef.current;
                 const elevationRange =

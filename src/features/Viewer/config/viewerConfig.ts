@@ -81,7 +81,10 @@ const optionalSearchNumberArray = z.preprocess((value) => {
     return parsedValues.length > 0 ? parsedValues : undefined;
 }, z.array(z.number()).optional());
 
-export const ColorModeSchema = z.enum(['elevation', 'intensity', 'return-number']);
+export const ColorModeSchema = z.preprocess(
+    (value) => (value === 'return-number' ? 'elevation' : value),
+    z.enum(['elevation', 'intensity'])
+);
 export type ColorMode = z.infer<typeof ColorModeSchema>;
 
 export const PointShapeSchema = z.enum(['square', 'circle', 'paraboloid']);
