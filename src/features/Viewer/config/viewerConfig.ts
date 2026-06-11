@@ -20,7 +20,7 @@ export const PERFORMANCE_DEFAULTS = {
 
 export const POINT_BUDGET_LIMITS = {
     min: 500_000,
-    max: 100_000_000,
+    max: 20_000_000,
     step: 500_000,
     warning: 10_000_000,
 } as const;
