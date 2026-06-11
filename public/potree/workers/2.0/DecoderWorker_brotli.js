@@ -2119,7 +2119,6 @@ onmessage = function (event) {
 		try{
 			buffer = BrotliDecode(new Int8Array(event.data.buffer));
 		}catch(e){
-			console.error(`problem with node ${name}: `, e);
 			postMessage({
 				error: {
 					name: e && e.name ? e.name : "Error",

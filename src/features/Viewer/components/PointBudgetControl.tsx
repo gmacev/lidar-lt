@@ -31,11 +31,22 @@ export function PointBudgetControl({
     useEffect(() => {
         const handleAutoReduction = (event: WindowEventMap['potree-point-budget-reduced']) => {
             const { previousBudget, reducedBudget } = event.detail;
+            const budgetReduced = event.detail.budgetReduced ?? reducedBudget < previousBudget;
 
-            setPointBudget(reducedBudget);
-            updateUrl({ pb: reducedBudget });
-            toast.warning(t('pointCloud.pointBudgetAutoReducedTitle'), {
-                description: t('pointCloud.pointBudgetAutoReducedMessage', {
+            if (budgetReduced) {
+                setPointBudget(reducedBudget);
+                updateUrl({ pb: reducedBudget });
+            }
+
+            const titleKey = budgetReduced
+                ? 'pointCloud.pointBudgetAutoReducedTitle'
+                : 'pointCloud.pointLoadingPausedTitle';
+            const messageKey = budgetReduced
+                ? 'pointCloud.pointBudgetAutoReducedMessage'
+                : 'pointCloud.pointLoadingPausedMessage';
+
+            toast.warning(t(titleKey), {
+                description: t(messageKey, {
                     previous: formatBudget(previousBudget),
                     reduced: formatBudget(reducedBudget),
                 }),

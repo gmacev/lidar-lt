@@ -422,6 +422,9 @@ declare global {
         'potree-point-budget-reduced': CustomEvent<{
             previousBudget: number;
             reducedBudget: number;
+            budgetReduced?: boolean;
+            loadingPaused?: boolean;
+            retryDelay?: number;
         }>;
     }
 

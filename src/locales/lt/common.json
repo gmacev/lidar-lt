@@ -102,7 +102,9 @@
         "pointBudgetHelp": "Nustato didžiausią vienu metu rodomų taškų kiekį. Daugiau taškų atrodo ryškiau, bet labiau apkrauna vaizdo plokštę.",
         "pointBudgetWarning": "Didesnės reikšmės gali sulėtinti jūsų įrenginį arba užstrigdyti šią naršyklės kortelę.",
         "pointBudgetAutoReducedTitle": "Sumažintas taškų biudžetas",
-        "pointBudgetAutoReducedMessage": "Naršyklei pritrūko atminties. Taškų biudžetas sumažintas nuo {{previous}} iki {{reduced}}, kad duomenys būtų kraunami toliau.",
+        "pointBudgetAutoReducedMessage": "Trūksta atminties: sumažinta nuo {{previous}} iki {{reduced}}. Naudokite iki 8 mln.",
+        "pointLoadingPausedTitle": "Taškų krovimas pristabdytas",
+        "pointLoadingPausedMessage": "Nepakanka atminties. Naudokite iki 8 mln.",
         "fov": "Matymo laukas",
         "projection": "Kameros Projekcija",
         "projections": {

@@ -66407,8 +66407,20 @@ void main() {
 				return false;
 			}
 
-			if (this._loadRetryAt && performance.now() < this._loadRetryAt) {
+			const now = performance.now();
+			if (this._loadRetryAt && now < this._loadRetryAt) {
 				return false;
+			}
+
+			if (Potree.memoryRecoveryUntil > now || Potree.memoryRecoveryProbeActive) {
+				return false;
+			}
+
+			if (Potree.memoryPressure) {
+				this._memoryRecoveryProbe = true;
+				Potree.memoryRecoveryProbeActive = true;
+			} else {
+				this._memoryRecoveryProbe = false;
 			}
 
 			this.octreeGeometry.loader.load(this);
@@ -66439,6 +66451,122 @@ void main() {
 	OctreeGeometryNode.IDCount = 0;
 
 	// let loadedNodes = new Set();
+
+	const MEMORY_RECOVERY_MIN_BUDGET = 500 * 1000;
+	const MEMORY_RECOVERY_BUDGET_STEP = 500 * 1000;
+	const MEMORY_RECOVERY_BASE_DELAY = 5000;
+	const MEMORY_RECOVERY_MAX_DELAY = 60 * 1000;
+
+	function isMemoryAllocationFailure(error) {
+		let errorMessage = error && error.message ? error.message : String(error || "");
+		return Boolean(
+			error && error.memoryAllocationFailed
+			|| /array buffer allocation failed|out of memory/i.test(errorMessage)
+		);
+	}
+
+	function releaseMemoryRecoveryProbe(node, retryAt = 0) {
+		if (!node._memoryRecoveryProbe) {
+			return;
+		}
+
+		node._memoryRecoveryProbe = false;
+		Potree.memoryRecoveryProbeActive = false;
+		Potree.memoryRecoveryUntil = retryAt;
+	}
+
+	function abortActiveNodeWorkers(retryAt) {
+		for (let [activeWorker, activeLoad] of Potree.activeNodeWorkers) {
+			activeWorker.onmessage = null;
+			activeWorker.onerror = null;
+			activeWorker.onmessageerror = null;
+			activeWorker.terminate();
+
+			const wasLoading = activeLoad.node.loading;
+			activeLoad.node.loaded = false;
+			activeLoad.node.loading = false;
+			activeLoad.node._memoryRecoveryProbe = false;
+			activeLoad.node._loadRetryAt = retryAt;
+			if (wasLoading) {
+				Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+			}
+		}
+
+		Potree.activeNodeWorkers.clear();
+		Potree.memoryRecoveryProbeActive = false;
+	}
+
+	function beginMemoryRecovery(node, error) {
+		const now = performance.now();
+		Potree.memoryPressure = true;
+		releaseMemoryRecoveryProbe(node);
+
+		if (Potree.memoryRecoveryUntil > now) {
+			node._loadRetryAt = Potree.memoryRecoveryUntil;
+			return false;
+		}
+
+		Potree.memoryRecoveryFailures = (Potree.memoryRecoveryFailures || 0) + 1;
+		const cooldown = Math.min(
+			MEMORY_RECOVERY_BASE_DELAY * (2 ** (Potree.memoryRecoveryFailures - 1)),
+			MEMORY_RECOVERY_MAX_DELAY
+		);
+		const retryAt = now + cooldown;
+		Potree.memoryRecoveryUntil = retryAt;
+		node._loadRetryAt = retryAt;
+
+		abortActiveNodeWorkers(retryAt);
+
+		const previousBudget = Potree.pointBudget;
+		const reduction = Math.max(Math.ceil(previousBudget * 0.1), 1 * 1000 * 1000);
+		const reducedBudget = Math.max(
+			MEMORY_RECOVERY_MIN_BUDGET,
+			Math.floor((previousBudget - reduction) / MEMORY_RECOVERY_BUDGET_STEP)
+				* MEMORY_RECOVERY_BUDGET_STEP
+		);
+		const budgetReduced = reducedBudget < previousBudget;
+
+		if (budgetReduced) {
+			Potree.pointBudget = reducedBudget;
+			Potree.requestedPointBudget = reducedBudget;
+		}
+
+		Potree.pointLoadLimit = reducedBudget;
+
+		// Free well below the new visible budget so the next decoder has working headroom.
+		const evictionTarget = Math.floor(reducedBudget * 0.5);
+		Potree.lru.freeMemory(evictionTarget);
+
+		console.error(
+			`Potree memory allocation failed at node ${node.name}. `
+			+ `Point loading paused for ${Math.ceil(cooldown / 1000)} seconds.`,
+			error
+		);
+
+		if (budgetReduced) {
+			console.warn(
+				`Potree memory pressure: reduced the session point budget from `
+				+ `${previousBudget.toLocaleString()} to ${reducedBudget.toLocaleString()}.`
+			);
+		} else {
+			console.warn(
+				`Potree memory pressure: loading remains paused at the minimum `
+				+ `${reducedBudget.toLocaleString()} point budget.`
+			);
+		}
+
+		window.dispatchEvent(new CustomEvent("potree-point-budget-reduced", {
+			detail: {
+				previousBudget: previousBudget,
+				reducedBudget: reducedBudget,
+				budgetReduced: budgetReduced,
+				loadingPaused: true,
+				retryDelay: cooldown,
+			},
+		}));
+
+		return true;
+	}
 
 	class NodeLoader {
 
@@ -66489,6 +66617,8 @@ void main() {
 
 			node.loading = true;
 			Potree.numNodesLoading++;
+			let worker = null;
+			let workerPath = null;
 
 			// console.log(node.name, node.numPoints);
 
@@ -66520,15 +66650,23 @@ void main() {
 					buffer = await this.loadRangeBuffer(urlOctree, first, last, byteSize, priority);
 				}
 
-				let workerPath;
 				if (this.metadata.encoding === "BROTLI") {
 					workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker_brotli.js';
 				} else {
 					workerPath = Potree.scriptPath + '/workers/2.0/DecoderWorker.js';
 				}
 
-				let worker = Potree.workerPool.getWorker(workerPath);
+				if (Potree.memoryRecoveryUntil > performance.now()) {
+					node.loaded = false;
+					node.loading = false;
+					node._loadRetryAt = Potree.memoryRecoveryUntil;
+					Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+					return;
+				}
+
+				worker = Potree.workerPool.getWorker(workerPath);
 				let workerSettled = false;
+				Potree.activeNodeWorkers.set(worker, {node: node, workerPath: workerPath});
 
 				worker.onmessage = function (e) {
 					if (e.data && e.data.error) {
@@ -66547,6 +66685,7 @@ void main() {
 					worker.onmessage = null;
 					worker.onerror = null;
 					worker.onmessageerror = null;
+					Potree.activeNodeWorkers.delete(worker);
 					Potree.workerPool.returnWorker(workerPath, worker);
 
 					let geometry = new BufferGeometry();
@@ -66588,7 +66727,14 @@ void main() {
 					node.loading = false;
 					node._loadFailures = 0;
 					node._loadRetryAt = 0;
-					Potree.numNodesLoading--;
+					Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+
+					if (node._memoryRecoveryProbe) {
+						node._memoryRecoveryProbe = false;
+						Potree.memoryRecoveryProbeActive = false;
+						Potree.memoryRecoveryUntil = 0;
+						Potree.memoryRecoveryFailures = 0;
+					}
 				};
 
 
@@ -66599,52 +66745,29 @@ void main() {
 					}
 					workerSettled = true;
 
-					console.error("Worker error for node " + node.name + ":", error);
 					worker.onmessage = null;
 					worker.onerror = null;
 					worker.onmessageerror = null;
+					Potree.activeNodeWorkers.delete(worker);
 					worker.terminate();
 
 					node.loaded = false;
 					node.loading = false;
 					node._loadFailures = (node._loadFailures || 0) + 1;
-					let errorMessage = error && error.message ? error.message : String(error || "");
-					let memoryAllocationFailed = Boolean(
-						error && error.memoryAllocationFailed
-						|| /array buffer allocation failed|out of memory/i.test(errorMessage)
-					);
+					let memoryAllocationFailed = isMemoryAllocationFailure(error);
 
 					if (memoryAllocationFailed) {
-						Potree.memoryPressure = true;
-						let previousBudget = Potree.pointBudget;
-						let reduction = Math.max(Math.ceil(previousBudget * 0.1), 1 * 1000 * 1000);
-						let budgetStep = 500 * 1000;
-						let reducedBudget = Math.max(
-							budgetStep,
-							Math.floor((previousBudget - reduction) / budgetStep) * budgetStep
-						);
-
-						Potree.pointBudget = reducedBudget;
-						Potree.requestedPointBudget = reducedBudget;
-						Potree.pointLoadLimit = reducedBudget;
-						Potree.lru.freeMemory(reducedBudget);
-
-						console.warn(
-							`Potree memory pressure: reduced the session point budget from `
-							+ `${previousBudget.toLocaleString()} to ${reducedBudget.toLocaleString()}`
-						);
-
-						window.dispatchEvent(new CustomEvent("potree-point-budget-reduced", {
-							detail: {
-								previousBudget: previousBudget,
-								reducedBudget: reducedBudget,
-							},
-						}));
+						beginMemoryRecovery(node, error);
+					} else {
+						console.error("Worker error for node " + node.name + ":", error);
+						releaseMemoryRecoveryProbe(node, performance.now() + 1000);
 					}
 
 					let retryBaseDelay = memoryAllocationFailed ? 2000 : 1000;
 					let retryDelay = Math.min(retryBaseDelay * (2 ** (node._loadFailures - 1)), 30_000);
-					node._loadRetryAt = performance.now() + retryDelay;
+					if (!memoryAllocationFailed) {
+						node._loadRetryAt = performance.now() + retryDelay;
+					}
 					Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
 
 					if (error && error.preventDefault) {
@@ -66680,13 +66803,27 @@ void main() {
 
 				worker.postMessage(message, [message.buffer]);
 			} catch (e) {
+				if (worker) {
+					worker.onmessage = null;
+					worker.onerror = null;
+					worker.onmessageerror = null;
+					Potree.activeNodeWorkers.delete(worker);
+					worker.terminate();
+				}
+
 				node.loaded = false;
 				node.loading = false;
-				Potree.numNodesLoading--;
+				node._loadFailures = (node._loadFailures || 0) + 1;
+				Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
 
-				console.log(`failed to load ${node.name}`);
-				console.log(e);
-				console.log(`trying again!`);
+				if (isMemoryAllocationFailure(e)) {
+					beginMemoryRecovery(node, e);
+				} else {
+					releaseMemoryRecoveryProbe(node, performance.now() + 1000);
+					node._loadRetryAt = performance.now()
+						+ Math.min(1000 * (2 ** (node._loadFailures - 1)), 30_000);
+					console.error(`Failed to load Potree node ${node.name}:`, e);
+				}
 			}
 		}
 
@@ -88812,6 +88949,9 @@ ENDSEC
 				Potree.requestedPointBudget = requestedBudget;
 				Potree.pointBudget = requestedBudget;
 				Potree.memoryPressure = false;
+				Potree.memoryRecoveryUntil = 0;
+				Potree.memoryRecoveryFailures = 0;
+				Potree.memoryRecoveryProbeActive = false;
 				this.dispatchEvent({ 'type': 'point_budget_changed', 'viewer': this });
 			}
 		};
@@ -90669,6 +90809,10 @@ ENDSEC
 	let numNodesLoading = 0;
 	let maxNodesLoading = 2; // Reduced to prevent OOM during Brotli decompression in workers
 	let memoryPressure = false;
+	let memoryRecoveryUntil = 0;
+	let memoryRecoveryFailures = 0;
+	let memoryRecoveryProbeActive = false;
+	let activeNodeWorkers = new Map();
 
 	const debug = {};
 
@@ -90957,6 +91101,10 @@ ENDSEC
 	exports.maxNodesLoading = maxNodesLoading;
 	exports.maxVisibleNodes = maxVisibleNodes;
 	exports.memoryPressure = memoryPressure;
+	exports.memoryRecoveryUntil = memoryRecoveryUntil;
+	exports.memoryRecoveryFailures = memoryRecoveryFailures;
+	exports.memoryRecoveryProbeActive = memoryRecoveryProbeActive;
+	exports.activeNodeWorkers = activeNodeWorkers;
 	exports.numNodesLoading = numNodesLoading;
 	exports.pointBudget = pointBudget;
 	exports.requestedPointBudget = pointBudget;
