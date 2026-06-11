@@ -2481,16 +2481,25 @@ onmessage = function (event) {
 	// console.log(`duration: ${duration.toFixed(1)}ms, #points: ${numPoints}, points/ms: ${pointsPerMs.toFixed(1)}`);
 
 	let message = {
-		buffer: buffer,
 		attributeBuffers: attributeBuffers,
 		density: occupancy,
 	};
 
 	let transferables = [];
+	let transferredBuffers = new Set();
 	for (let property in message.attributeBuffers) {
-		transferables.push(message.attributeBuffers[property].buffer);
+		let attributeBuffer = message.attributeBuffers[property].buffer;
+		if (!transferredBuffers.has(attributeBuffer)) {
+			transferables.push(attributeBuffer);
+			transferredBuffers.add(attributeBuffer);
+		}
+
+		let preciseBuffer = message.attributeBuffers[property].preciseBuffer;
+		if (preciseBuffer && !transferredBuffers.has(preciseBuffer.buffer)) {
+			transferables.push(preciseBuffer.buffer);
+			transferredBuffers.add(preciseBuffer.buffer);
+		}
 	}
-	// transferables.push(buffer);
 
 	postMessage(message, transferables);
 };

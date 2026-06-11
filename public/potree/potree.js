@@ -61832,8 +61832,12 @@ void main() {
 			}
 		}
 
-		for (let i = 0; i < Math.min(Potree.maxNodesLoading, unloadedGeometry.length); i++) {
-			unloadedGeometry[i].load();
+		let loadAttempts = 0;
+		for (let i = 0; i < unloadedGeometry.length && loadAttempts < Potree.maxNodesLoading; i++) {
+			let started = unloadedGeometry[i].load();
+			if (started !== false) {
+				loadAttempts++;
+			}
 		}
 
 		return {
@@ -66399,10 +66403,15 @@ void main() {
 		load() {
 
 			if (Potree.numNodesLoading >= Potree.maxNodesLoading) {
-				return;
+				return false;
+			}
+
+			if (this._loadRetryAt && performance.now() < this._loadRetryAt) {
+				return false;
 			}
 
 			this.octreeGeometry.loader.load(this);
+			return true;
 		}
 
 		getNumPoints() {
@@ -66518,12 +66527,20 @@ void main() {
 				}
 
 				let worker = Potree.workerPool.getWorker(workerPath);
+				let workerSettled = false;
 
 				worker.onmessage = function (e) {
+					if (workerSettled) {
+						return;
+					}
+					workerSettled = true;
 
 					let data = e.data;
 					let buffers = data.attributeBuffers;
 
+					worker.onmessage = null;
+					worker.onerror = null;
+					worker.onmessageerror = null;
 					Potree.workerPool.returnWorker(workerPath, worker);
 
 					let geometry = new BufferGeometry();
@@ -66564,18 +66581,39 @@ void main() {
 					node.geometry = geometry;
 					node.loaded = true;
 					node.loading = false;
+					node._loadFailures = 0;
+					node._loadRetryAt = 0;
 					Potree.numNodesLoading--;
 				};
 
 
 				// Handle worker errors (e.g., OOM during postMessage)
-				worker.onerror = function (error) {
+				let handleWorkerError = function (error) {
+					if (workerSettled) {
+						return true;
+					}
+					workerSettled = true;
+
 					console.error("Worker error for node " + node.name + ":", error);
-					Potree.workerPool.returnWorker(workerPath, worker);
+					worker.onmessage = null;
+					worker.onerror = null;
+					worker.onmessageerror = null;
+					worker.terminate();
+
 					node.loaded = false;
 					node.loading = false;
-					Potree.numNodesLoading--;
+					node._loadFailures = (node._loadFailures || 0) + 1;
+					let retryDelay = Math.min(1000 * (2 ** (node._loadFailures - 1)), 30_000);
+					node._loadRetryAt = performance.now() + retryDelay;
+					Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+
+					if (error && error.preventDefault) {
+						error.preventDefault();
+					}
+					return true;
 				};
+				worker.onerror = handleWorkerError;
+				worker.onmessageerror = handleWorkerError;
 
 				let pointAttributes = node.octreeGeometry.pointAttributes;
 				let scale = node.octreeGeometry.scale;
