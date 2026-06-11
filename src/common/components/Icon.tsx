@@ -31,6 +31,33 @@ const icons = {
             <path d="M12 18h.01" />
         </>
     ),
+    info: () => (
+        <>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 11v5" />
+            <path d="M12 8h.01" />
+        </>
+    ),
+    checkCircle: () => (
+        <>
+            <circle cx="12" cy="12" r="9" />
+            <path d="m8 12 2.5 2.5L16 9" />
+        </>
+    ),
+    warningTriangle: () => (
+        <>
+            <path d="M10.3 3.8 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+        </>
+    ),
+    alertCircle: () => (
+        <>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v5" />
+            <path d="M12 17h.01" />
+        </>
+    ),
     crosshair: () => (
         <>
             <circle cx="12" cy="12" r="8" />

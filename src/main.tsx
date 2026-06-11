@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
-import { ModalProvider } from '@/common/components';
+import { ModalProvider, ToastProvider } from '@/common/components';
 import './i18n';
 import './index.css';
 import { routeTree } from './routeTree.gen';
@@ -20,9 +20,11 @@ const helmetContext = {};
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <HelmetProvider context={helmetContext}>
-            <ModalProvider>
-                <RouterProvider router={router} />
-            </ModalProvider>
+            <ToastProvider>
+                <ModalProvider>
+                    <RouterProvider router={router} />
+                </ModalProvider>
+            </ToastProvider>
         </HelmetProvider>
     </StrictMode>
 );

@@ -101,6 +101,8 @@
         "pointBudgetHelpAria": "Explain point budget",
         "pointBudgetHelp": "Sets the maximum number of points displayed at once. More points look sharper but need more GPU power.",
         "pointBudgetWarning": "Higher values may slow down your device or crash this browser tab.",
+        "pointBudgetAutoReducedTitle": "Point budget reduced",
+        "pointBudgetAutoReducedMessage": "Browser memory was exhausted. The point budget was reduced from {{previous}} to {{reduced}} so loading can continue.",
         "fov": "Field of View",
         "projection": "Camera Projection",
         "projections": {
@@ -194,6 +196,8 @@
     },
     "common": {
         "cancel": "Cancel",
-        "confirm": "Confirm"
+        "confirm": "Confirm",
+        "dismissNotification": "Dismiss notification",
+        "notifications": "Notifications"
     }
 }

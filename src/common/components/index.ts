@@ -8,4 +8,6 @@ export type { IconName } from './Icon';
 export { LanguageSwitcher } from './LanguageSwitcher';
 export { Modal, ModalProvider } from './Modal';
 export type { ModalContentProps, ModalContextValue } from './Modal';
+export { ToastProvider, toast, useToast } from './Toast';
+export type { ToastAction, ToastOptions, ToastVariant, ToastVariantOptions } from './Toast';
 export { SEOHead } from './SEOHead';

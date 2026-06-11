@@ -247,6 +247,7 @@ export interface PotreeViewer {
     setEDLRadius(radius: number): void;
     setFOV(fov: number): void;
     setPointBudget(budget: number): void;
+    getPointBudget(): number;
     setBackground(type: string): void;
     setClassificationVisibility(key: number, value: boolean): void;
     loadSkybox(path: string): void;
@@ -417,6 +418,13 @@ interface Proj4Static {
 }
 
 declare global {
+    interface WindowEventMap {
+        'potree-point-budget-reduced': CustomEvent<{
+            previousBudget: number;
+            reducedBudget: number;
+        }>;
+    }
+
     interface Window {
         Potree: Potree;
         THREE: typeof import('three');

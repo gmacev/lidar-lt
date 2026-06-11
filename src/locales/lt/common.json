@@ -101,6 +101,8 @@
         "pointBudgetHelpAria": "Paaiškinti taškų biudžetą",
         "pointBudgetHelp": "Nustato didžiausią vienu metu rodomų taškų kiekį. Daugiau taškų atrodo ryškiau, bet labiau apkrauna vaizdo plokštę.",
         "pointBudgetWarning": "Didesnės reikšmės gali sulėtinti jūsų įrenginį arba užstrigdyti šią naršyklės kortelę.",
+        "pointBudgetAutoReducedTitle": "Sumažintas taškų biudžetas",
+        "pointBudgetAutoReducedMessage": "Naršyklei pritrūko atminties. Taškų biudžetas sumažintas nuo {{previous}} iki {{reduced}}, kad duomenys būtų kraunami toliau.",
         "fov": "Matymo laukas",
         "projection": "Kameros Projekcija",
         "projections": {
@@ -194,6 +196,8 @@
     },
     "common": {
         "cancel": "Atšaukti",
-        "confirm": "Patvirtinti"
+        "confirm": "Patvirtinti",
+        "dismissNotification": "Uždaryti pranešimą",
+        "notifications": "Pranešimai"
     }
 }

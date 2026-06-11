@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HelpHint } from '@/common/components';
+import { HelpHint, toast } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { getDefaultPointBudget, POINT_BUDGET_LIMITS } from '@/features/Viewer/config';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -27,6 +27,28 @@ export function PointBudgetControl({
         initialState.pb ?? getDefaultPointBudget()
     );
     const commitPointBudget = useCommittedRange(pointBudget, (value) => updateUrl({ pb: value }));
+
+    useEffect(() => {
+        const handleAutoReduction = (event: WindowEventMap['potree-point-budget-reduced']) => {
+            const { previousBudget, reducedBudget } = event.detail;
+
+            setPointBudget(reducedBudget);
+            updateUrl({ pb: reducedBudget });
+            toast.warning(t('pointCloud.pointBudgetAutoReducedTitle'), {
+                description: t('pointCloud.pointBudgetAutoReducedMessage', {
+                    previous: formatBudget(previousBudget),
+                    reduced: formatBudget(reducedBudget),
+                }),
+                duration: 8_000,
+                dedupeKey: 'potree-point-budget-auto-reduced',
+            });
+        };
+
+        window.addEventListener('potree-point-budget-reduced', handleAutoReduction);
+        return () => {
+            window.removeEventListener('potree-point-budget-reduced', handleAutoReduction);
+        };
+    }, [t, updateUrl]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseInt(e.target.value, 10);

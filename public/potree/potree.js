@@ -66616,8 +66616,30 @@ void main() {
 
 					if (memoryAllocationFailed) {
 						Potree.memoryPressure = true;
-						Potree.pointLoadLimit = Potree.pointBudget;
-						Potree.lru.freeMemory(Potree.pointBudget);
+						let previousBudget = Potree.pointBudget;
+						let reduction = Math.max(Math.ceil(previousBudget * 0.1), 1 * 1000 * 1000);
+						let budgetStep = 500 * 1000;
+						let reducedBudget = Math.max(
+							budgetStep,
+							Math.floor((previousBudget - reduction) / budgetStep) * budgetStep
+						);
+
+						Potree.pointBudget = reducedBudget;
+						Potree.requestedPointBudget = reducedBudget;
+						Potree.pointLoadLimit = reducedBudget;
+						Potree.lru.freeMemory(reducedBudget);
+
+						console.warn(
+							`Potree memory pressure: reduced the session point budget from `
+							+ `${previousBudget.toLocaleString()} to ${reducedBudget.toLocaleString()}`
+						);
+
+						window.dispatchEvent(new CustomEvent("potree-point-budget-reduced", {
+							detail: {
+								previousBudget: previousBudget,
+								reducedBudget: reducedBudget,
+							},
+						}));
 					}
 
 					let retryBaseDelay = memoryAllocationFailed ? 2000 : 1000;
@@ -88782,14 +88804,20 @@ ENDSEC
 		}
 
 		setPointBudget(value) {
-			if (Potree.pointBudget !== value) {
-				Potree.pointBudget = parseInt(value);
+			let requestedBudget = parseInt(value);
+			if (
+				Potree.requestedPointBudget !== requestedBudget
+				|| Potree.pointBudget !== requestedBudget
+			) {
+				Potree.requestedPointBudget = requestedBudget;
+				Potree.pointBudget = requestedBudget;
+				Potree.memoryPressure = false;
 				this.dispatchEvent({ 'type': 'point_budget_changed', 'viewer': this });
 			}
 		};
 
 		getPointBudget() {
-			return Potree.pointBudget;
+			return Potree.requestedPointBudget;
 		};
 
 		setShowAnnotations(value) {
@@ -90931,6 +90959,7 @@ ENDSEC
 	exports.memoryPressure = memoryPressure;
 	exports.numNodesLoading = numNodesLoading;
 	exports.pointBudget = pointBudget;
+	exports.requestedPointBudget = pointBudget;
 	exports.resourcePath = resourcePath;
 	exports.saveProject = saveProject;
 	exports.updatePointClouds = updatePointClouds;
