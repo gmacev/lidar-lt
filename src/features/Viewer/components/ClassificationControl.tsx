@@ -82,18 +82,16 @@ export function ClassificationControl({
     }, [viewerRef, hiddenClasses]);
 
     const toggleClassification = (id: number) => {
-        setHiddenClasses((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(id)) {
-                newSet.delete(id);
-            } else {
-                newSet.add(id);
-            }
+        const newSet = new Set(hiddenClasses);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
 
-            // Pass undefined when empty to remove from URL
-            updateUrl({ hiddenClasses: newSet.size > 0 ? Array.from(newSet) : undefined });
-            return newSet;
-        });
+        setHiddenClasses(newSet);
+        // Pass undefined when empty to remove from URL
+        updateUrl({ hiddenClasses: newSet.size > 0 ? Array.from(newSet) : undefined });
     };
 
     const toggleAll = () => {

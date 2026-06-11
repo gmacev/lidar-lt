@@ -58291,15 +58291,6 @@ bool pointInClipPolygon(vec3 point, int polyIdx) {
 
 void doClipping(){
 
-	{
-		vec4 cl = getClassification(); 
-		if(cl.a == 0.0){
-			gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
-			
-			return;
-		}
-	}
-
 	#if defined(clip_return_number_enabled)
 	{ // return number filter
 		vec2 range = uFilterReturnNumberRange;
@@ -58409,6 +58400,13 @@ void main() {
 	vViewPosition = mvPosition.xyz;
 	gl_Position = projectionMatrix * mvPosition;
 	vLogDepth = log2(-mvPosition.z);
+
+	vec4 classificationColor = getClassification();
+	if(classificationColor.a == 0.0){
+		gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
+		gl_PointSize = 0.0;
+		return;
+	}
 
 	//gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
 	//gl_PointSize = 5.0;
