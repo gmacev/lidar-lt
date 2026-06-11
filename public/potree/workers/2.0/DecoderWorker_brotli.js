@@ -2074,19 +2074,6 @@ let BrotliDecode = BrotliDecodeClosure();
 
 // window["BrotliDecode"] = BrotliDecode;
 
-const typedArrayMapping = {
-	"int8":   Int8Array,
-	"int16":  Int16Array,
-	"int32":  Int32Array,
-	"int64":  Float64Array,
-	"uint8":  Uint8Array,
-	"uint16": Uint16Array,
-	"uint32": Uint32Array,
-	"uint64": Float64Array,
-	"float":  Float32Array,
-	"double": Float64Array,
-};
-
 Potree = {};
 
 function dealign24b(mortoncode){
@@ -2374,9 +2361,6 @@ onmessage = function (event) {
 			let buff = new ArrayBuffer(numPoints * 4);
 			let f32 = new Float32Array(buff);
 
-			let TypedArray = typedArrayMapping[pointAttribute.type.name];
-			preciseBuffer = new TypedArray(numPoints);
-
 			let [offset, scale] = [0, 1];
 
 			const getterMap = {
@@ -2406,12 +2390,10 @@ onmessage = function (event) {
 				byteOffset += pointAttribute.byteSize;
 
 				f32[j] = (value - offset) * scale;
-				preciseBuffer[j] = value;
 			}
 
 			attributeBuffers[pointAttribute.name] = { 
 				buffer: buff,
-				preciseBuffer: preciseBuffer,
 				attribute: pointAttribute,
 				offset: offset,
 				scale: scale,
@@ -2494,11 +2476,6 @@ onmessage = function (event) {
 			transferredBuffers.add(attributeBuffer);
 		}
 
-		let preciseBuffer = message.attributeBuffers[property].preciseBuffer;
-		if (preciseBuffer && !transferredBuffers.has(preciseBuffer.buffer)) {
-			transferables.push(preciseBuffer.buffer);
-			transferredBuffers.add(preciseBuffer.buffer);
-		}
 	}
 
 	postMessage(message, transferables);

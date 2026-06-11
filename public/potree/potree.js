@@ -66009,7 +66009,6 @@ void main() {
 						bufferAttribute.potree = {
 							offset: buffers[property].offset,
 							scale: buffers[property].scale,
-							preciseBuffer: buffers[property].preciseBuffer,
 							range: batchAttribute.range,
 						};
 
@@ -66567,7 +66566,6 @@ void main() {
 							bufferAttribute.potree = {
 								offset: buffers[property].offset,
 								scale: buffers[property].scale,
-								preciseBuffer: buffers[property].preciseBuffer,
 								range: batchAttribute.range,
 							};
 
