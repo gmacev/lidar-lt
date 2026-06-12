@@ -1,197 +1,193 @@
-import { type RefObject, useEffect, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import type { Measure, PotreeScene, PotreeViewer, Profile } from '@/common/types/potree';
 
 interface UseProfileToolOptions {
     viewerRef: RefObject<PotreeViewer | null>;
 }
 
+export type ProfilePhase = 'idle' | 'drawing' | 'ready';
+
 interface UseProfileToolReturn {
-    isMeasuring: boolean;
+    phase: ProfilePhase;
+    activeProfile: Profile | null;
     toggleProfileMeasurement: () => void;
-    menuPosition: { x: number; y: number } | null;
-    setMenuPosition: (pos: { x: number; y: number } | null) => void;
+    startNewProfile: () => void;
+    finishProfile: () => void;
+    closeProfile: () => void;
     resetProfile: () => void;
     deleteLastPoint: () => void;
+    setProfileWidth: (width: number) => void;
 }
 
-// Helper interface to handle Potree's EventDispatcher behavior
 interface DispatchableViewer {
     dispatchEvent: (event: { type: string }) => void;
 }
 
-// Extend PotreeScene locally to include removeProfile which might be missing from types
-// but exists at runtime, or fallback to removeMeasurement
 interface ExtendedPotreeScene extends PotreeScene {
     removeProfile?: (profile: Profile) => void;
 }
 
-/**
- * Hook for height profile tool functionality.
- * - Tracks whether user is actively drawing a profile
- * - Handles context menu on right-click
- */
+const DEFAULT_WIDTH = 1;
+
 export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfileToolReturn {
-    const [isMeasuring, setIsMeasuring] = useState(false);
-    const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
-
-    // Track current active profile
+    const [phase, setPhase] = useState<ProfilePhase>('idle');
+    const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
     const activeProfileRef = useRef<Profile | null>(null);
-    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
+    const removeProfile = useCallback(
+        (profile: Profile | null) => {
+            const viewer = viewerRef.current;
+            if (!viewer || !profile) return;
+
+            const scene = viewer.scene as ExtendedPotreeScene;
+            if (scene.removeProfile) {
+                scene.removeProfile(profile);
+            } else {
+                scene.removeMeasurement(profile as unknown as Measure);
             }
-        };
-    }, []);
+        },
+        [viewerRef]
+    );
 
-    // Helper to start insertion
-    const startInsertion = () => {
+    const startNewProfile = useCallback(() => {
         const viewer = viewerRef.current;
         if (!viewer?.profileTool) return;
 
-        activeProfileRef.current = viewer.profileTool.startInsertion({
-            width: 1, // Default width 1m
+        if (activeProfileRef.current) {
+            (viewer as unknown as DispatchableViewer).dispatchEvent({ type: 'cancel_insertions' });
+            removeProfile(activeProfileRef.current);
+        }
+
+        const profile = viewer.profileTool.startInsertion({
+            width: DEFAULT_WIDTH,
             name: 'Profilis',
         });
-    };
+        profile.setWidth(DEFAULT_WIDTH);
+        activeProfileRef.current = profile;
+        setActiveProfile(profile);
+        setPhase('drawing');
+    }, [removeProfile, viewerRef]);
 
-    // Helper to safely remove a profile from the scene
-    const removeActiveProfile = (viewer: PotreeViewer) => {
-        if (!activeProfileRef.current) return;
-
-        const scene = viewer.scene as ExtendedPotreeScene;
-
-        if (scene.removeProfile) {
-            scene.removeProfile(activeProfileRef.current);
-        } else {
-            // Fallback for older Potree versions: treat Profile as Measure
-            // Casting to unknown first to avoid structural incompatibility complaints
-            scene.removeMeasurement(activeProfileRef.current as unknown as Measure);
-        }
-
-        activeProfileRef.current = null;
-    };
-
-    // Reset profile (Clear all) but keep measuring
-    const resetProfile = () => {
-        const viewer = viewerRef.current;
-        if (!viewer) return;
-
-        // Remove current profile
-        removeActiveProfile(viewer);
-
-        // Restart insertion if we are supposed to be measuring
-        if (isMeasuring) {
-            startInsertion();
-        }
-    };
-
-    // Toggle profile measurement (start or cancel)
-    const toggleProfileMeasurement = () => {
-        const viewer = viewerRef.current;
-        if (!viewer?.profileTool) {
-            console.warn('ProfileTool not available');
-            return;
-        }
-
-        setMenuPosition(null);
-
-        // If already measuring, cancel it
-        if (isMeasuring) {
-            // Dispatch cancel_insertions to stop the tool
-            (viewer as unknown as DispatchableViewer).dispatchEvent({ type: 'cancel_insertions' });
-
-            // Remove the incomplete profile
-            removeActiveProfile(viewer);
-
-            setIsMeasuring(false);
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            return;
-        }
-
-        setIsMeasuring(true);
-        startInsertion();
-
-        // Safety timeout - clear after 120 seconds
-        timeoutRef.current = setTimeout(() => {
-            setIsMeasuring(false);
-            activeProfileRef.current = null;
-        }, 120000);
-    };
-
-    // Right-click handling for Context Menu (Capture phase to prevent Potree default cancel)
-    useEffect(() => {
-        const viewer = viewerRef.current;
-        if (!viewer || !isMeasuring) return;
-
-        const renderer = viewer.renderer;
-        if (!renderer?.domElement) return;
-
-        const handleRightClick = (event: MouseEvent) => {
-            if (event.button === 2) {
-                // Prevent Potree from cancelling the insertion
-                event.preventDefault();
-                event.stopPropagation();
-
-                setMenuPosition({ x: event.clientX, y: event.clientY });
-            }
-        };
-
-        const handleContextMenu = (e: MouseEvent) => {
-            e.preventDefault();
-        };
-
-        // Use capture phase to intercept before Potree
-        renderer.domElement.addEventListener('mouseup', handleRightClick, { capture: true });
-        // Also prevent context menu default browser behavior globally while measuring
-        window.addEventListener('contextmenu', handleContextMenu, { capture: true });
-
-        return () => {
-            renderer.domElement.removeEventListener('mouseup', handleRightClick, { capture: true });
-            window.removeEventListener('contextmenu', handleContextMenu, { capture: true });
-        };
-    }, [viewerRef, isMeasuring]);
-
-    // Delete last point functionality
-    const deleteLastPoint = () => {
+    const finishProfile = useCallback(() => {
         const viewer = viewerRef.current;
         const profile = activeProfileRef.current;
-        if (profile && profile.points && profile.points.length > 0) {
-            // Use Potree's removeMarker to ensure visual elements and internal state are updated
-            profile.removeMarker(profile.points.length - 1);
+        if (!viewer || !profile || phase !== 'drawing') return;
 
-            // If all points deleted, restart the measurement
-            if (profile.points.length === 0 && viewer) {
-                removeActiveProfile(viewer);
-                startInsertion();
-            }
-        }
-    };
+        (viewer as unknown as DispatchableViewer).dispatchEvent({ type: 'cancel_insertions' });
 
-    // Listen for custom event to reset state when profile is closed from UI
-    useEffect(() => {
-        const handleProfileClosed = () => {
-            setIsMeasuring(false);
+        if (profile.points.length < 2) {
+            removeProfile(profile);
             activeProfileRef.current = null;
-            setMenuPosition(null);
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        };
+            setActiveProfile(null);
+            setPhase('idle');
+            return;
+        }
 
-        window.addEventListener('lidar:profile_closed', handleProfileClosed);
-        return () => {
-            window.removeEventListener('lidar:profile_closed', handleProfileClosed);
-        };
+        setPhase('ready');
+    }, [phase, removeProfile, viewerRef]);
+
+    const closeProfile = useCallback(() => {
+        const viewer = viewerRef.current;
+        if (viewer) {
+            (viewer as unknown as DispatchableViewer).dispatchEvent({ type: 'cancel_insertions' });
+        }
+        removeProfile(activeProfileRef.current);
+        activeProfileRef.current = null;
+        setActiveProfile(null);
+        setPhase('idle');
+    }, [removeProfile, viewerRef]);
+
+    const toggleProfileMeasurement = useCallback(() => {
+        if (phase === 'idle') {
+            startNewProfile();
+        } else {
+            closeProfile();
+        }
+    }, [closeProfile, phase, startNewProfile]);
+
+    const resetProfile = useCallback(() => {
+        startNewProfile();
+    }, [startNewProfile]);
+
+    const deleteLastPoint = useCallback(() => {
+        const profile = activeProfileRef.current;
+        if (!profile) return;
+
+        const index = phase === 'drawing' ? profile.points.length - 2 : profile.points.length - 1;
+        if (index < 0) return;
+        profile.removeMarker(index);
+
+        if (phase === 'ready' && profile.points.length < 2) {
+            setPhase('drawing');
+        }
+    }, [phase]);
+
+    const setProfileWidth = useCallback((width: number) => {
+        const profile = activeProfileRef.current;
+        if (!profile || Math.abs(profile.width - width) < 0.001) return;
+        profile.setWidth(width);
     }, []);
 
+    useEffect(() => {
+        if (phase !== 'drawing') return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                finishProfile();
+            } else if (event.key === 'Backspace') {
+                event.preventDefault();
+                deleteLastPoint();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [deleteLastPoint, finishProfile, phase]);
+
+    useEffect(() => {
+        const element = viewerRef.current?.renderer.domElement;
+        if (!element || phase !== 'drawing') return;
+
+        const handlePointerFinish = (event: MouseEvent) => {
+            if (event.button !== 2) return;
+            queueMicrotask(() => {
+                const profile = activeProfileRef.current;
+                if (!profile) return;
+                if (profile.points.length >= 2) {
+                    setPhase('ready');
+                } else {
+                    closeProfile();
+                }
+            });
+        };
+
+        element.addEventListener('mouseup', handlePointerFinish);
+        return () => element.removeEventListener('mouseup', handlePointerFinish);
+    }, [closeProfile, phase, viewerRef]);
+
+    useEffect(() => {
+        return () => {
+            const viewer = viewerRef.current;
+            if (viewer) {
+                (viewer as unknown as DispatchableViewer).dispatchEvent({
+                    type: 'cancel_insertions',
+                });
+            }
+            removeProfile(activeProfileRef.current);
+            activeProfileRef.current = null;
+        };
+    }, [removeProfile, viewerRef]);
+
     return {
-        isMeasuring,
+        phase,
+        activeProfile,
         toggleProfileMeasurement,
-        menuPosition,
-        setMenuPosition,
+        startNewProfile,
+        finishProfile,
+        closeProfile,
         resetProfile,
         deleteLastPoint,
+        setProfileWidth,
     };
 }

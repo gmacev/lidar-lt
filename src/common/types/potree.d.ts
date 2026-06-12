@@ -110,6 +110,8 @@ export interface PointCloudMaterial {
     >;
     /** Updates the GPU classification texture after visibility changes */
     recomputeClassification(): void;
+    addEventListener?(type: string, listener: () => void): void;
+    removeEventListener?(type: string, listener: () => void): void;
 }
 
 // ============================================================================
@@ -123,6 +125,7 @@ export interface PointCloud {
     position: Vector3;
     scale: Vector3; // Added for Vertical Exaggeration
     name: string;
+    visible: boolean;
     // Added for World Space transformation
     matrixWorld: Matrix4;
     updateMatrixWorld(force?: boolean): void;
@@ -137,6 +140,11 @@ export interface PointCloud {
         geometryNode?: PotreeGeometryNode;
     };
     profileRequests: ProfileRequest[];
+    getPointsInProfile(
+        profile: Profile,
+        maxDepth: number | null,
+        callback: ProfileRequestCallback
+    ): ProfileRequest;
 }
 
 // ============================================================================
@@ -329,11 +337,38 @@ export interface Profile {
     height: number;
     addMarker(point: Vector3): void;
     removeMarker(index: number): void;
+    setPosition(index: number, position: Vector3): void;
+    setWidth(width: number): void;
+    addEventListener(type: ProfileEventType, listener: (event: ProfileEvent) => void): void;
+    removeEventListener(type: ProfileEventType, listener: (event: ProfileEvent) => void): void;
+}
+
+export type ProfileEventType =
+    | 'marker_added'
+    | 'marker_removed'
+    | 'marker_moved'
+    | 'marker_dropped'
+    | 'width_changed';
+
+export interface ProfileEvent {
+    type: ProfileEventType;
+    profile: Profile;
+    index?: number;
+    position?: Vector3;
+    width?: number;
 }
 
 export interface ProfileTool {
     profiles: Profile[];
     startInsertion(options?: { width?: number; name?: string }): Profile;
+    addEventListener(
+        type: 'start_inserting_profile',
+        listener: (event: { profile: Profile }) => void
+    ): void;
+    removeEventListener(
+        type: 'start_inserting_profile',
+        listener: (event: { profile: Profile }) => void
+    ): void;
 }
 
 // ============================================================================
@@ -495,6 +530,7 @@ export interface ProfileDataSegment {
         numPoints: number;
         data: {
             position: Float32Array; // [x, y, z, x, y, z...]
+            mileage: Float64Array;
             color?: Uint8Array;
             intensity?: Float32Array;
             classification?: Uint8Array;
@@ -503,6 +539,7 @@ export interface ProfileDataSegment {
 }
 
 export interface ProfileRequestEvent {
+    request?: ProfileRequest;
     points: {
         segments: ProfileDataSegment[];
         boundingBox?: Box3;
@@ -512,7 +549,7 @@ export interface ProfileRequestEvent {
 
 export interface ProfileRequestCallback {
     onProgress: (event: ProfileRequestEvent) => void;
-    onFinish: () => void;
+    onFinish: (event?: { request: ProfileRequest }) => void;
     onCancel?: () => void;
     cancel?: () => void; // Helper for internal cleanup
 }
@@ -526,6 +563,7 @@ export class ProfileRequest {
     );
     cancel(): void;
     update(): void;
+    finishLevelThenCancel(): void;
 }
 
 declare global {

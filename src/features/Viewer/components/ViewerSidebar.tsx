@@ -19,6 +19,7 @@ interface ViewerSidebarProps {
     updateUrl: (state: Partial<ViewerState>) => void;
     onBack: () => void;
     onResetDefaults: () => void;
+    onCollapsedChange: (collapsed: boolean) => void;
     resetKey: number;
 }
 
@@ -34,6 +35,7 @@ export function ViewerSidebar({
     updateUrl,
     onBack,
     onResetDefaults,
+    onCollapsedChange,
     resetKey,
 }: ViewerSidebarProps) {
     const { t } = useTranslation();
@@ -46,6 +48,12 @@ export function ViewerSidebar({
     const handleResetDefaults = () => {
         setProjection('PERSPECTIVE');
         onResetDefaults();
+    };
+
+    const handleToggleCollapsed = () => {
+        const nextCollapsed = !isCollapsed;
+        setIsCollapsed(nextCollapsed);
+        onCollapsedChange(nextCollapsed);
     };
 
     return (
@@ -158,7 +166,7 @@ export function ViewerSidebar({
             </div>
 
             <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
+                onClick={handleToggleCollapsed}
                 className={`absolute -right-4 top-1/2 flex h-24 w-4 -translate-y-1/2 items-center justify-center rounded-r-xl border-y border-r border-white/10 bg-glass-bg transition-all duration-300 hover:w-6 hover:bg-black/95 group ${
                     isCollapsed ? 'opacity-100 shadow-[4px_0_15px_rgba(0,0,0,0.5)]' : 'opacity-80'
                 }`}

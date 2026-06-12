@@ -149,6 +149,24 @@
         "deleteAll": "Ištrinti viską",
         "exportCsv": "Eksportuoti CSV"
     },
+    "profile": {
+        "title": "Aukščių profilis",
+        "distanceAxis": "Atstumas (m)",
+        "elevationAxis": "Aukštis (m)",
+        "segments": "atkarpos",
+        "points": "taškai",
+        "shown": "rodoma",
+        "width": "Plotis",
+        "widthHint": "Siauras profilis rodo aiškesnį pjūvį. Didesnis plotis apibendrina koridorių.",
+        "finish": "Baigti",
+        "new": "Naujas profilis",
+        "close": "Uždaryti aukščių profilį",
+        "collapse": "Suskleisti aukščių profilį",
+        "expand": "Išskleisti aukščių profilį",
+        "drawHelp": "Pažymėkite bent du taškus. Baikite dešiniuoju pelės mygtuku arba Enter.",
+        "loading": "Kraunami profilio taškai...",
+        "empty": "LiDAR taškų nerasta. Pabandykite padidinti profilio plotį."
+    },
     "googleMaps": {
         "copied": "Nukopijuota!",
         "copyLink": "Kopijuoti Google Maps nuorodą"

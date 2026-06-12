@@ -15,5 +15,6 @@ export { DistanceMeasurement } from './DistanceMeasurement';
 export { AreaMeasurement } from './AreaMeasurement';
 export { AngleMeasurement } from './AngleMeasurement';
 export { HeightProfileMeasurement } from './HeightProfileMeasurement';
+export { HeightProfilePanel } from './HeightProfilePanel';
 export { Compass } from './Compass';
 export { FloodSimulationTool } from './FloodSimulationTool';

@@ -30,12 +30,14 @@ import { CoordinateSearchControl } from './CoordinateSearchControl';
 import { GoogleMapsButton } from './GoogleMapsButton';
 import { MarkerOverlay } from './MarkerOverlay';
 import { SectorNavigation } from './SectorNavigation';
+import { HeightProfilePanel } from './HeightProfilePanel';
 
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { resetPotreeViewerDisplayDefaults } from '@/features/Viewer/utils/viewerDefaults';
 import { Route } from '@/routes/viewer.$cellId';
+import { isMobile } from '@/common/utils/screenSize';
 
 interface ViewerPageProps {
     cellId: string;
@@ -76,6 +78,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const eptBaseUrl = import.meta.env.VITE_EPT_BASE_URL;
     const dataUrl = `${eptBaseUrl}/${cellId}/potree_output/metadata.json`;
     const [uiVisible, setUiVisible] = useState(true);
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(isMobile);
     const [sidebarResetKey, setSidebarResetKey] = useState(0);
     const [resetSidebarInitialState, setResetSidebarInitialState] = useState<{
         cellId: string;
@@ -121,9 +124,6 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         markerParam: initialState.mk,
         onSearchChange: updateUrl,
     });
-
-    // Get profile data for CSV export
-    const { exportToCsv: exportProfileCsv } = useProfileData({ viewerRef });
 
     // Distance Measurement Tool State
     const {
@@ -200,13 +200,32 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
     // Profile Tool State
     const {
-        isMeasuring: isProfileMeasuring,
+        phase: profilePhase,
+        activeProfile,
         toggleProfileMeasurement: _toggleProfileMeasurement,
-        menuPosition,
-        setMenuPosition,
-        resetProfile,
+        startNewProfile,
+        finishProfile,
+        closeProfile,
         deleteLastPoint,
+        setProfileWidth,
     } = useProfileTool({ viewerRef });
+    const isProfileMeasuring = profilePhase !== 'idle';
+    const [profileWidth, setProfileWidthState] = useState(1);
+    const [isProfilePanelCollapsed, setIsProfilePanelCollapsed] = useState(false);
+    const {
+        sample: profileSample,
+        bins: profileBins,
+        segments: profileSegments,
+        status: profileStatus,
+        summary: profileSummary,
+        revision: profileRevision,
+        exportToCsv: exportProfileCsv,
+    } = useProfileData({ viewerRef, profile: activeProfile });
+
+    const handleProfileWidthChange = (width: number) => {
+        setProfileWidthState(width);
+        setProfileWidth(width);
+    };
 
     // Flood Simulation Tool State
     const {
@@ -279,7 +298,13 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleDistance = createHandler('distance', _toggleDistanceMeasurement);
     const handleToggleArea = createHandler('area', _toggleAreaMeasurement);
     const handleToggleVolume = createHandler('volume', _toggleVolumeMeasurement);
-    const handleToggleProfile = createHandler('profile', _toggleProfileMeasurement);
+    const handleToggleProfile = createHandler('profile', () => {
+        if (!isProfileMeasuring) {
+            setProfileWidthState(1);
+            setIsProfilePanelCollapsed(false);
+        }
+        _toggleProfileMeasurement();
+    });
     const handleStartFlood = createHandler('flood', _startFlood);
     const handleToggleAngle = createHandler('angle', _toggleAngleMeasurement);
     const handleToggleAzimuth = createHandler('azimuth', _toggleAzimuthMeasurement);
@@ -355,8 +380,16 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             {uiVisible && (
                 <>
                     {/* Sector info + Coordinate Search - bottom center, always */}
-                    {!isLoading && !error && (
-                        <div className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 items-stretch gap-2 xl:bottom-4">
+                    {!isLoading && !error && !isProfileMeasuring && (
+                        <div
+                            className={`absolute left-1/2 z-20 flex -translate-x-1/2 items-stretch gap-2 ${
+                                isProfileMeasuring
+                                    ? isProfilePanelCollapsed
+                                        ? 'bottom-[3.25rem]'
+                                        : 'bottom-[calc(clamp(240px,34dvh,360px)+0.5rem)]'
+                                    : 'bottom-2 xl:bottom-4'
+                            }`}
+                        >
                             <CoordinateSearchControl
                                 viewerRef={viewerRef}
                                 sectorName={initialState.sectorName}
@@ -393,7 +426,15 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
                     {/* Right rail - keeps measurement tools and navigation aids from colliding */}
                     {!isLoading && !error && (
-                        <div className="absolute bottom-2 right-2 top-16 z-20 flex w-10 flex-col items-center gap-3 md:top-[140px] xl:right-4">
+                        <div
+                            className={`absolute right-2 top-16 z-20 flex w-10 flex-col items-center gap-3 md:top-[140px] xl:right-4 ${
+                                isProfileMeasuring
+                                    ? isProfilePanelCollapsed
+                                        ? 'bottom-[3.25rem]'
+                                        : 'bottom-[calc(clamp(240px,34dvh,360px)+0.5rem)]'
+                                    : 'bottom-2'
+                            }`}
+                        >
                             <MeasurementToolbar
                                 className="min-h-0 w-max max-w-[280px] flex-1 self-end"
                                 isProfileMeasuring={isProfileMeasuring}
@@ -441,18 +482,6 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                 <Compass viewerRef={viewerRef} onOrientNorth={orientNorth} />
                             </div>
                         </div>
-                    )}
-
-                    {/* Profile Context Menu */}
-                    {menuPosition && (
-                        <MeasurementContext
-                            x={menuPosition.x}
-                            y={menuPosition.y}
-                            onClose={() => setMenuPosition(null)}
-                            onDeleteLast={deleteLastPoint}
-                            onDeleteAll={resetProfile}
-                            onExportCsv={() => exportProfileCsv(cellId)}
-                        />
                     )}
 
                     {/* Distance Context Menu */}
@@ -538,10 +567,41 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                             updateUrl={updateUrl}
                             onBack={onBack}
                             onResetDefaults={handleResetDefaults}
+                            onCollapsedChange={setIsSidebarCollapsed}
                             resetKey={sidebarResetKey}
                         />
                     )}
                 </>
+            )}
+
+            {isProfileMeasuring && !isLoading && !error && (
+                <HeightProfilePanel
+                    key={activeProfile?.uuid}
+                    viewerRef={viewerRef}
+                    phase={profilePhase}
+                    sample={profileSample}
+                    bins={profileBins}
+                    segments={profileSegments}
+                    status={profileStatus}
+                    summary={profileSummary}
+                    revision={profileRevision}
+                    width={profileWidth}
+                    onWidthChange={handleProfileWidthChange}
+                    onFinish={finishProfile}
+                    onNewProfile={() => {
+                        setProfileWidthState(1);
+                        setIsProfilePanelCollapsed(false);
+                        startNewProfile();
+                    }}
+                    onDeleteLast={deleteLastPoint}
+                    onExport={() => exportProfileCsv(cellId)}
+                    onClose={() => {
+                        setIsProfilePanelCollapsed(false);
+                        closeProfile();
+                    }}
+                    onCollapsedChange={setIsProfilePanelCollapsed}
+                    sidebarVisible={uiVisible && !isSidebarCollapsed}
+                />
             )}
 
             {/* UI Toggle button - ALWAYS visible, top right next to language switcher */}

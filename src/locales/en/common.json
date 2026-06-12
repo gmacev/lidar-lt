@@ -149,6 +149,24 @@
         "deleteAll": "Delete all",
         "exportCsv": "Export CSV"
     },
+    "profile": {
+        "title": "Height profile",
+        "distanceAxis": "Distance (m)",
+        "elevationAxis": "Elevation (m)",
+        "segments": "segments",
+        "points": "points",
+        "shown": "shown",
+        "width": "Width",
+        "widthHint": "Use a narrow width for a clean cross-section. Wider values summarize a corridor.",
+        "finish": "Finish",
+        "new": "New profile",
+        "close": "Close height profile",
+        "collapse": "Collapse height profile",
+        "expand": "Expand height profile",
+        "drawHelp": "Click two or more points to create a cross-section. Right-click or press Enter to finish.",
+        "loading": "Loading profile points...",
+        "empty": "No LiDAR points found. Try increasing the corridor width."
+    },
     "googleMaps": {
         "copied": "Copied!",
         "copyLink": "Copy Google Maps link"
