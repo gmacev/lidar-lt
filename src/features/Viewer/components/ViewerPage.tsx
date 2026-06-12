@@ -254,6 +254,21 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         annotation: { isActive: isAnnotationPanelOpen, deactivate: closeAnnotationPanel },
     };
 
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+
+            const activeTool = Object.values(measurements).find(({ isActive }) => isActive);
+            if (!activeTool) return;
+
+            event.preventDefault();
+            activeTool.deactivate();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [measurements]);
+
     const createHandler = (type: MeasurementType | 'annotation', action: () => void) => () => {
         Object.entries(measurements).forEach(([key, { isActive, deactivate }]) => {
             if (key !== type && isActive) deactivate();
