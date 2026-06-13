@@ -56616,6 +56616,12 @@
 			}
 		}
 
+		clear() {
+			while (this.first !== null) {
+				this.disposeDescendants(this.first.node);
+			}
+		}
+
 		disposeDescendants(node) {
 			let stack = [];
 			stack.push(node);
@@ -62997,6 +63003,7 @@ void main() {
 			this.numElements = 0;
 			this.vao = null;
 			this.vbos = new Map();
+			this.disposeHandler = null;
 		}
 
 	};
@@ -63005,18 +63012,31 @@ void main() {
 
 		constructor(threeRenderer) {
 			this.threeRenderer = threeRenderer;
-			this.gl = this.threeRenderer.getContext();
-
 			this.buffers = new Map();
 			this.shaders = new Map();
 			this.textures = new Map();
-
 			this.glTypeMapping = new Map();
+
+			this.resetContext();
+
+			this.toggle = 0;
+		}
+
+		resetContext() {
+			for (let [geometry, webglBuffer] of this.buffers) {
+				if (webglBuffer.disposeHandler) {
+					geometry.removeEventListener("dispose", webglBuffer.disposeHandler);
+				}
+			}
+
+			this.gl = this.threeRenderer.getContext();
+			this.buffers.clear();
+			this.shaders.clear();
+			this.textures.clear();
+			this.glTypeMapping.clear();
 			this.glTypeMapping.set(Float32Array, this.gl.FLOAT);
 			this.glTypeMapping.set(Uint8Array, this.gl.UNSIGNED_BYTE);
 			this.glTypeMapping.set(Uint16Array, this.gl.UNSIGNED_SHORT);
-
-			this.toggle = 0;
 		}
 
 		deleteBuffer(geometry) {
@@ -63077,6 +63097,7 @@ void main() {
 				this.deleteBuffer(geometry);
 				geometry.removeEventListener("dispose", disposeHandler);
 			};
+			webglBuffer.disposeHandler = disposeHandler;
 			geometry.addEventListener("dispose", disposeHandler);
 
 			return webglBuffer;
@@ -63891,6 +63912,9 @@ void main() {
 		render(scene, camera, target = null, params = {}) {
 
 			const gl = this.gl;
+			if (Potree.webglContextLost || gl.isContextLost()) {
+				return;
+			}
 
 			// PREPARE 
 			if (target != null) {
@@ -66402,6 +66426,10 @@ void main() {
 
 		load() {
 
+			if (Potree.webglContextLost) {
+				return false;
+			}
+
 			let maxNodesLoading = Potree.memoryPressure || useConservativeChromiumLoading()
 				? 1
 				: Potree.maxNodesLoading;
@@ -66414,7 +66442,7 @@ void main() {
 				return false;
 			}
 
-			if (Potree.memoryRecoveryUntil > now || Potree.memoryRecoveryProbeActive) {
+			if (Potree.memoryRecoveryUntil > now) {
 				return false;
 			}
 
@@ -66458,7 +66486,9 @@ void main() {
 	const MEMORY_RECOVERY_BUDGET_STEP = 500 * 1000;
 	const MEMORY_RECOVERY_BASE_DELAY = 5000;
 	const MEMORY_RECOVERY_MAX_DELAY = 60 * 1000;
+	const MEMORY_RECOVERY_WORKER_TIMEOUT = 60 * 1000;
 	const CHROMIUM_CONSERVATIVE_BUDGET = 8 * 1000 * 1000;
+	const WEBGL_CONTEXT_RECOVERY_DELAY = 5 * 1000;
 
 	function isChromiumRuntime() {
 		if (typeof navigator === "undefined") {
@@ -66475,7 +66505,7 @@ void main() {
 
 	function useConservativeChromiumLoading() {
 		return Potree.isChromiumRuntime
-			&& Potree.pointBudget > CHROMIUM_CONSERVATIVE_BUDGET;
+			&& Potree.pointBudget >= CHROMIUM_CONSERVATIVE_BUDGET;
 	}
 
 	function isMemoryAllocationFailure(error) {
@@ -66498,6 +66528,9 @@ void main() {
 
 	function abortActiveNodeWorkers(retryAt) {
 		for (let [activeWorker, activeLoad] of Potree.activeNodeWorkers) {
+			if (activeLoad.cancel) {
+				activeLoad.cancel();
+			}
 			activeWorker.onmessage = null;
 			activeWorker.onerror = null;
 			activeWorker.onmessageerror = null;
@@ -66515,6 +66548,69 @@ void main() {
 
 		Potree.activeNodeWorkers.clear();
 		Potree.memoryRecoveryProbeActive = false;
+	}
+
+	function beginWebGLContextRecovery() {
+		if (Potree.webglContextLost) {
+			return;
+		}
+
+		const now = performance.now();
+		const retryAt = Math.max(
+			Potree.memoryRecoveryUntil,
+			now + WEBGL_CONTEXT_RECOVERY_DELAY
+		);
+
+		Potree.webglContextLost = true;
+		Potree.memoryPressure = true;
+		Potree.memoryRecoveryUntil = retryAt;
+		Potree.memoryRecoveryFailures = Math.max(Potree.memoryRecoveryFailures || 0, 1);
+
+		abortActiveNodeWorkers(retryAt);
+
+		const previousBudget = Potree.pointBudget;
+		const recoveryCeiling = Potree.isChromiumRuntime
+			? CHROMIUM_CONSERVATIVE_BUDGET
+			: previousBudget;
+		const recoveryTarget = Math.min(previousBudget * 0.5, recoveryCeiling);
+		const reducedBudget = Math.max(
+			MEMORY_RECOVERY_MIN_BUDGET,
+			Math.floor(recoveryTarget / MEMORY_RECOVERY_BUDGET_STEP)
+				* MEMORY_RECOVERY_BUDGET_STEP
+		);
+		const budgetReduced = reducedBudget < previousBudget;
+
+		if (budgetReduced) {
+			Potree.pointBudget = reducedBudget;
+			Potree.requestedPointBudget = reducedBudget;
+		}
+		Potree.pointLoadLimit = reducedBudget;
+
+		// The restored context must not immediately re-upload the old GPU-sized cache.
+		Potree.lru.clear();
+
+		console.warn(
+			`Potree WebGL context lost under memory pressure. `
+			+ `Cleared the point cache and paused loading for `
+			+ `${Math.ceil((retryAt - now) / 1000)} seconds.`
+		);
+
+		if (budgetReduced) {
+			console.warn(
+				`Potree memory pressure: reduced the session point budget from `
+				+ `${previousBudget.toLocaleString()} to ${reducedBudget.toLocaleString()}.`
+			);
+		}
+
+		window.dispatchEvent(new CustomEvent("potree-point-budget-reduced", {
+			detail: {
+				previousBudget: previousBudget,
+				reducedBudget: reducedBudget,
+				budgetReduced: budgetReduced,
+				loadingPaused: true,
+				retryDelay: retryAt - now,
+			},
+		}));
 	}
 
 	function beginMemoryRecovery(node, error) {
@@ -66687,7 +66783,21 @@ void main() {
 
 				worker = Potree.workerPool.getWorker(workerPath);
 				let workerSettled = false;
-				Potree.activeNodeWorkers.set(worker, {node: node, workerPath: workerPath});
+				let workerTimeout = null;
+				const clearWorkerTimeout = function () {
+					if (workerTimeout !== null) {
+						clearTimeout(workerTimeout);
+						workerTimeout = null;
+					}
+				};
+				Potree.activeNodeWorkers.set(worker, {
+					node: node,
+					workerPath: workerPath,
+					cancel: function () {
+						workerSettled = true;
+						clearWorkerTimeout();
+					},
+				});
 
 				worker.onmessage = function (e) {
 					if (e.data && e.data.error) {
@@ -66698,63 +66808,71 @@ void main() {
 					if (workerSettled) {
 						return;
 					}
-					workerSettled = true;
 
-					let data = e.data;
-					let buffers = data.attributeBuffers;
+					let geometry = null;
+					try {
+						let data = e.data;
+						let buffers = data.attributeBuffers;
+						geometry = new BufferGeometry();
 
-					worker.onmessage = null;
-					worker.onerror = null;
-					worker.onmessageerror = null;
-					Potree.activeNodeWorkers.delete(worker);
-					Potree.workerPool.returnWorker(workerPath, worker);
+						for (let property in buffers) {
 
-					let geometry = new BufferGeometry();
+							let buffer = buffers[property].buffer;
 
-					for (let property in buffers) {
+							if (property === "position") {
+								geometry.setAttribute('position', new BufferAttribute(new Float32Array(buffer), 3));
+							} else if (property === "rgba") {
+								geometry.setAttribute('rgba', new BufferAttribute(new Uint8Array(buffer), 4, true));
+							} else if (property === "NORMAL") {
+								//geometry.setAttribute('rgba', new THREE.BufferAttribute(new Uint8Array(buffer), 4, true));
+								geometry.setAttribute('normal', new BufferAttribute(new Float32Array(buffer), 3));
+							} else if (property === "INDICES") {
+								let bufferAttribute = new BufferAttribute(new Uint8Array(buffer), 4);
+								bufferAttribute.normalized = true;
+								geometry.setAttribute('indices', bufferAttribute);
+							} else {
+								const bufferAttribute = new BufferAttribute(new Float32Array(buffer), 1);
 
-						let buffer = buffers[property].buffer;
+								let batchAttribute = buffers[property].attribute;
+								bufferAttribute.potree = {
+									offset: buffers[property].offset,
+									scale: buffers[property].scale,
+									range: batchAttribute.range,
+								};
 
-						if (property === "position") {
-							geometry.setAttribute('position', new BufferAttribute(new Float32Array(buffer), 3));
-						} else if (property === "rgba") {
-							geometry.setAttribute('rgba', new BufferAttribute(new Uint8Array(buffer), 4, true));
-						} else if (property === "NORMAL") {
-							//geometry.setAttribute('rgba', new THREE.BufferAttribute(new Uint8Array(buffer), 4, true));
-							geometry.setAttribute('normal', new BufferAttribute(new Float32Array(buffer), 3));
-						} else if (property === "INDICES") {
-							let bufferAttribute = new BufferAttribute(new Uint8Array(buffer), 4);
-							bufferAttribute.normalized = true;
-							geometry.setAttribute('indices', bufferAttribute);
-						} else {
-							const bufferAttribute = new BufferAttribute(new Float32Array(buffer), 1);
+								geometry.setAttribute(property, bufferAttribute);
+							}
 
-							let batchAttribute = buffers[property].attribute;
-							bufferAttribute.potree = {
-								offset: buffers[property].offset,
-								scale: buffers[property].scale,
-								range: batchAttribute.range,
-							};
-
-							geometry.setAttribute(property, bufferAttribute);
 						}
+						// indices ??
 
-					}
-					// indices ??
+						workerSettled = true;
+						clearWorkerTimeout();
+						worker.onmessage = null;
+						worker.onerror = null;
+						worker.onmessageerror = null;
+						Potree.activeNodeWorkers.delete(worker);
+						Potree.workerPool.returnWorker(workerPath, worker);
 
-					node.density = data.density;
-					node.geometry = geometry;
-					node.loaded = true;
-					node.loading = false;
-					node._loadFailures = 0;
-					node._loadRetryAt = 0;
-					Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+						node.density = data.density;
+						node.geometry = geometry;
+						node.loaded = true;
+						node.loading = false;
+						node._loadFailures = 0;
+						node._loadRetryAt = 0;
+						Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
 
-					if (node._memoryRecoveryProbe) {
-						node._memoryRecoveryProbe = false;
-						Potree.memoryRecoveryProbeActive = false;
-						Potree.memoryRecoveryUntil = 0;
-						Potree.memoryRecoveryFailures = 0;
+						if (node._memoryRecoveryProbe) {
+							node._memoryRecoveryProbe = false;
+							Potree.memoryRecoveryProbeActive = false;
+							Potree.memoryRecoveryUntil = 0;
+							Potree.memoryRecoveryFailures = 0;
+						}
+					} catch (error) {
+						if (geometry) {
+							geometry.dispose();
+						}
+						handleWorkerError(error);
 					}
 				};
 
@@ -66765,6 +66883,7 @@ void main() {
 						return true;
 					}
 					workerSettled = true;
+					clearWorkerTimeout();
 
 					worker.onmessage = null;
 					worker.onerror = null;
@@ -66798,6 +66917,14 @@ void main() {
 				};
 				worker.onerror = handleWorkerError;
 				worker.onmessageerror = handleWorkerError;
+				workerTimeout = setTimeout(function () {
+					const timeoutError = new Error(
+						`Decoder worker timed out for node ${node.name}`
+					);
+					timeoutError.name = "TimeoutError";
+					timeoutError.memoryAllocationFailed = true;
+					handleWorkerError(timeoutError);
+				}, MEMORY_RECOVERY_WORKER_TIMEOUT);
 
 				let pointAttributes = node.octreeGeometry.pointAttributes;
 				let scale = node.octreeGeometry.scale;
@@ -66825,6 +66952,10 @@ void main() {
 				worker.postMessage(message, [message.buffer]);
 			} catch (e) {
 				if (worker) {
+					const activeLoad = Potree.activeNodeWorkers.get(worker);
+					if (activeLoad && activeLoad.cancel) {
+						activeLoad.cancel();
+					}
 					worker.onmessage = null;
 					worker.onerror = null;
 					worker.onmessageerror = null;
@@ -88587,12 +88718,16 @@ ENDSEC
 				{
 					let canvas = this.renderer.domElement;
 					canvas.addEventListener("webglcontextlost", (e) => {
-						console.log(e);
-						this.postMessage("WebGL context lost. \u2639");
+						e.preventDefault();
+						beginWebGLContextRecovery();
+					}, false);
+					canvas.addEventListener("webglcontextrestored", () => {
+						if (this.pRenderer) {
+							this.pRenderer.resetContext();
+						}
 
-						let gl = this.renderer.getContext();
-						let error = gl.getError();
-						console.log(error);
+						Potree.webglContextLost = false;
+						console.warn("Potree WebGL context restored. Point loading will resume gradually.");
 					}, false);
 				}
 
@@ -90835,6 +90970,7 @@ ENDSEC
 	let memoryRecoveryProbeActive = false;
 	let activeNodeWorkers = new Map();
 	let chromiumRuntime = isChromiumRuntime();
+	let webglContextLost = false;
 
 	const debug = {};
 
@@ -91128,6 +91264,7 @@ ENDSEC
 	exports.memoryRecoveryProbeActive = memoryRecoveryProbeActive;
 	exports.activeNodeWorkers = activeNodeWorkers;
 	exports.isChromiumRuntime = chromiumRuntime;
+	exports.webglContextLost = webglContextLost;
 	exports.numNodesLoading = numNodesLoading;
 	exports.pointBudget = pointBudget;
 	exports.requestedPointBudget = pointBudget;
