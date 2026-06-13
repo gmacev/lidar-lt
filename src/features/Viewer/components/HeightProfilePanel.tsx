@@ -119,6 +119,9 @@ export function HeightProfilePanel({
     const dataCanvasRef = useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
+    const tooltipDistanceRef = useRef<HTMLSpanElement>(null);
+    const tooltipElevationRef = useRef<HTMLSpanElement>(null);
+    const tooltipDetailsRef = useRef<HTMLDivElement>(null);
     const cacheRef = useRef<ProjectionCache | null>(null);
     const viewRef = useRef<ViewBounds>(EMPTY_BOUNDS);
     const hasFittedRef = useRef(false);
@@ -425,8 +428,17 @@ export function HeightProfilePanel({
 
         const segmentIndex = sample.segmentIndex[index];
         tooltip.hidden = false;
-        tooltip.style.transform = `translate(${Math.min(clientX + 12, overlay.clientWidth - 190)}px, ${Math.max(8, clientY - 72)}px)`;
-        tooltip.textContent = `${sample.mileage[index].toFixed(2)} m · ${sample.elevation[index].toFixed(2)} m · P${Math.max(1, segmentIndex + 1)}–P${Math.max(2, segmentIndex + 2)} · C${sample.classification[index]}`;
+        const tooltipX = Math.max(8, Math.min(clientX + 12, overlay.clientWidth - 244));
+        tooltip.style.transform = `translate(${tooltipX}px, ${Math.max(8, clientY - 100)}px)`;
+        if (tooltipDistanceRef.current) {
+            tooltipDistanceRef.current.textContent = `${sample.mileage[index].toFixed(2)} m`;
+        }
+        if (tooltipElevationRef.current) {
+            tooltipElevationRef.current.textContent = `${sample.elevation[index].toFixed(2)} m`;
+        }
+        if (tooltipDetailsRef.current) {
+            tooltipDetailsRef.current.textContent = `${t('profile.segment')} P${segmentIndex + 1}–P${segmentIndex + 2} · ${t('profile.classification')} ${sample.classification[index]}`;
+        }
 
         let marker = markerRef.current;
         if (!marker) {
@@ -677,8 +689,21 @@ export function HeightProfilePanel({
                     <div
                         ref={tooltipRef}
                         hidden
-                        className="pointer-events-none absolute left-0 top-0 max-w-[260px] rounded border border-neon-amber/35 bg-black/95 px-3 py-2 font-mono text-xs leading-5 text-white/90 shadow-lg"
-                    />
+                        className="pointer-events-none absolute left-0 top-0 min-w-56 rounded border border-neon-amber/35 bg-black/95 px-3 py-2 font-mono text-xs leading-5 text-white/90 shadow-lg"
+                    >
+                        <div className="grid grid-cols-[18px_1fr_auto] gap-x-2">
+                            <span className="font-semibold text-neon-amber">X</span>
+                            <span className="text-white/55">{t('profile.distance')}</span>
+                            <span ref={tooltipDistanceRef} className="text-right text-white" />
+                            <span className="font-semibold text-neon-amber">Y</span>
+                            <span className="text-white/55">{t('profile.elevation')}</span>
+                            <span ref={tooltipElevationRef} className="text-right text-white" />
+                        </div>
+                        <div
+                            ref={tooltipDetailsRef}
+                            className="mt-1 border-t border-white/10 pt-1 text-[11px] text-white/50"
+                        />
+                    </div>
 
                     {status === 'waiting' && (
                         <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/45">
