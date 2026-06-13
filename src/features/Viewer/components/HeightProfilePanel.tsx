@@ -17,6 +17,7 @@ import type {
     ProfileSummary,
 } from '@/features/Viewer/hooks/useProfileData';
 import type { ProfilePhase } from '@/features/Viewer/hooks/useProfileTool';
+import { ProfilePointRenderer } from '@/features/Viewer/utils/ProfilePointRenderer';
 import { Icon } from '@/common/components';
 
 interface HeightProfilePanelProps {
@@ -47,17 +48,19 @@ interface ViewBounds {
 }
 
 interface ProjectionCache {
-    x: Float32Array;
-    y: Float32Array;
-    cells: Map<string, number[]>;
     bounds: ViewBounds;
     plot: { left: number; top: number; width: number; height: number };
 }
 
+interface HoverIndex {
+    buckets: number[][];
+    minX: number;
+    maxX: number;
+}
+
 const EMPTY_BOUNDS: ViewBounds = { minX: 0, maxX: 1, minY: 0, maxY: 1 };
-const CELL_SIZE = 16;
+const HOVER_BUCKET_COUNT = 1024;
 const GROUND_TRACE_MAX_GAP_METERS = 1;
-const POINT_COLORS = ['#3b528b', '#21918c', '#5ec962', '#fde725', '#ffb000', '#ef6c42'] as const;
 
 function niceStep(range: number, targetTicks: number) {
     const rough = range / Math.max(1, targetTicks);
@@ -91,6 +94,14 @@ function isClassificationVisible(viewer: PotreeViewer | null, classification: nu
     return entry.visible !== false && entry.color[3] !== 0;
 }
 
+function buildClassificationVisibility(viewer: PotreeViewer | null) {
+    const visibility = new Uint8Array(256);
+    for (let classification = 0; classification < visibility.length; classification++) {
+        visibility[classification] = isClassificationVisible(viewer, classification) ? 1 : 0;
+    }
+    return visibility;
+}
+
 function formatMeters(value: number | null, digits = 1) {
     return value === null ? '—' : `${value.toFixed(digits)} m`;
 }
@@ -117,12 +128,15 @@ export function HeightProfilePanel({
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
     const dataCanvasRef = useRef<HTMLCanvasElement>(null);
+    const pointsCanvasRef = useRef<HTMLCanvasElement>(null);
     const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
     const tooltipDistanceRef = useRef<HTMLSpanElement>(null);
     const tooltipElevationRef = useRef<HTMLSpanElement>(null);
     const tooltipDetailsRef = useRef<HTMLDivElement>(null);
     const cacheRef = useRef<ProjectionCache | null>(null);
+    const hoverIndexRef = useRef<HoverIndex | null>(null);
+    const pointRendererRef = useRef<ProfilePointRenderer | null>(null);
     const viewRef = useRef<ViewBounds>(EMPTY_BOUNDS);
     const hasFittedRef = useRef(false);
     const userAdjustedViewRef = useRef(false);
@@ -181,7 +195,9 @@ export function HeightProfilePanel({
     useEffect(() => {
         return () => {
             if (redrawFrameRef.current !== null) cancelAnimationFrame(redrawFrameRef.current);
+            if (pointerFrameRef.current !== null) cancelAnimationFrame(pointerFrameRef.current);
             clearSelection();
+            pointRendererRef.current?.dispose();
             markerRef.current?.geometry.dispose();
             (markerRef.current?.material as MeshBasicMaterial | undefined)?.dispose();
         };
@@ -199,10 +215,31 @@ export function HeightProfilePanel({
     }, [revision, sample, summary]);
 
     useEffect(() => {
+        if (sample.count === 0) {
+            hoverIndexRef.current = null;
+            return;
+        }
+
+        const minX = 0;
+        const maxX = Math.max(1, summary.length);
+        const buckets = Array.from({ length: HOVER_BUCKET_COUNT }, () => [] as number[]);
+        for (let i = 0; i < sample.count; i++) {
+            const normalized = (sample.mileage[i] - minX) / (maxX - minX);
+            const bucketIndex = Math.min(
+                HOVER_BUCKET_COUNT - 1,
+                Math.max(0, Math.floor(normalized * HOVER_BUCKET_COUNT))
+            );
+            buckets[bucketIndex].push(i);
+        }
+        hoverIndexRef.current = { buckets, minX, maxX };
+    }, [revision, sample, summary.length]);
+
+    useEffect(() => {
         if (collapsed || canvasSize.width === 0 || canvasSize.height === 0) return;
         const canvas = dataCanvasRef.current;
+        const pointsCanvas = pointsCanvasRef.current;
         const overlay = overlayCanvasRef.current;
-        if (!canvas || !overlay) return;
+        if (!canvas || !pointsCanvas || !overlay) return;
 
         const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
         for (const target of [canvas, overlay]) {
@@ -214,6 +251,11 @@ export function HeightProfilePanel({
                 target.style.width = `${canvasSize.width}px`;
                 target.style.height = `${canvasSize.height}px`;
             }
+        }
+
+        if (!pointRendererRef.current || pointRendererRef.current.canvas !== pointsCanvas) {
+            pointRendererRef.current?.dispose();
+            pointRendererRef.current = ProfilePointRenderer.create(pointsCanvas);
         }
 
         const context = canvas.getContext('2d');
@@ -297,54 +339,14 @@ export function HeightProfilePanel({
             context.fillText(controlPoint.label, labelX, plot.top + 12);
         }
 
-        const projectedX = new Float32Array(sample.count);
-        const projectedY = new Float32Array(sample.count);
-        const cells = new Map<string, number[]>();
         const viewer = viewerRef.current;
-        const colorPaths = POINT_COLORS.map(() => new Path2D());
         const colorMin = summary.minElevation ?? bounds.minY;
         const colorMax = summary.maxElevation ?? bounds.maxY;
-        for (let i = 0; i < sample.count; i++) {
-            if (!isClassificationVisible(viewer, sample.classification[i])) continue;
-            const x = scaleX(sample.mileage[i]);
-            const y = scaleY(sample.elevation[i]);
-            projectedX[i] = x;
-            projectedY[i] = y;
-            if (
-                x < plot.left ||
-                x > plot.left + plot.width ||
-                y < plot.top ||
-                y > plot.top + plot.height
-            ) {
-                continue;
-            }
-            const colorIndex = Math.min(
-                POINT_COLORS.length - 1,
-                Math.max(
-                    0,
-                    Math.floor(
-                        ((sample.elevation[i] - colorMin) / Math.max(0.001, colorMax - colorMin)) *
-                            POINT_COLORS.length
-                    )
-                )
-            );
-            colorPaths[colorIndex].rect(x, y, 1.35, 1.35);
-            const key = `${Math.floor(x / CELL_SIZE)}:${Math.floor(y / CELL_SIZE)}`;
-            const bucket = cells.get(key);
-            if (bucket) bucket.push(i);
-            else cells.set(key, [i]);
-        }
+
         context.save();
         context.beginPath();
         context.rect(plot.left, plot.top, plot.width, plot.height);
         context.clip();
-        context.globalAlpha = 0.82;
-        for (let i = 0; i < colorPaths.length; i++) {
-            context.fillStyle = POINT_COLORS[i];
-            context.fill(colorPaths[i]);
-        }
-        context.globalAlpha = 1;
-
         if (bins.length > 1) {
             context.strokeStyle = '#70d6a3';
             context.lineWidth = 1.5;
@@ -383,7 +385,19 @@ export function HeightProfilePanel({
         context.fillText(t('profile.elevationAxis'), 0, 0);
         context.restore();
 
-        cacheRef.current = { x: projectedX, y: projectedY, cells, bounds, plot };
+        pointRendererRef.current?.render({
+            sample,
+            bounds,
+            plot,
+            width: canvasSize.width,
+            height: canvasSize.height,
+            dpr,
+            colorMin,
+            colorMax,
+            classificationVisibility: buildClassificationVisibility(viewer),
+        });
+
+        cacheRef.current = { bounds, plot };
         clearSelection();
     }, [bins, canvasSize, collapsed, phase, revision, sample, segments, t, viewerRef]);
 
@@ -412,8 +426,17 @@ export function HeightProfilePanel({
         if (!context) return;
         context.setTransform(dpr, 0, 0, dpr, 0, 0);
         context.clearRect(0, 0, overlay.width / dpr, overlay.height / dpr);
-        const x = cache.x[index];
-        const y = cache.y[index];
+        const x =
+            cache.plot.left +
+            ((sample.mileage[index] - cache.bounds.minX) /
+                (cache.bounds.maxX - cache.bounds.minX)) *
+                cache.plot.width;
+        const y =
+            cache.plot.top +
+            (1 -
+                (sample.elevation[index] - cache.bounds.minY) /
+                    (cache.bounds.maxY - cache.bounds.minY)) *
+                cache.plot.height;
         context.strokeStyle = 'rgba(255,184,0,0.72)';
         context.beginPath();
         context.moveTo(x, cache.plot.top);
@@ -483,23 +506,47 @@ export function HeightProfilePanel({
         pointerFrameRef.current = requestAnimationFrame(() => {
             pointerFrameRef.current = null;
             const cache = cacheRef.current;
-            if (!cache) return;
+            const hoverIndex = hoverIndexRef.current;
+            if (!cache || !hoverIndex) return;
             const rect = currentTarget.getBoundingClientRect();
             const x = clientX - rect.left;
             const y = clientY - rect.top;
-            const cellX = Math.floor(x / CELL_SIZE);
-            const cellY = Math.floor(y / CELL_SIZE);
+            const xTolerance = (10 / cache.plot.width) * (cache.bounds.maxX - cache.bounds.minX);
+            const pointerMileage =
+                cache.bounds.minX +
+                ((x - cache.plot.left) / cache.plot.width) *
+                    (cache.bounds.maxX - cache.bounds.minX);
+            const bucketScale =
+                HOVER_BUCKET_COUNT / Math.max(0.001, hoverIndex.maxX - hoverIndex.minX);
+            const firstBucket = Math.max(
+                0,
+                Math.floor((pointerMileage - xTolerance - hoverIndex.minX) * bucketScale)
+            );
+            const lastBucket = Math.min(
+                HOVER_BUCKET_COUNT - 1,
+                Math.floor((pointerMileage + xTolerance - hoverIndex.minX) * bucketScale)
+            );
             let closest = -1;
             let closestDistance = 10;
-            for (let ox = -1; ox <= 1; ox++) {
-                for (let oy = -1; oy <= 1; oy++) {
-                    const bucket = cache.cells.get(`${cellX + ox}:${cellY + oy}`) ?? [];
-                    for (const index of bucket) {
-                        const distance = Math.hypot(cache.x[index] - x, cache.y[index] - y);
-                        if (distance < closestDistance) {
-                            closest = index;
-                            closestDistance = distance;
-                        }
+            const viewer = viewerRef.current;
+            for (let bucketIndex = firstBucket; bucketIndex <= lastBucket; bucketIndex++) {
+                for (const index of hoverIndex.buckets[bucketIndex]) {
+                    if (!isClassificationVisible(viewer, sample.classification[index])) continue;
+                    const projectedX =
+                        cache.plot.left +
+                        ((sample.mileage[index] - cache.bounds.minX) /
+                            (cache.bounds.maxX - cache.bounds.minX)) *
+                            cache.plot.width;
+                    const projectedY =
+                        cache.plot.top +
+                        (1 -
+                            (sample.elevation[index] - cache.bounds.minY) /
+                                (cache.bounds.maxY - cache.bounds.minY)) *
+                            cache.plot.height;
+                    const distance = Math.hypot(projectedX - x, projectedY - y);
+                    if (distance < closestDistance) {
+                        closest = index;
+                        closestDistance = distance;
                     }
                 }
             }
@@ -665,6 +712,10 @@ export function HeightProfilePanel({
             {!collapsed && (
                 <div ref={containerRef} className="relative h-[calc(100%-2.75rem)] overflow-hidden">
                     <canvas ref={dataCanvasRef} className="absolute inset-0" />
+                    <canvas
+                        ref={pointsCanvasRef}
+                        className="pointer-events-none absolute inset-0"
+                    />
                     <canvas
                         ref={overlayCanvasRef}
                         className="absolute inset-0 cursor-crosshair touch-none"

@@ -63,18 +63,10 @@ interface UseProfileDataReturn {
     exportToCsv: (cellId: string) => void;
 }
 
-const EMPTY_SAMPLE: ProfileSample = {
-    mileage: new Float64Array(),
-    elevation: new Float32Array(),
-    displayElevation: new Float32Array(),
-    x: new Float64Array(),
-    y: new Float64Array(),
-    classification: new Uint8Array(),
-    segmentIndex: new Uint16Array(),
-    count: 0,
-};
-const SAMPLE_LIMIT = 10_000;
-const REQUEST_POINT_LIMIT = 20_000;
+const SAMPLE_LIMIT = 60_000;
+const REQUEST_POINT_LIMIT = 60_000;
+const MAX_RETAINED_POINTS = 100_000;
+const MAX_SAMPLE_BUCKETS = 512;
 const PROFILE_MAX_DEPTH = 10;
 const CSV_BIN_SIZE = 0.2;
 
@@ -97,6 +89,35 @@ interface MutableBin {
     groundCount: number;
     minPoint: { x: number; y: number; z: number };
     maxPoint: { x: number; y: number; z: number };
+}
+
+function createEmptySample(): ProfileSample {
+    return {
+        mileage: new Float64Array(),
+        elevation: new Float32Array(),
+        displayElevation: new Float32Array(),
+        x: new Float64Array(),
+        y: new Float64Array(),
+        classification: new Uint8Array(),
+        segmentIndex: new Uint16Array(),
+        count: 0,
+    };
+}
+
+function replaceSample(target: ProfileSample, source: ProfileSample) {
+    target.mileage = source.mileage;
+    target.elevation = source.elevation;
+    target.displayElevation = source.displayElevation;
+    target.x = source.x;
+    target.y = source.y;
+    target.classification = source.classification;
+    target.segmentIndex = source.segmentIndex;
+    target.count = source.count;
+}
+
+function replaceBins(target: ProfileBin[], source: ProfileBin[]) {
+    target.length = source.length;
+    for (let i = 0; i < source.length; i++) target[i] = source[i];
 }
 
 function buildSegments(profile: Profile | null): ProfileSegment[] {
@@ -159,12 +180,57 @@ function toTypedSample(points: MutablePoint[]): ProfileSample {
     return sample;
 }
 
+function createDistanceAwareSample(points: MutablePoint[], profileLength: number) {
+    if (points.length <= SAMPLE_LIMIT) return points;
+
+    const bucketCount = Math.min(MAX_SAMPLE_BUCKETS, Math.max(64, Math.ceil(profileLength)));
+    const buckets = Array.from({ length: bucketCount }, () => [] as MutablePoint[]);
+    for (const point of points) {
+        const normalizedDistance = point.mileage / Math.max(profileLength, Number.EPSILON);
+        const bucketIndex = Math.min(
+            bucketCount - 1,
+            Math.max(0, Math.floor(normalizedDistance * bucketCount))
+        );
+        buckets[bucketIndex].push(point);
+    }
+
+    const populated = buckets
+        .filter((bucket) => bucket.length > 0)
+        .map((bucket) => ({ bucket, quota: 0 }));
+    let remaining = SAMPLE_LIMIT;
+    let expandable = populated;
+    while (remaining > 0 && expandable.length > 0) {
+        const share = Math.max(1, Math.floor(remaining / expandable.length));
+        const nextExpandable: typeof populated = [];
+        for (const entry of expandable) {
+            if (remaining === 0) break;
+            const added = Math.min(entry.bucket.length - entry.quota, share, remaining);
+            entry.quota += added;
+            remaining -= added;
+            if (entry.quota < entry.bucket.length) nextExpandable.push(entry);
+        }
+        expandable = nextExpandable;
+    }
+
+    const sampled: MutablePoint[] = [];
+    for (const { bucket, quota } of populated) {
+        if (quota >= bucket.length) {
+            for (const point of bucket) sampled.push(point);
+            continue;
+        }
+        for (let i = 0; i < quota; i++) {
+            sampled.push(bucket[Math.floor(((i + 0.5) * bucket.length) / quota)]);
+        }
+    }
+    return sampled;
+}
+
 export function useProfileData({
     viewerRef,
     profile,
 }: UseProfileDataOptions): UseProfileDataReturn {
-    const [sample, setSample] = useState<ProfileSample>(EMPTY_SAMPLE);
-    const [bins, setBins] = useState<ProfileBin[]>([]);
+    const sampleRef = useRef<ProfileSample>(createEmptySample());
+    const binsRef = useRef<ProfileBin[]>([]);
     const [status, setStatus] = useState<ProfileDataStatus>('idle');
     const [acceptedPointCount, setAcceptedPointCount] = useState(0);
     const [revision, setRevision] = useState(0);
@@ -213,9 +279,10 @@ export function useProfileData({
         if (isNewProfile) {
             queueMicrotask(() => {
                 if (generation !== generationRef.current) return;
-                setSample(EMPTY_SAMPLE);
-                setBins([]);
+                replaceSample(sampleRef.current, createEmptySample());
+                binsRef.current.length = 0;
                 setAcceptedPointCount(0);
+                setRevision((value) => value + 1);
             });
         }
 
@@ -229,26 +296,35 @@ export function useProfileData({
         if (requestProfile.points.length < 2) {
             queueMicrotask(() => {
                 if (generation !== generationRef.current) return;
-                setSample(EMPTY_SAMPLE);
-                setBins([]);
+                replaceSample(sampleRef.current, createEmptySample());
+                binsRef.current.length = 0;
                 setAcceptedPointCount(0);
                 setStatus('waiting');
+                setRevision((value) => value + 1);
             });
             return;
         }
 
+        const requestSegments = buildSegments(requestProfile);
+        const profileLength = requestSegments.at(-1)?.endDistance ?? 0;
         const mutablePoints: MutablePoint[] = [];
         const mutableBins = new Map<string, MutableBin>();
         let totalAccepted = 0;
         let finishedRequests = 0;
         let publishPending = false;
+        let finalStatus: ProfileDataStatus | null = null;
 
         const publish = () => {
             if (generation !== generationRef.current) return;
+            if (publishTimerRef.current) clearTimeout(publishTimerRef.current);
             publishPending = false;
             publishTimerRef.current = null;
-            setSample(toTypedSample(mutablePoints));
-            setBins(
+            replaceSample(
+                sampleRef.current,
+                toTypedSample(createDistanceAwareSample(mutablePoints, profileLength))
+            );
+            replaceBins(
+                binsRef.current,
                 Array.from(mutableBins.values())
                     .sort((a, b) => a.binIndex - b.binIndex || a.segmentIndex - b.segmentIndex)
                     .map((bin) => ({
@@ -263,13 +339,20 @@ export function useProfileData({
                     }))
             );
             setAcceptedPointCount(totalAccepted);
+            if (finalStatus) setStatus(finalStatus);
             setRevision((value) => value + 1);
         };
 
-        const schedulePublish = () => {
+        const schedulePublish = (delay = 750) => {
             if (publishPending) return;
             publishPending = true;
-            publishTimerRef.current = setTimeout(publish, 500);
+            publishTimerRef.current = setTimeout(publish, delay);
+        };
+
+        const scheduleFinalPublish = () => {
+            if (publishTimerRef.current) clearTimeout(publishTimerRef.current);
+            publishPending = true;
+            publishTimerRef.current = setTimeout(publish, 0);
         };
 
         const visiblePointclouds = viewer.scene.pointclouds.filter(
@@ -320,11 +403,13 @@ export function useProfileData({
                         classification,
                         segmentIndex,
                     };
-                    if (mutablePoints.length < SAMPLE_LIMIT) {
+                    if (mutablePoints.length < MAX_RETAINED_POINTS) {
                         mutablePoints.push(point);
                     } else {
                         const replacement = Math.floor(Math.random() * totalAccepted);
-                        if (replacement < SAMPLE_LIMIT) mutablePoints[replacement] = point;
+                        if (replacement < MAX_RETAINED_POINTS) {
+                            mutablePoints[replacement] = point;
+                        }
                     }
 
                     const binIndex = Math.floor(mileage / CSV_BIN_SIZE);
@@ -370,9 +455,9 @@ export function useProfileData({
                 onProgress: (event) => processProgress(pointcloud, event),
                 onFinish: () => {
                     finishedRequests++;
-                    publish();
                     if (finishedRequests === visiblePointclouds.length) {
-                        setStatus(totalAccepted > 0 ? 'ready' : 'empty');
+                        finalStatus = totalAccepted > 0 ? 'ready' : 'empty';
+                        scheduleFinalPublish();
                     }
                 },
                 onCancel: () => undefined,
@@ -385,6 +470,9 @@ export function useProfileData({
         };
     }, [cancelRequests, geometryRevision, profile, viewerRef]);
 
+    /* eslint-disable react-hooks/refs -- High-volume profile buffers keep stable identities so React DevTools does not clone their contents. */
+    const sample = sampleRef.current;
+    const bins = binsRef.current;
     const segments = buildSegments(profile);
     const summary: ProfileSummary = {
         length: segments.at(-1)?.endDistance ?? 0,
@@ -421,5 +509,6 @@ export function useProfileData({
         );
     };
 
-    return { sample, bins, segments, status, summary, revision, exportToCsv };
+    const result = { sample, bins, segments, status, summary, revision, exportToCsv };
+    return result;
 }
