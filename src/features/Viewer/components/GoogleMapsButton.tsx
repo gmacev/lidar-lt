@@ -2,6 +2,7 @@ import { useState, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
+import { GoogleMapsIcon } from './GoogleMapsIcon';
 import { ToolbarToolButton } from './ToolbarToolButton';
 
 // LKS94 projection definition (EPSG:3346)
@@ -52,13 +53,7 @@ export function GoogleMapsButton({ viewerRef }: GoogleMapsButtonProps) {
             isActive={copied}
             activeClassName="bg-neon-green/30 border-neon-green text-neon-green shadow-[0_0_12px_rgba(0,255,0,0.3)]"
             label={copied ? t('googleMaps.copied') : t('googleMaps.copyLink')}
-            icon={
-                copied ? (
-                    <Icon name="check" size={18} />
-                ) : (
-                    <Icon name="mapPin" size={18} fill="currentColor" stroke="none" />
-                )
-            }
+            icon={copied ? <Icon name="check" size={18} /> : <GoogleMapsIcon size={22} />}
         />
     );
 }
