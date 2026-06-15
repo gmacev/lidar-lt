@@ -31,6 +31,7 @@ import { GoogleMapsButton } from './GoogleMapsButton';
 import { MarkerOverlay } from './MarkerOverlay';
 import { SectorNavigation } from './SectorNavigation';
 import { HeightProfilePanel } from './HeightProfilePanel';
+import { ToolbarToolButton } from './ToolbarToolButton';
 
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
@@ -349,6 +350,23 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         });
     };
 
+    const handleRecenterView = () => {
+        updateUrlDebounced.cancel();
+        recenterView();
+        void navigate({
+            search: (prev) => ({
+                ...prev,
+                x: undefined,
+                y: undefined,
+                z: undefined,
+                yaw: undefined,
+                pitch: undefined,
+                radius: undefined,
+            }),
+            replace: true,
+        });
+    };
+
     return (
         <div className="relative h-dvh w-screen bg-void-black">
             <div
@@ -478,6 +496,12 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                             />
 
                             <div className="flex shrink-0 flex-col items-center gap-2">
+                                <ToolbarToolButton
+                                    icon={<Icon name="crosshair" size={20} />}
+                                    isActive={false}
+                                    label={t('viewer.recenter')}
+                                    onClick={handleRecenterView}
+                                />
                                 <GoogleMapsButton viewerRef={viewerRef} />
                                 <Compass viewerRef={viewerRef} onOrientNorth={orientNorth} />
                             </div>
