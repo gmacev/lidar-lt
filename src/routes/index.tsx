@@ -40,7 +40,42 @@ function HomePage() {
                 </main>
 
                 <footer className="shrink-0 border-t border-glass-border p-2 text-center text-xs text-white/30">
-                    {t('home.footer')} · {t('home.mapAttribution')}
+                    {t('home.dataSource')}{' '}
+                    <a
+                        href="https://www.geoportal.lt/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-inherit opacity-60 transition-[color,opacity] hover:text-white/50 hover:opacity-100 focus-visible:text-white/50 focus-visible:opacity-100 focus-visible:underline focus-visible:underline-offset-2 focus-visible:outline-none"
+                    >
+                        geoportal.lt
+                    </a>{' '}
+                    ·{' '}
+                    <a
+                        href="https://openfreemap.org/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-inherit opacity-60 transition-[color,opacity] hover:text-white/50 hover:opacity-100 focus-visible:text-white/50 focus-visible:opacity-100 focus-visible:underline focus-visible:underline-offset-2 focus-visible:outline-none"
+                    >
+                        OpenFreeMap
+                    </a>{' '}
+                    © OpenMapTiles {t('home.mapDataFrom')}{' '}
+                    <a
+                        href="https://www.openstreetmap.org/copyright"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-inherit opacity-60 transition-[color,opacity] hover:text-white/50 hover:opacity-100 focus-visible:text-white/50 focus-visible:opacity-100 focus-visible:underline focus-visible:underline-offset-2 focus-visible:outline-none"
+                    >
+                        OpenStreetMap
+                    </a>{' '}
+                    ·{' '}
+                    <a
+                        href="https://github.com/gmacev/lidar-lt"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-inherit opacity-60 transition-[color,opacity] hover:text-white/50 hover:opacity-100 focus-visible:text-white/50 focus-visible:opacity-100 focus-visible:underline focus-visible:underline-offset-2 focus-visible:outline-none"
+                    >
+                        {t('home.sourceCode')}
+                    </a>
                 </footer>
             </div>
         </>

@@ -8,8 +8,9 @@
     "home": {
         "title": "LIETUVOS LIDAR ŽEMĖLAPIS",
         "subtitle": "Pasirinkite sektorių peržiūrai",
-        "footer": "Duomenų šaltinis: geoportal.lt",
-        "mapAttribution": "OpenFreeMap © OpenMapTiles duomenys iš OpenStreetMap"
+        "dataSource": "Duomenų šaltinis:",
+        "mapDataFrom": "duomenys iš",
+        "sourceCode": "Atvirasis kodas GitHub"
     },
     "sidebar": {
         "visualization": "Vizualizacija",
