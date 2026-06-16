@@ -120,6 +120,21 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         initialState,
         updateUrl: updateUrlDebounced,
     });
+    const sectorLabel = initialState.sectorName ?? cellId;
+    const errorCopy =
+        error?.code === 'metadata-not-found'
+            ? {
+                  title: t('viewer.loadError.metadataNotFoundTitle'),
+                  message: t('viewer.loadError.metadataNotFoundMessage', {
+                      sector: sectorLabel,
+                  }),
+              }
+            : error
+              ? {
+                    title: t('viewer.loadError.unavailableTitle'),
+                    message: t('viewer.loadError.unavailableMessage'),
+                }
+              : null;
     const { markers, addMarkerAtViewCenter, deleteMarker } = useMarkers({
         viewerRef,
         markerParam: initialState.mk,
@@ -383,12 +398,31 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
             {error && (
                 <div className="absolute inset-0 flex items-center justify-center bg-void-black/90">
-                    <GlassPanel className="max-w-md text-center">
-                        <p className="text-plasma-red mb-4">
-                            {t('viewer.error')}: {error}
-                        </p>
-                        <NeonButton variant="amber" onClick={onBack}>
-                            {t('viewer.back')}
+                    <GlassPanel
+                        className="mx-4 flex max-w-lg flex-col items-center gap-4 p-5 text-center"
+                        role="status"
+                    >
+                        <div className="flex size-12 items-center justify-center rounded-full border border-neon-amber/40 bg-neon-amber/10 text-neon-amber">
+                            <Icon name="warningTriangle" size={24} />
+                        </div>
+                        <div className="space-y-2">
+                            <h2 className="text-lg font-bold text-white">
+                                {errorCopy?.title ?? t('viewer.error')}
+                            </h2>
+                            <p className="text-sm leading-6 text-white/70">{errorCopy?.message}</p>
+                        </div>
+                        <dl className="grid w-full grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md border border-white/10 bg-black/30 p-3 text-left text-xs">
+                            <dt className="text-white/40">{t('viewer.loadError.sector')}</dt>
+                            <dd className="min-w-0 truncate text-white/75">{sectorLabel}</dd>
+                            <dt className="text-white/40">{t('viewer.loadError.details')}</dt>
+                            <dd className="min-w-0 truncate font-mono text-white/60">
+                                {error.status
+                                    ? t('viewer.loadError.httpStatus', { status: error.status })
+                                    : error.message}
+                            </dd>
+                        </dl>
+                        <NeonButton variant="amber" onClick={onBack} className="px-4 py-2">
+                            {t('viewer.loadError.backToMap')}
                         </NeonButton>
                     </GlassPanel>
                 </div>
@@ -421,25 +455,33 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                     {/* Language switcher, UI toggle, and Controls - top right corner */}
                     <div className="absolute right-2 top-2 flex items-start gap-2 xl:right-4 xl:top-4">
                         <LanguageSwitcher />
-                        <button
-                            onClick={() => setUiVisible(!uiVisible)}
-                            className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95"
-                            title={uiVisible ? t('viewer.hideControls') : t('viewer.showControls')}
-                        >
-                            <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
-                        </button>
-                        {/* Controls panel - hidden on small screens */}
-                        <GlassPanel className="hidden w-64 md:block">
-                            <h3 className="mb-2 text-sm font-bold text-neon-amber">
-                                {t('viewer.controls')}
-                            </h3>
-                            <ul className="space-y-1 text-xs text-white/70">
-                                <li>{t('viewer.controlLeftClick')}</li>
-                                <li>{t('viewer.controlRightClick')}</li>
-                                <li>{t('viewer.controlScroll')}</li>
-                                <li>{t('viewer.controlAddMarker')}</li>
-                            </ul>
-                        </GlassPanel>
+                        {!isLoading && !error && (
+                            <>
+                                <button
+                                    onClick={() => setUiVisible(!uiVisible)}
+                                    className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95"
+                                    title={
+                                        uiVisible
+                                            ? t('viewer.hideControls')
+                                            : t('viewer.showControls')
+                                    }
+                                >
+                                    <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
+                                </button>
+                                {/* Controls panel - hidden on small screens */}
+                                <GlassPanel className="hidden w-64 md:block">
+                                    <h3 className="mb-2 text-sm font-bold text-neon-amber">
+                                        {t('viewer.controls')}
+                                    </h3>
+                                    <ul className="space-y-1 text-xs text-white/70">
+                                        <li>{t('viewer.controlLeftClick')}</li>
+                                        <li>{t('viewer.controlRightClick')}</li>
+                                        <li>{t('viewer.controlScroll')}</li>
+                                        <li>{t('viewer.controlAddMarker')}</li>
+                                    </ul>
+                                </GlassPanel>
+                            </>
+                        )}
                     </div>
 
                     {/* Right rail - keeps measurement tools and navigation aids from colliding */}
@@ -629,7 +671,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             )}
 
             {/* UI Toggle button - ALWAYS visible, top right next to language switcher */}
-            {!uiVisible && (
+            {!uiVisible && !isLoading && !error && (
                 <button
                     onClick={() => setUiVisible(!uiVisible)}
                     className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95 xl:right-4 xl:top-4"

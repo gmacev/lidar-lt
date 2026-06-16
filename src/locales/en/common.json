@@ -119,6 +119,16 @@
         "showControls": "Show controls",
         "loading": "Loading point cloud...",
         "error": "Error",
+        "loadError": {
+            "metadataNotFoundTitle": "Point cloud is not available",
+            "metadataNotFoundMessage": "{{sector}} has a map sector, but its LiDAR point cloud has not been generated yet.",
+            "unavailableTitle": "Point cloud could not be loaded",
+            "unavailableMessage": "The sector data service did not respond as expected. Try again later or choose another sector.",
+            "sector": "Sector",
+            "details": "Details",
+            "httpStatus": "HTTP {{status}}",
+            "backToMap": "Back to map"
+        },
         "back": "Back",
         "resetDefaults": "Defaults",
         "controls": "Controls",

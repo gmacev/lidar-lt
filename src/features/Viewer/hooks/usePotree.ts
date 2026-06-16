@@ -51,7 +51,7 @@ interface UsePotreeOptions {
 
 interface PotreeState {
     isLoading: boolean;
-    error: string | null;
+    error: PotreeLoadError | null;
 }
 
 interface UsePotreeResult extends PotreeState {
@@ -59,6 +59,18 @@ interface UsePotreeResult extends PotreeState {
     viewerRef: RefObject<PotreeViewer | null>;
     orientNorth: () => void;
     recenterView: () => void;
+}
+
+export type PotreeLoadErrorCode =
+    | 'metadata-not-found'
+    | 'metadata-unavailable'
+    | 'potree-unavailable';
+
+export interface PotreeLoadError {
+    code: PotreeLoadErrorCode;
+    message: string;
+    status?: number;
+    url?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -203,6 +215,51 @@ function disposeViewer(viewer: PotreeViewer, PotreeLib: Potree, container: HTMLE
     viewer.renderer.dispose();
     viewer.renderer.domElement.remove();
     container.replaceChildren();
+}
+
+function isAbortError(error: unknown) {
+    return error instanceof DOMException && error.name === 'AbortError';
+}
+
+async function validateMetadataUrl(
+    url: string,
+    signal: AbortSignal
+): Promise<PotreeLoadError | null> {
+    try {
+        let response = await fetch(url, {
+            method: 'HEAD',
+            signal,
+            cache: 'no-store',
+        });
+
+        if (response.status === 405 || response.status === 501) {
+            response = await fetch(url, {
+                method: 'GET',
+                signal,
+                cache: 'no-store',
+            });
+        }
+
+        if (response.ok) return null;
+
+        return {
+            code: response.status === 404 ? 'metadata-not-found' : 'metadata-unavailable',
+            message: `Point cloud metadata request failed with HTTP ${response.status}.`,
+            status: response.status,
+            url,
+        };
+    } catch (error) {
+        if (isAbortError(error)) return null;
+
+        return {
+            code: 'metadata-unavailable',
+            message:
+                error instanceof Error
+                    ? error.message
+                    : 'Point cloud metadata could not be requested.',
+            url,
+        };
+    }
 }
 
 export function usePotree(options: UsePotreeOptions): UsePotreeResult {
@@ -408,9 +465,15 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
     };
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        const container = containerRef.current;
+        if (!container) return;
 
         let disposed = false;
+        let viewer: PotreeViewer | null = null;
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+        let listenersAttached = false;
+        const abortController = new AbortController();
+        setState({ isLoading: true, error: null });
 
         // Access global Potree
         const PotreeLib: Potree | undefined = window.Potree;
@@ -419,61 +482,87 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             console.error('Potree not loaded globally');
             setTimeout(() => {
                 if (disposed) return;
-                setState({ isLoading: false, error: 'Potree library not loaded' });
+                setState({
+                    isLoading: false,
+                    error: {
+                        code: 'potree-unavailable',
+                        message: 'Potree library not loaded',
+                    },
+                });
             }, 0);
             return () => {
                 disposed = true;
+                abortController.abort();
             };
         }
-
-        // Create Potree Viewer
-        const viewer: PotreeViewer = new PotreeLib.Viewer(containerRef.current);
-        viewerRef.current = viewer;
-
-        // Configure viewer
-        viewer.setFOV(PERFORMANCE_DEFAULTS.fov);
-        viewer.setPointBudget(getDefaultPointBudget());
-        viewer.setMinNodeSize(PERFORMANCE_DEFAULTS.minNodeSize);
-        viewer.useHQ = (initialStateRef.current.pq ?? POINT_APPEARANCE_DEFAULTS.quality) === 'high';
-
-        // Enable EDL
-        viewer.setEDLEnabled(EDL_DEFAULTS.enabled);
-        viewer.setEDLStrength(EDL_DEFAULTS.strength);
-        viewer.setEDLRadius(EDL_DEFAULTS.radius);
-
-        // Background (handled by separate effect)
-        // viewer.setBackground('gradient'); // Default will be set by the other effect
-
-        viewer.setDescription('');
-
-        // Control - use orbit controls for touch devices (better touch gesture support)
-        if (isTouchDevice()) {
-            viewer.setControls(viewer.orbitControls);
-        } else {
-            viewer.setControls(viewer.earthControls);
-        }
-
-        // Load point cloud
-        loadPointCloud(PotreeLib, viewer, dataUrl, () => disposed);
 
         // Track user interaction - any mouse/wheel/touch event enables camera syncing
         // This prevents syncing during initial fitToScreen animation
         const markUserInteracted = () => {
             userHasInteractedRef.current = true;
         };
-        const container = containerRef.current;
-        container.addEventListener('mousedown', markUserInteracted);
-        container.addEventListener('wheel', markUserInteracted);
-        container.addEventListener('touchstart', markUserInteracted);
-        const intervalId = setInterval(syncCamera, 200);
+
+        void (async () => {
+            const metadataError = await validateMetadataUrl(dataUrl, abortController.signal);
+            if (disposed) return;
+
+            if (metadataError) {
+                setState({ isLoading: false, error: metadataError });
+                return;
+            }
+
+            // Create Potree Viewer
+            viewer = new PotreeLib.Viewer(container);
+            viewerRef.current = viewer;
+
+            // Configure viewer
+            viewer.setFOV(PERFORMANCE_DEFAULTS.fov);
+            viewer.setPointBudget(getDefaultPointBudget());
+            viewer.setMinNodeSize(PERFORMANCE_DEFAULTS.minNodeSize);
+            viewer.useHQ =
+                (initialStateRef.current.pq ?? POINT_APPEARANCE_DEFAULTS.quality) === 'high';
+
+            // Enable EDL
+            viewer.setEDLEnabled(EDL_DEFAULTS.enabled);
+            viewer.setEDLStrength(EDL_DEFAULTS.strength);
+            viewer.setEDLRadius(EDL_DEFAULTS.radius);
+
+            // Background (handled by separate effect)
+            // viewer.setBackground('gradient'); // Default will be set by the other effect
+
+            viewer.setDescription('');
+
+            // Control - use orbit controls for touch devices (better touch gesture support)
+            if (isTouchDevice()) {
+                viewer.setControls(viewer.orbitControls);
+            } else {
+                viewer.setControls(viewer.earthControls);
+            }
+
+            // Load point cloud
+            loadPointCloud(PotreeLib, viewer, dataUrl, () => disposed);
+
+            container.addEventListener('mousedown', markUserInteracted);
+            container.addEventListener('wheel', markUserInteracted);
+            container.addEventListener('touchstart', markUserInteracted);
+            listenersAttached = true;
+            intervalId = setInterval(syncCamera, 200);
+        })();
 
         return () => {
             disposed = true;
-            clearInterval(intervalId);
-            container.removeEventListener('mousedown', markUserInteracted);
-            container.removeEventListener('wheel', markUserInteracted);
-            container.removeEventListener('touchstart', markUserInteracted);
-            disposeViewer(viewer, PotreeLib, container);
+            abortController.abort();
+            if (intervalId !== null) {
+                clearInterval(intervalId);
+            }
+            if (listenersAttached) {
+                container.removeEventListener('mousedown', markUserInteracted);
+                container.removeEventListener('wheel', markUserInteracted);
+                container.removeEventListener('touchstart', markUserInteracted);
+            }
+            if (viewer) {
+                disposeViewer(viewer, PotreeLib, container);
+            }
             viewerRef.current = null;
         };
     }, [dataUrl]);

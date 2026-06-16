@@ -119,6 +119,16 @@
         "showControls": "Rodyti valdiklius",
         "loading": "Kraunami taškų debesys...",
         "error": "Klaida",
+        "loadError": {
+            "metadataNotFoundTitle": "Taškų debesis nepasiekiamas",
+            "metadataNotFoundMessage": "{{sector}} yra žemėlapio dalis, bet jo LiDAR taškų debesis dar nebuvo sugeneruotas.",
+            "unavailableTitle": "Nepavyko įkelti taškų debesies",
+            "unavailableMessage": "Sektoriaus duomenų paslauga neatsakė taip, kaip tikėtasi. Bandykite vėliau arba pasirinkite kitą sektorių.",
+            "sector": "Sektorius",
+            "details": "Detalės",
+            "httpStatus": "HTTP {{status}}",
+            "backToMap": "Grįžti į žemėlapį"
+        },
         "back": "Atgal",
         "resetDefaults": "Atstatyti",
         "controls": "Valdymas",
