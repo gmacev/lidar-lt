@@ -203,6 +203,10 @@
         "unavailable": "No sector available in this direction",
         "unnamed": "Unnamed sector"
     },
+    "sourceAttribution": {
+        "label": "LiDAR source: {{dateRange}}",
+        "provider": "GeoPortal.lt"
+    },
     "language": {
         "lt": "LT",
         "en": "EN"

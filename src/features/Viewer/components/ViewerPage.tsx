@@ -32,6 +32,7 @@ import { MarkerOverlay } from './MarkerOverlay';
 import { SectorNavigation } from './SectorNavigation';
 import { HeightProfilePanel } from './HeightProfilePanel';
 import { ToolbarToolButton } from './ToolbarToolButton';
+import { SourceAttribution } from './SourceAttribution';
 
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
@@ -78,7 +79,9 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const navigate = useNavigate({ from: Route.fullPath });
     const eptBaseUrl = import.meta.env.VITE_EPT_BASE_URL;
     const dataUrl = `${eptBaseUrl}/${cellId}/potree_output/metadata.json`;
+    const sourceManifestUrl = `${eptBaseUrl}/${cellId}/potree_output/source_manifest.json`;
     const [uiVisible, setUiVisible] = useState(true);
+    const [isSourceAttributionVisible, setIsSourceAttributionVisible] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(isMobile);
     const [sidebarResetKey, setSidebarResetKey] = useState(0);
     const [resetSidebarInitialState, setResetSidebarInitialState] = useState<{
@@ -428,6 +431,14 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 </div>
             )}
 
+            {!isLoading && !error && (
+                <SourceAttribution
+                    manifestUrl={sourceManifestUrl}
+                    className="absolute bottom-0 right-0 z-10"
+                    onVisibleChange={setIsSourceAttributionVisible}
+                />
+            )}
+
             {/* UI elements that can be toggled */}
             {uiVisible && (
                 <>
@@ -492,7 +503,9 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                     ? isProfilePanelCollapsed
                                         ? 'bottom-[3.25rem]'
                                         : 'bottom-[calc(clamp(240px,34dvh,360px)+0.5rem)]'
-                                    : 'bottom-2'
+                                    : isSourceAttributionVisible
+                                      ? 'bottom-10'
+                                      : 'bottom-2'
                             }`}
                         >
                             <MeasurementToolbar

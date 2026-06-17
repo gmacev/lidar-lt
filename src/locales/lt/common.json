@@ -203,6 +203,10 @@
         "unavailable": "Šia kryptimi sektoriaus nėra",
         "unnamed": "Sektorius be pavadinimo"
     },
+    "sourceAttribution": {
+        "label": "LiDAR šaltinis: {{dateRange}}",
+        "provider": "GeoPortal.lt"
+    },
     "language": {
         "lt": "LT",
         "en": "EN"
