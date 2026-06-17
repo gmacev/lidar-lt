@@ -6,7 +6,6 @@ interface SourceManifest {
         from?: string | null;
         to?: string | null;
     };
-    software?: string[];
 }
 
 interface SourceAttributionProps {
@@ -26,12 +25,6 @@ function formatDateRange(range: SourceManifest['sourceFileDateRange']) {
     return `${from} - ${to}`;
 }
 
-function formatSoftware(software: SourceManifest['software']) {
-    if (!software?.length) return null;
-
-    return software.filter(Boolean).join(', ');
-}
-
 export function SourceAttribution({
     manifestUrl,
     className = '',
@@ -46,9 +39,7 @@ export function SourceAttribution({
         void fetch(manifestUrl, { signal: controller.signal })
             .then((response) => (response.ok ? response.json() : null))
             .then((data: SourceManifest | null) => {
-                const isVisible =
-                    Boolean(formatDateRange(data?.sourceFileDateRange)) &&
-                    Boolean(formatSoftware(data?.software));
+                const isVisible = Boolean(formatDateRange(data?.sourceFileDateRange));
 
                 setManifest(data);
                 onVisibleChange?.(isVisible);
@@ -63,17 +54,14 @@ export function SourceAttribution({
     }, [manifestUrl, onVisibleChange]);
 
     const dateRange = formatDateRange(manifest?.sourceFileDateRange);
-    const software = formatSoftware(manifest?.software);
 
-    if (!dateRange || !software) return null;
+    if (!dateRange) return null;
 
     return (
         <div
             className={`flex max-w-[calc(100vw-5rem)] items-center gap-1.5 rounded-tl-[3px] border border-b-0 border-r-0 border-white/10 bg-black/65 px-2 py-1 text-[10px] font-medium leading-none text-white/70 shadow-[0_2px_10px_rgba(0,0,0,0.35)] backdrop-blur-sm ${className}`}
         >
             <span>{t('sourceAttribution.label', { dateRange })}</span>
-            <span aria-hidden="true">{'\u00b7'}</span>
-            <span>{software}</span>
             <span aria-hidden="true">{'\u00b7'}</span>
             <a
                 href="https://www.geoportal.lt/"
