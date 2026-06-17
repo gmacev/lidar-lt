@@ -122,6 +122,7 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
     const markersRef = useRef(markers);
     const screenMarkersRef = useRef(screenMarkers);
     const lastMarkerParamRef = useRef(markerParam);
+    const onSearchChangeRef = useRef(onSearchChange);
 
     useEffect(() => {
         markersRef.current = markers;
@@ -130,6 +131,10 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
     useEffect(() => {
         screenMarkersRef.current = screenMarkers;
     }, [screenMarkers]);
+
+    useEffect(() => {
+        onSearchChangeRef.current = onSearchChange;
+    }, [onSearchChange]);
 
     useEffect(() => {
         if (markerParam === lastMarkerParamRef.current) return;
@@ -142,7 +147,7 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
         const serialized = serializeMarkers(nextMarkers);
         lastMarkerParamRef.current = serialized;
         setMarkers(nextMarkers);
-        onSearchChange({ mk: serialized });
+        onSearchChangeRef.current({ mk: serialized });
     };
 
     const deleteMarker = (id: string) => {
@@ -206,11 +211,12 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
     };
 
     useEffect(() => {
-        const viewer = viewerRef.current;
-        const rendererElement = viewer?.renderer?.domElement;
-        if (!viewer || !rendererElement) return;
+        let frameId = 0;
+        let rendererElement: HTMLCanvasElement | null = null;
 
         const handleMouseDown = (event: MouseEvent) => {
+            const viewer = viewerRef.current;
+            if (!viewer || !rendererElement) return;
             if (event.button !== 0 || (!event.ctrlKey && !event.metaKey)) return;
 
             const rect = rendererElement.getBoundingClientRect();
@@ -227,12 +233,26 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
             addMarker(position);
         };
 
-        rendererElement.addEventListener('mousedown', handleMouseDown, { capture: true });
+        const setRendererElement = (nextRendererElement: HTMLCanvasElement | null) => {
+            if (rendererElement === nextRendererElement) return;
+
+            rendererElement?.removeEventListener('mousedown', handleMouseDown, { capture: true });
+            rendererElement = nextRendererElement;
+            rendererElement?.addEventListener('mousedown', handleMouseDown, { capture: true });
+        };
+
+        const syncRendererElement = () => {
+            setRendererElement(viewerRef.current?.renderer?.domElement ?? null);
+            frameId = requestAnimationFrame(syncRendererElement);
+        };
+
+        syncRendererElement();
 
         return () => {
-            rendererElement.removeEventListener('mousedown', handleMouseDown, { capture: true });
+            cancelAnimationFrame(frameId);
+            setRendererElement(null);
         };
-    }, [commitMarkers, viewerRef]);
+    }, [viewerRef]);
 
     useEffect(() => {
         let frameId = 0;
