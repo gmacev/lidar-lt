@@ -59,7 +59,7 @@ export function SourceAttribution({
 
     return (
         <div
-            className={`flex max-w-[calc(100vw-5rem)] items-center gap-1.5 rounded-tl-[3px] border border-b-0 border-r-0 border-white/10 bg-black/65 px-2 py-1 text-[10px] font-medium leading-none text-white/70 shadow-[0_2px_10px_rgba(0,0,0,0.35)] backdrop-blur-sm ${className}`}
+            className={`flex max-w-[calc(100vw-5rem)] items-center gap-1.5 rounded-tl-lg border border-b-0 border-r-0 border-white/10 bg-glass-bg px-2 py-1 text-[10px] font-medium leading-none text-white/70 ${className}`}
         >
             <span>{t('sourceAttribution.label', { dateRange })}</span>
             <span aria-hidden="true">{'\u00b7'}</span>
