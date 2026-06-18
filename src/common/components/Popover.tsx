@@ -205,13 +205,19 @@ export const Popover = forwardRef<HTMLDivElement, PopoverProps>(function Popover
         setPosition((current) => ({ ...current, visibility: 'hidden' }));
         updatePosition();
         window.addEventListener('resize', updatePosition);
-        window.addEventListener('scroll', updatePosition, true);
+        const handleScroll = (event: Event) => {
+            const target = event.target;
+            if (target instanceof Node && panelRef.current?.contains(target)) return;
+            updatePosition();
+        };
+
+        window.addEventListener('scroll', handleScroll, true);
         const resizeObserver = new ResizeObserver(updatePosition);
         if (panelRef.current) resizeObserver.observe(panelRef.current);
 
         return () => {
             window.removeEventListener('resize', updatePosition);
-            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('scroll', handleScroll, true);
             resizeObserver.disconnect();
         };
     }, [align, children, gap, isOpen, resolvedAnchorRef, side, viewportPadding, width]);

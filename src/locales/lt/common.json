@@ -186,6 +186,34 @@
         "copied": "Nukopijuota!",
         "copyLink": "Kopijuoti Google Maps nuorodą"
     },
+    "kvrInspect": {
+        "activeLabel": "Spustelėkite LiDAR tašką, kad patikrintumėte KVR",
+        "centerObject": "Centruoti šį objektą taškų debesyje",
+        "close": "Uždaryti KVR paiešką",
+        "code": "Kodas {{code}}",
+        "emptyDescription": "Netoliese, 100 m ribose, KVR objektų taškų taip pat nerasta.",
+        "emptyTitle": "Šiame taške registruotos kultūros vertybių nerasta.",
+        "errorDescription": "KVR paieška nepavyko. Bandykite dar kartą po akimirkos.",
+        "errorTitle": "Nepavyko patikrinti KVR",
+        "label": "Tikrinti Kultūros vertybių registre",
+        "loading": "Tikrinami KVR sluoksniai...",
+        "matchType": {
+            "object-territory": "KVR objekto teritorija",
+            "physical-protection-zone": "Apsaugos nuo fizinio poveikio pozonis",
+            "visual-protection-zone": "Vizualinės apsaugos pozonis",
+            "nearby-object": "Netoliese esantis objektas"
+        },
+        "matchTypePlural": {
+            "object-territory": "KVR objektų teritorijos",
+            "physical-protection-zone": "Apsaugos nuo fizinio poveikio pozoniai",
+            "visual-protection-zone": "Vizualinės apsaugos pozoniai",
+            "nearby-object": "Netoliese esantys objektai"
+        },
+        "openKvr": "Atverti KVR",
+        "readyDescription": "Spustelėkite LiDAR tašką, kad patikrintumėte, ar KVR ten turi registruotą objektą.",
+        "retry": "Bandyti dar kartą",
+        "unnamed": "Objektas be pavadinimo"
+    },
     "search": {
         "coordinatePlaceholder": "54.687, 25.279",
         "gridPlaceholder": "Ieškoti (ID, pavadinimas, coords)...",

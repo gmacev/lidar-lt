@@ -10,3 +10,4 @@ export { useProfileTool } from './useProfileTool';
 export { useProfileData } from './useProfileData';
 export { useCoordinateSearch } from './useCoordinateSearch';
 export { useFloodSimulation } from './useFloodSimulation';
+export { useKvrInspectTool } from './useKvrInspectTool';

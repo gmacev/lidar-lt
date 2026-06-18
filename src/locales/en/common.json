@@ -186,6 +186,34 @@
         "copied": "Copied!",
         "copyLink": "Copy Google Maps link"
     },
+    "kvrInspect": {
+        "activeLabel": "Click LiDAR to check KVR",
+        "centerObject": "Center this object in the point cloud",
+        "close": "Close KVR lookup",
+        "code": "Code {{code}}",
+        "emptyDescription": "No nearby object points were found within 100 m either.",
+        "emptyTitle": "No registered heritage objects found at this point.",
+        "errorDescription": "KVR lookup failed. Try again in a moment.",
+        "errorTitle": "Could not check KVR",
+        "label": "Check Kultūros vertybių registras",
+        "loading": "Checking KVR layers...",
+        "matchType": {
+            "object-territory": "Registered object territory",
+            "physical-protection-zone": "Physical protection zone",
+            "visual-protection-zone": "Visual protection zone",
+            "nearby-object": "Nearby object"
+        },
+        "matchTypePlural": {
+            "object-territory": "Registered object territories",
+            "physical-protection-zone": "Physical protection zones",
+            "visual-protection-zone": "Visual protection zones",
+            "nearby-object": "Nearby objects"
+        },
+        "openKvr": "Open KVR",
+        "readyDescription": "Click a LiDAR point to check whether KVR has a registered object there.",
+        "retry": "Retry",
+        "unnamed": "Unnamed object"
+    },
     "search": {
         "coordinatePlaceholder": "54.687, 25.279",
         "gridPlaceholder": "Search (ID, name, coords)...",

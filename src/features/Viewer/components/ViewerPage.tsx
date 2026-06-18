@@ -12,6 +12,7 @@ import {
     useAzimuthMeasurementTool,
     useCircleMeasurementTool,
     useFloodSimulation,
+    useKvrInspectTool,
 } from '@/features/Viewer/hooks';
 import { useMarkers } from '@/features/Viewer/hooks/useMarkers';
 import { useVolumeMeasurementTool } from '@/features/Viewer/hooks/useVolumeMeasurementTool';
@@ -24,10 +25,12 @@ import { useCircleMeasurementData } from '@/features/Viewer/hooks/useCircleMeasu
 import { useAnnotations } from '@/features/Viewer/hooks/useAnnotations';
 import { MeasurementToolbar } from './MeasurementToolbar';
 import type { MeasurementType } from '@/features/Viewer/types/measurement';
+import type { KvrMatch } from '@/features/Viewer/utils/kvrClient';
 import { ViewerSidebar } from './ViewerSidebar';
 import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
 import { GoogleMapsButton } from './GoogleMapsButton';
+import { KvrInspectButton } from './KvrInspectButton';
 import { MarkerOverlay } from './MarkerOverlay';
 import { SectorNavigation } from './SectorNavigation';
 import { HeightProfilePanel } from './HeightProfilePanel';
@@ -37,7 +40,10 @@ import { SourceAttribution } from './SourceAttribution';
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
-import { resetPotreeViewerDisplayDefaults } from '@/features/Viewer/utils/viewerDefaults';
+import {
+    getCurrentCameraState,
+    resetPotreeViewerDisplayDefaults,
+} from '@/features/Viewer/utils/viewerDefaults';
 import { Route } from '@/routes/viewer.$cellId';
 import { isMobile } from '@/common/utils/screenSize';
 
@@ -46,6 +52,9 @@ interface ViewerPageProps {
     onBack: () => void;
     initialState: ViewerState;
 }
+
+const KVR_CENTER_CAMERA_RADIUS = 55;
+const KVR_CENTER_CAMERA_Z_OFFSET = 240;
 
 function addResourceHint(rel: 'preconnect' | 'dns-prefetch', href: string) {
     const selector = `link[rel="${rel}"][href="${href}"]`;
@@ -275,10 +284,18 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         allVisible: allAnnotationsVisible,
         someVisible: someAnnotationsVisible,
     } = useAnnotations({ viewerRef, sectorId: cellId });
+    const {
+        closePopover: closeKvrInspect,
+        inspectState: kvrInspectState,
+        isInspecting: isKvrInspecting,
+        isPopoverOpen: isKvrPopoverOpen,
+        retryLastInspection: retryKvrInspection,
+        toggleInspectMode: toggleKvrInspectMode,
+    } = useKvrInspectTool({ viewerRef });
 
     // Mutual exclusivity handlers - cancel other tools when starting a new one
     const measurements: Record<
-        MeasurementType | 'annotation',
+        MeasurementType | 'annotation' | 'kvr',
         { isActive: boolean; deactivate: () => void }
     > = {
         distance: { isActive: isDistanceMeasuring, deactivate: _toggleDistanceMeasurement },
@@ -290,6 +307,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         azimuth: { isActive: isAzimuthMeasuring, deactivate: _toggleAzimuthMeasurement },
         circle: { isActive: isCircleMeasuring, deactivate: _toggleCircleMeasurement },
         annotation: { isActive: isAnnotationPanelOpen, deactivate: closeAnnotationPanel },
+        kvr: { isActive: isKvrInspecting || isKvrPopoverOpen, deactivate: closeKvrInspect },
     };
 
     useEffect(() => {
@@ -307,12 +325,13 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [measurements]);
 
-    const createHandler = (type: MeasurementType | 'annotation', action: () => void) => () => {
-        Object.entries(measurements).forEach(([key, { isActive, deactivate }]) => {
-            if (key !== type && isActive) deactivate();
-        });
-        action();
-    };
+    const createHandler =
+        (type: MeasurementType | 'annotation' | 'kvr', action: () => void) => () => {
+            Object.entries(measurements).forEach(([key, { isActive, deactivate }]) => {
+                if (key !== type && isActive) deactivate();
+            });
+            action();
+        };
 
     const handleToggleDistance = createHandler('distance', _toggleDistanceMeasurement);
     const handleToggleArea = createHandler('area', _toggleAreaMeasurement);
@@ -329,6 +348,25 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleAzimuth = createHandler('azimuth', _toggleAzimuthMeasurement);
     const handleToggleCircle = createHandler('circle', _toggleCircleMeasurement);
     const handleToggleAnnotationPanel = createHandler('annotation', toggleAnnotationPanel);
+    const handleToggleKvrInspect = createHandler('kvr', toggleKvrInspectMode);
+    const handleCenterKvrMatch = (match: KvrMatch) => {
+        const viewer = viewerRef.current;
+        const center = match.center;
+        if (!viewer || !center) return;
+
+        const THREE = window.THREE;
+        const pivot = viewer.scene.view.getPivot();
+        const targetZ = Number.isFinite(pivot.z) ? pivot.z : 0;
+        updateUrlDebounced.cancel();
+        viewer.scene.view.position.set(center.x, center.y, targetZ + KVR_CENTER_CAMERA_Z_OFFSET);
+        // eslint-disable-next-line react-compiler/react-compiler
+        viewer.scene.view.pitch = -Math.PI / 2;
+        viewer.scene.view.yaw = 0;
+        viewer.scene.view.radius = KVR_CENTER_CAMERA_RADIUS;
+        viewer.scene.view.lookAt(new THREE.Vector3(center.x, center.y, targetZ));
+        updateUrl(getCurrentCameraState(viewer));
+    };
+
     const handleSectorNavigate = (sector: { id: string; name: string | null }) => {
         updateUrlDebounced.cancel();
 
@@ -389,7 +427,9 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         <div className="relative h-dvh w-screen bg-void-black">
             <div
                 ref={containerRef}
-                className={`h-full w-full ${isAnnotationPlacing ? '!cursor-pointer' : ''}`}
+                className={`h-full w-full ${isAnnotationPlacing ? '!cursor-pointer' : ''} ${
+                    isKvrInspecting ? '!cursor-help' : ''
+                }`}
             />
             <MarkerOverlay markers={markers} onDelete={deleteMarker} />
 
@@ -558,6 +598,15 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                                     onClick={handleRecenterView}
                                 />
                                 <GoogleMapsButton viewerRef={viewerRef} />
+                                <KvrInspectButton
+                                    inspectState={kvrInspectState}
+                                    isActive={isKvrInspecting}
+                                    isPopoverOpen={isKvrPopoverOpen}
+                                    onClick={handleToggleKvrInspect}
+                                    onClose={closeKvrInspect}
+                                    onCenterMatch={handleCenterKvrMatch}
+                                    onRetry={retryKvrInspection}
+                                />
                                 <Compass viewerRef={viewerRef} onOrientNorth={orientNorth} />
                             </div>
                         </div>
