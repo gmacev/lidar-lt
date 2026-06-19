@@ -58864,6 +58864,10 @@ uniform float screenHeight;
 uniform vec2 neighbours[NEIGHBOUR_COUNT];
 uniform float edlStrength;
 uniform float radius;
+uniform float reliefStrength;
+uniform float reliefRadius;
+uniform float reliefEnabled;
+uniform vec2 reliefLightDirection;
 
 varying vec2 vUv;
 
@@ -58889,11 +58893,50 @@ float response(float depth){
 	return sum / float(NEIGHBOUR_COUNT);
 }
 
+float reliefShade(float depth){
+	if(depth == 0.0){
+		return 1.0;
+	}
+
+	vec2 uvRadius = reliefRadius / vec2(screenWidth, screenHeight);
+	float tl = texture2D(uEDLMap, vUv + uvRadius * vec2(-1.0, 1.0)).a;
+	float t = texture2D(uEDLMap, vUv + uvRadius * vec2(0.0, 1.0)).a;
+	float tr = texture2D(uEDLMap, vUv + uvRadius * vec2(1.0, 1.0)).a;
+	float l = texture2D(uEDLMap, vUv + uvRadius * vec2(-1.0, 0.0)).a;
+	float r = texture2D(uEDLMap, vUv + uvRadius * vec2(1.0, 0.0)).a;
+	float bl = texture2D(uEDLMap, vUv + uvRadius * vec2(-1.0, -1.0)).a;
+	float b = texture2D(uEDLMap, vUv + uvRadius * vec2(0.0, -1.0)).a;
+	float br = texture2D(uEDLMap, vUv + uvRadius * vec2(1.0, -1.0)).a;
+
+	tl = (tl == 0.0) ? depth : tl;
+	t = (t == 0.0) ? depth : t;
+	tr = (tr == 0.0) ? depth : tr;
+	l = (l == 0.0) ? depth : l;
+	r = (r == 0.0) ? depth : r;
+	bl = (bl == 0.0) ? depth : bl;
+	b = (b == 0.0) ? depth : b;
+	br = (br == 0.0) ? depth : br;
+
+	vec2 gradient = vec2(
+		(tr + 2.0 * r + br) - (tl + 2.0 * l + bl),
+		(tl + 2.0 * t + tr) - (bl + 2.0 * b + br)
+	);
+	float amount = dot(gradient, normalize(reliefLightDirection)) * 220.0 * reliefStrength;
+	float highlight = smoothstep(0.0, 1.0, max(amount, 0.0));
+	float shadow = smoothstep(0.0, 1.0, max(-amount, 0.0));
+
+	return clamp(1.0 + highlight * 0.55 - shadow * 0.85, 0.35, 1.45);
+}
+
 void main() {
 
 	float edlDepth = texture2D(uEDLMap, vUv).a;
 	float res = response(edlDepth);
 	float shade = exp(-res * 300.0 * edlStrength);
+	float relief = 1.0;
+	if(reliefEnabled > 0.5){
+		relief = reliefShade(edlDepth);
+	}
 
 	float depth = texture2D(uDepthMap, vUv).r;
 	if(depth >= 1.0 && res == 0.0){
@@ -58902,7 +58945,7 @@ void main() {
 	
 	vec4 color = texture2D(uWeightMap, vUv); 
 	color = color / color.w;
-	color = color * shade;
+	color = color * shade * relief;
 
 	gl_FragColor = vec4(color.xyz, 1.0); 
 
@@ -58945,6 +58988,10 @@ uniform float screenHeight;
 uniform vec2 neighbours[NEIGHBOUR_COUNT];
 uniform float edlStrength;
 uniform float radius;
+uniform float reliefStrength;
+uniform float reliefRadius;
+uniform float reliefEnabled;
+uniform vec2 reliefLightDirection;
 uniform float opacity;
 
 uniform float uNear;
@@ -58980,6 +59027,50 @@ float response(float depth){
 	return sum / float(NEIGHBOUR_COUNT);
 }
 
+float reliefShade(float depth){
+	if(depth == 0.0){
+		return 1.0;
+	}
+
+	vec2 uvRadius = reliefRadius / vec2(screenWidth, screenHeight);
+	float tl = texture2D(uEDLColor, vUv + uvRadius * vec2(-1.0, 1.0)).a;
+	float t = texture2D(uEDLColor, vUv + uvRadius * vec2(0.0, 1.0)).a;
+	float tr = texture2D(uEDLColor, vUv + uvRadius * vec2(1.0, 1.0)).a;
+	float l = texture2D(uEDLColor, vUv + uvRadius * vec2(-1.0, 0.0)).a;
+	float r = texture2D(uEDLColor, vUv + uvRadius * vec2(1.0, 0.0)).a;
+	float bl = texture2D(uEDLColor, vUv + uvRadius * vec2(-1.0, -1.0)).a;
+	float b = texture2D(uEDLColor, vUv + uvRadius * vec2(0.0, -1.0)).a;
+	float br = texture2D(uEDLColor, vUv + uvRadius * vec2(1.0, -1.0)).a;
+
+	tl = (tl == 1.0) ? 0.0 : tl;
+	t = (t == 1.0) ? 0.0 : t;
+	tr = (tr == 1.0) ? 0.0 : tr;
+	l = (l == 1.0) ? 0.0 : l;
+	r = (r == 1.0) ? 0.0 : r;
+	bl = (bl == 1.0) ? 0.0 : bl;
+	b = (b == 1.0) ? 0.0 : b;
+	br = (br == 1.0) ? 0.0 : br;
+
+	tl = (tl == 0.0) ? depth : tl;
+	t = (t == 0.0) ? depth : t;
+	tr = (tr == 0.0) ? depth : tr;
+	l = (l == 0.0) ? depth : l;
+	r = (r == 0.0) ? depth : r;
+	bl = (bl == 0.0) ? depth : bl;
+	b = (b == 0.0) ? depth : b;
+	br = (br == 0.0) ? depth : br;
+
+	vec2 gradient = vec2(
+		(tr + 2.0 * r + br) - (tl + 2.0 * l + bl),
+		(tl + 2.0 * t + tr) - (bl + 2.0 * b + br)
+	);
+	float amount = dot(gradient, normalize(reliefLightDirection)) * 220.0 * reliefStrength;
+	float highlight = smoothstep(0.0, 1.0, max(amount, 0.0));
+	float shadow = smoothstep(0.0, 1.0, max(-amount, 0.0));
+
+	return clamp(1.0 + highlight * 0.55 - shadow * 0.85, 0.35, 1.45);
+}
+
 void main(){
 	vec4 cEDL = texture2D(uEDLColor, vUv);
 	
@@ -58987,8 +59078,12 @@ void main(){
 	depth = (depth == 1.0) ? 0.0 : depth;
 	float res = response(depth);
 	float shade = exp(-res * 300.0 * edlStrength);
+	float relief = 1.0;
+	if(reliefEnabled > 0.5){
+		relief = reliefShade(depth);
+	}
 
-	gl_FragColor = vec4(cEDL.rgb * shade, opacity);
+	gl_FragColor = vec4(cEDL.rgb * shade * relief, opacity);
 
 	{ // write regular hyperbolic depth values to depth buffer
 		float dl = pow(2.0, depth);
@@ -65569,6 +65664,26 @@ void main() {
 	// http://www.kitware.com/source/home/post/9
 	// https://tel.archives-ouvertes.fr/tel-00438464/document p. 115+ (french)
 
+	const RELIEF_WORLD_LIGHT_X = -Math.SQRT1_2;
+	const RELIEF_WORLD_LIGHT_Y = Math.SQRT1_2;
+
+	function setWorldLockedReliefLightDirection(uniform, camera) {
+		const elements = camera.matrixWorld.elements;
+		let screenX = RELIEF_WORLD_LIGHT_X * elements[0] + RELIEF_WORLD_LIGHT_Y * elements[1];
+		let screenY = RELIEF_WORLD_LIGHT_X * elements[4] + RELIEF_WORLD_LIGHT_Y * elements[5];
+		const length = Math.sqrt(screenX * screenX + screenY * screenY);
+
+		if (length > 0.0001) {
+			screenX /= length;
+			screenY /= length;
+		} else {
+			screenX = -0.55;
+			screenY = 0.85;
+		}
+
+		uniform.value.set(screenX, screenY);
+	}
+
 	class EyeDomeLightingMaterial extends RawShaderMaterial {
 
 		constructor(parameters = {}) {
@@ -65581,6 +65696,10 @@ void main() {
 				uNear: { type: 'f', value: 1.0 },
 				uFar: { type: 'f', value: 1.0 },
 				radius: { type: 'f', value: 1.0 },
+				reliefStrength: { type: 'f', value: 1.0 },
+				reliefRadius: { type: 'f', value: 1.0 },
+				reliefEnabled: { type: 'f', value: 0.0 },
+				reliefLightDirection: { type: 'v2', value: new Vector2(-0.55, 0.85) },
 				neighbours: { type: '2fv', value: [] },
 				depthMap: { type: 't', value: null },
 				uEDLColor: { type: 't', value: null },
@@ -65652,6 +65771,10 @@ void main() {
 				screenHeight: { type: 'f', value: 0 },
 				edlStrength: { type: 'f', value: 1.0 },
 				radius: { type: 'f', value: 1.0 },
+				reliefStrength: { type: 'f', value: 1.0 },
+				reliefRadius: { type: 'f', value: 1.0 },
+				reliefEnabled: { type: 'f', value: 0.0 },
+				reliefLightDirection: { type: 'v2', value: new Vector2(-0.55, 0.85) },
 				neighbours: { type: '2fv', value: [] },
 				uEDLMap: { type: 't', value: null },
 				uDepthMap: { type: 't', value: null },
@@ -71178,8 +71301,12 @@ void main() {
 				uniforms.uEDLDepth.value = this.rtEDL.depthTexture;
 				uniforms.uProj.value = this.projectionMatrixBuffer;
 
-				uniforms.edlStrength.value = viewer.edlStrength;
+				uniforms.edlStrength.value = viewer.useEDL ? viewer.edlStrength : 0.0;
 				uniforms.radius.value = viewer.edlRadius;
+				uniforms.reliefEnabled.value = viewer.useRelief ? 1.0 : 0.0;
+				uniforms.reliefStrength.value = viewer.reliefStrength;
+				uniforms.reliefRadius.value = viewer.reliefRadius;
+				setWorldLockedReliefLightDirection(uniforms.reliefLightDirection, camera);
 				uniforms.opacity.value = viewer.edlOpacity; // HACK
 
 				Utils.screenPass.render(viewer.renderer, this.edlMaterial);
@@ -71486,8 +71613,12 @@ void main() {
 				let normalizationMaterial = this.useEDL ? this.normalizationEDLMaterial : this.normalizationMaterial;
 
 				if (this.useEDL) {
-					normalizationMaterial.uniforms.edlStrength.value = viewer.edlStrength;
+					normalizationMaterial.uniforms.edlStrength.value = viewer.useEDL ? viewer.edlStrength : 0.0;
 					normalizationMaterial.uniforms.radius.value = viewer.edlRadius;
+					normalizationMaterial.uniforms.reliefEnabled.value = viewer.useRelief ? 1.0 : 0.0;
+					normalizationMaterial.uniforms.reliefStrength.value = viewer.reliefStrength;
+					normalizationMaterial.uniforms.reliefRadius.value = viewer.reliefRadius;
+					setWorldLockedReliefLightDirection(normalizationMaterial.uniforms.reliefLightDirection, camera);
 					normalizationMaterial.uniforms.screenWidth.value = width;
 					normalizationMaterial.uniforms.screenHeight.value = height;
 					normalizationMaterial.uniforms.uEDLMap.value = this.rtDepth.texture;
@@ -88654,6 +88785,9 @@ ENDSEC
 				this.edlRadius = 1.4;
 				this.edlOpacity = 1.0;
 				this.useEDL = false;
+				this.reliefStrength = 1.0;
+				this.reliefRadius = 1.0;
+				this.useRelief = false;
 				this.description = "";
 
 				this.classifications = ClassificationScheme.DEFAULT;
@@ -89171,6 +89305,41 @@ ENDSEC
 
 		getEDLStrength() {
 			return this.edlStrength;
+		};
+
+		setReliefEnabled(value) {
+			value = Boolean(value) && Features.SHADER_EDL.isSupported();
+
+			if (this.useRelief !== value) {
+				this.useRelief = value;
+				this.dispatchEvent({ 'type': 'use_relief_changed', 'viewer': this });
+			}
+		};
+
+		getReliefEnabled() {
+			return this.useRelief;
+		};
+
+		setReliefRadius(value) {
+			if (this.reliefRadius !== value) {
+				this.reliefRadius = value;
+				this.dispatchEvent({ 'type': 'relief_radius_changed', 'viewer': this });
+			}
+		};
+
+		getReliefRadius() {
+			return this.reliefRadius;
+		};
+
+		setReliefStrength(value) {
+			if (this.reliefStrength !== value) {
+				this.reliefStrength = value;
+				this.dispatchEvent({ 'type': 'relief_strength_changed', 'viewer': this });
+			}
+		};
+
+		getReliefStrength() {
+			return this.reliefStrength;
 		};
 
 		setEDLOpacity(value) {
@@ -90453,11 +90622,11 @@ ENDSEC
 				if (!this.hqRenderer) {
 					this.hqRenderer = new HQSplatRenderer(this);
 				}
-				this.hqRenderer.useEDL = this.useEDL;
+				this.hqRenderer.useEDL = this.useEDL || this.useRelief;
 
 				return this.hqRenderer;
 			} else {
-				if (this.useEDL && Features.SHADER_EDL.isSupported()) {
+				if ((this.useEDL || this.useRelief) && Features.SHADER_EDL.isSupported()) {
 					if (!this.edlRenderer) {
 						this.edlRenderer = new EDLRenderer(this);
 					}

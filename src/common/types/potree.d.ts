@@ -253,6 +253,12 @@ export interface PotreeViewer {
     setEDLEnabled(enabled: boolean): void;
     setEDLStrength(strength: number): void;
     setEDLRadius(radius: number): void;
+    setReliefEnabled(enabled: boolean): void;
+    getReliefEnabled(): boolean;
+    setReliefStrength(strength: number): void;
+    getReliefStrength(): number;
+    setReliefRadius(radius: number): void;
+    getReliefRadius(): number;
     setFOV(fov: number): void;
     setPointBudget(budget: number): void;
     getPointBudget(): number;

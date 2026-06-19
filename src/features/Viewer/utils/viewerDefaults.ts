@@ -2,6 +2,7 @@ import type { PotreeViewer } from '@/common/types/potree';
 import {
     configureMaterialForElevation,
     EDL_DEFAULTS,
+    RELIEF_DEFAULTS,
     getDefaultPointBudget,
     PERFORMANCE_DEFAULTS,
     POINT_APPEARANCE_DEFAULTS,
@@ -41,6 +42,9 @@ export function resetPotreeViewerDisplayDefaults(viewer: PotreeViewer | null): v
     viewer.setEDLEnabled(EDL_DEFAULTS.enabled);
     viewer.setEDLStrength(EDL_DEFAULTS.strength);
     viewer.setEDLRadius(EDL_DEFAULTS.radius);
+    viewer.setReliefEnabled(RELIEF_DEFAULTS.enabled);
+    viewer.setReliefStrength(RELIEF_DEFAULTS.strength);
+    viewer.setReliefRadius(RELIEF_DEFAULTS.radius);
     viewer.setBackground('gradient');
 
     const PotreeLib = window.Potree;

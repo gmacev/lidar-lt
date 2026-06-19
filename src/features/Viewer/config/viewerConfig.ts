@@ -9,6 +9,12 @@ export const EDL_DEFAULTS: { enabled: boolean; strength: number; radius: number 
     radius: 0.6,
 };
 
+export const RELIEF_DEFAULTS: { enabled: boolean; strength: number; radius: number } = {
+    enabled: false,
+    strength: 1.0,
+    radius: 1.0,
+};
+
 export const PERFORMANCE_DEFAULTS = {
     pointBudget: 8_000_000,
     pointBudgetMobile: 4_000_000,
@@ -135,6 +141,10 @@ export const ViewerStateSchema = z.object({
     edlEnabled: optionalSearchBoolean,
     edlStrength: optionalSearchNumber,
     edlRadius: optionalSearchNumber,
+    // Relief detail settings
+    reliefEnabled: optionalSearchBoolean,
+    reliefStrength: optionalSearchNumber,
+    reliefRadius: optionalSearchNumber,
     // Rendering settings (short names to avoid Potree URL conflicts)
     ps: optionalSearchNumber, // point size
     psm: PointSizeModeSchema.optional(), // point size mode

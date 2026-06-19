@@ -4,6 +4,7 @@ import {
     configureMaterialForElevation,
     configureMaterialForIntensity,
     EDL_DEFAULTS,
+    RELIEF_DEFAULTS,
     PERFORMANCE_DEFAULTS,
     POINT_APPEARANCE_DEFAULTS,
     getDefaultPointBudget,
@@ -354,8 +355,22 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             }
 
             // Apply URL state overrides for rendering settings
-            const { ps, psm, pq, mns, pb, fov, edlEnabled, edlStrength, edlRadius, psh, zScale } =
-                initialStateRef.current;
+            const {
+                ps,
+                psm,
+                pq,
+                mns,
+                pb,
+                fov,
+                edlEnabled,
+                edlStrength,
+                edlRadius,
+                reliefEnabled,
+                reliefStrength,
+                reliefRadius,
+                psh,
+                zScale,
+            } = initialStateRef.current;
 
             // Point size from URL overrides the default
             if (typeof ps === 'number') {
@@ -405,6 +420,17 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             }
             if (typeof edlRadius === 'number') {
                 viewer.setEDLRadius(edlRadius);
+            }
+
+            // Relief detail settings from URL
+            if (typeof reliefEnabled === 'boolean') {
+                viewer.setReliefEnabled(reliefEnabled);
+            }
+            if (typeof reliefStrength === 'number') {
+                viewer.setReliefStrength(reliefStrength);
+            }
+            if (typeof reliefRadius === 'number') {
+                viewer.setReliefRadius(reliefRadius);
             }
 
             // Point Shape - default to circle (better visuals than square)
@@ -526,6 +552,11 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             viewer.setEDLEnabled(EDL_DEFAULTS.enabled);
             viewer.setEDLStrength(EDL_DEFAULTS.strength);
             viewer.setEDLRadius(EDL_DEFAULTS.radius);
+
+            // Relief defaults
+            viewer.setReliefEnabled(RELIEF_DEFAULTS.enabled);
+            viewer.setReliefStrength(RELIEF_DEFAULTS.strength);
+            viewer.setReliefRadius(RELIEF_DEFAULTS.radius);
 
             // Background (handled by separate effect)
             // viewer.setBackground('gradient'); // Default will be set by the other effect

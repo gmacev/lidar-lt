@@ -8,6 +8,7 @@ import { ColorModeControl } from './ColorModeControl';
 // import { BackgroundControl } from './BackgroundControl'; // Disabled - not useful
 import { ClassificationControl } from './ClassificationControl';
 import { EDLControl } from './EDLControl';
+import { ReliefControl } from './ReliefControl';
 import { PointCloudSettings } from './PointCloudSettings';
 import { CameraProjectionControl } from './CameraProjectionControl';
 import { FOVControl } from './FOVControl';
@@ -152,6 +153,13 @@ export function ViewerSidebar({
                                     initialState={initialState}
                                     updateUrl={updateUrl}
                                 />
+                                <div className="border-t border-white/10 pt-3">
+                                    <ReliefControl
+                                        viewerRef={viewerRef}
+                                        initialState={initialState}
+                                        updateUrl={updateUrl}
+                                    />
+                                </div>
                                 <div className="border-t border-white/10 pt-3">
                                     <PointCloudSettings
                                         viewerRef={viewerRef}

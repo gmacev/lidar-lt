@@ -7,6 +7,7 @@ export { FOVControl } from './FOVControl';
 export { FpsCounter } from './FpsCounter';
 export { NodeSizeControl } from './NodeSizeControl';
 export { EDLControl } from './EDLControl';
+export { ReliefControl } from './ReliefControl';
 export { ClassificationControl } from './ClassificationControl';
 export { ColorModeControl } from './ColorModeControl';
 export { PointShapeControl } from './PointShapeControl';

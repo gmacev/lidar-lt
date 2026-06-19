@@ -60,6 +60,15 @@
         "radiusHelpAria": "Explain EDL radius",
         "radiusHelp": "Controls how far the shading looks around each point."
     },
+    "relief": {
+        "label": "Hillshade",
+        "helpAria": "Explain hillshade settings",
+        "helpTitle": "Hillshade",
+        "helpDescription": "Applies directional terrain shading so mounds, slopes, and depressions are easier to read.",
+        "strength": "Strength",
+        "strengthHelpAria": "Explain hillshade strength",
+        "strengthHelp": "Controls how strongly the directional light and shadow affect the point cloud."
+    },
     "flood": {
         "waterLevel": "Water Level",
         "waterLevelValue": "Water level: {{value}}",

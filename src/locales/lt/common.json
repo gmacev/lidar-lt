@@ -60,6 +60,15 @@
         "radiusHelpAria": "Paaiškinti EDL spindulį",
         "radiusHelp": "Nustato, kaip plačiai šešėliavimas skaičiuojamas aplink kiekvieną tašką."
     },
+    "relief": {
+        "label": "Šešėlinis reljefas",
+        "helpAria": "Paaiškinti šešėlinio reljefo nustatymus",
+        "helpTitle": "Šešėlinis reljefas",
+        "helpDescription": "Pritaiko kryptinį reljefo šešėliavimą, kad pylimai, šlaitai ir įdubos būtų aiškiau matomi.",
+        "strength": "Stiprumas",
+        "strengthHelpAria": "Paaiškinti šešėlinio reljefo stiprumą",
+        "strengthHelp": "Nustato, kaip stipriai kryptinė šviesa ir šešėlis veikia taškų debesį."
+    },
     "flood": {
         "waterLevel": "Vandens lygis",
         "waterLevelValue": "Vandens lygis: {{value}}",
