@@ -44,6 +44,11 @@ import {
     getCurrentCameraState,
     resetPotreeViewerDisplayDefaults,
 } from '@/features/Viewer/utils/viewerDefaults';
+import {
+    applyViewerDisplaySettings,
+    replaceViewerDisplaySettings,
+} from '@/features/Viewer/utils/viewerDisplaySettings';
+import type { ViewerPreset } from '@/features/Viewer/utils/viewerPresetStorage';
 import { Route } from '@/routes/viewer.$cellId';
 import { isMobile } from '@/common/utils/screenSize';
 
@@ -109,6 +114,18 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
     // Create immediate URL updater for control settings (no debounce needed)
     const updateUrl = (state: Partial<ViewerState>) => {
+        setResetSidebarInitialState((current) =>
+            current?.cellId === cellId
+                ? {
+                      cellId,
+                      state: {
+                          ...current.state,
+                          ...state,
+                      },
+                  }
+                : current
+        );
+
         void navigate({
             search: (prev) => ({ ...prev, ...state }),
             replace: true,
@@ -406,6 +423,20 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         });
     };
 
+    const handleLoadPreset = (preset: ViewerPreset) => {
+        updateUrlDebounced.cancel();
+
+        applyViewerDisplaySettings(viewerRef.current, preset.state);
+        const nextSidebarState = replaceViewerDisplaySettings(initialState, preset.state);
+        setResetSidebarInitialState({ cellId, state: nextSidebarState });
+        setSidebarResetKey((value) => value + 1);
+
+        void navigate({
+            search: (prev) => replaceViewerDisplaySettings(prev, preset.state),
+            replace: true,
+        });
+    };
+
     const handleRecenterView = () => {
         updateUrlDebounced.cancel();
         recenterView();
@@ -692,9 +723,11 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                         <ViewerSidebar
                             viewerRef={viewerRef}
                             initialState={sidebarInitialState}
+                            currentState={sidebarInitialState}
                             updateUrl={updateUrl}
                             onBack={onBack}
                             onResetDefaults={handleResetDefaults}
+                            onLoadPreset={handleLoadPreset}
                             onCollapsedChange={setIsSidebarCollapsed}
                             resetKey={sidebarResetKey}
                         />

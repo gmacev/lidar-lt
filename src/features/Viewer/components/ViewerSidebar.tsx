@@ -13,13 +13,17 @@ import { PointCloudSettings } from './PointCloudSettings';
 import { CameraProjectionControl } from './CameraProjectionControl';
 import { FOVControl } from './FOVControl';
 import { FpsCounter } from './FpsCounter';
+import { ViewerPresetManager } from './ViewerPresetManager';
+import type { ViewerPreset } from '@/features/Viewer/utils/viewerPresetStorage';
 
 interface ViewerSidebarProps {
     viewerRef: RefObject<PotreeViewer | null>;
     initialState: ViewerState;
+    currentState: ViewerState;
     updateUrl: (state: Partial<ViewerState>) => void;
     onBack: () => void;
     onResetDefaults: () => void;
+    onLoadPreset: (preset: ViewerPreset) => void;
     onCollapsedChange: (collapsed: boolean) => void;
     resetKey: number;
 }
@@ -33,9 +37,11 @@ import { isMobile } from '@/common/utils/screenSize';
 export function ViewerSidebar({
     viewerRef,
     initialState,
+    currentState,
     updateUrl,
     onBack,
     onResetDefaults,
+    onLoadPreset,
     onCollapsedChange,
     resetKey,
 }: ViewerSidebarProps) {
@@ -168,6 +174,16 @@ export function ViewerSidebar({
                                     />
                                 </div>
                             </div>
+                        </SidebarSection>
+
+                        <SidebarSection
+                            title={t('presets.title')}
+                            icon={<Icon name="bookmark" size={16} />}
+                        >
+                            <ViewerPresetManager
+                                currentState={currentState}
+                                onLoadPreset={onLoadPreset}
+                            />
                         </SidebarSection>
                     </div>
                 </div>

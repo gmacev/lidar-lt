@@ -2,6 +2,7 @@ import { useState, useEffect, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { CLASSIFICATION_DISPLAY_ORDER } from '@/features/Viewer/utils/viewerDisplaySettings';
 
 interface ClassificationControlProps {
     viewerRef: RefObject<PotreeViewer | null>;
@@ -16,16 +17,6 @@ interface ClassificationItem {
     visible: boolean;
     color: [number, number, number, number];
 }
-
-const DISPLAY_ORDER = [
-    2, // Ground
-    3, // Low Vegetation
-    4, // Medium Vegetation
-    5, // High Vegetation
-    6, // Buildings
-    0, // Unclassified (Master for 0 & 1)
-    7, // Noise
-];
 
 export function ClassificationControl({
     viewerRef,
@@ -53,7 +44,7 @@ export function ClassificationControl({
     };
 
     // Initialize list immediately for UI - no layout shift!
-    const classifications: ClassificationItem[] = DISPLAY_ORDER.map((id) => ({
+    const classifications: ClassificationItem[] = CLASSIFICATION_DISPLAY_ORDER.map((id) => ({
         id,
         name: getClassificationName(id),
         visible: !hiddenClasses.has(id),
@@ -70,7 +61,7 @@ export function ClassificationControl({
         const viewer = viewerRef.current;
         if (!viewer) return;
 
-        DISPLAY_ORDER.forEach((id) => {
+        CLASSIFICATION_DISPLAY_ORDER.forEach((id) => {
             const shouldBeVisible = !hiddenClasses.has(id);
             viewer.setClassificationVisibility(id, shouldBeVisible);
 
@@ -97,7 +88,7 @@ export function ClassificationControl({
     const toggleAll = () => {
         if (allVisible) {
             // Hide all
-            const newHidden = new Set(DISPLAY_ORDER);
+            const newHidden = new Set(CLASSIFICATION_DISPLAY_ORDER);
             setHiddenClasses(newHidden);
             updateUrl({ hiddenClasses: Array.from(newHidden) });
         } else {

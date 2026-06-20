@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Vector3 } from 'three';
 import {
-    configureMaterialForElevation,
-    configureMaterialForIntensity,
     EDL_DEFAULTS,
-    RELIEF_DEFAULTS,
     PERFORMANCE_DEFAULTS,
-    POINT_APPEARANCE_DEFAULTS,
+    RELIEF_DEFAULTS,
     getDefaultPointBudget,
 } from '@/features/Viewer/config';
-import { getShapeEnumValue } from '@/features/Viewer/utils/pointShapeUtils';
-import { getPointSizeModeEnumValue } from '@/features/Viewer/utils/pointSizeModeUtils';
 import { getCurrentCameraState } from '@/features/Viewer/utils/viewerDefaults';
+import { applyViewerDisplaySettings } from '@/features/Viewer/utils/viewerDisplaySettings';
 import { isTouchDevice } from '@/common/utils/screenSize';
 import type { LoadPointCloudResult, Potree, PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -325,117 +321,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             // Add to viewer scene
             viewer.scene.addPointCloud(pointcloud);
 
-            // Apply color mode from URL state (default to elevation)
-            const colorMode = initialStateRef.current.colorMode ?? 'elevation';
-            if (colorMode === 'intensity') {
-                configureMaterialForIntensity(pointcloud, PotreeLib);
-                // Apply intensity range from URL if present
-                const { intensityMax, ig, ib } = initialStateRef.current;
-                if (typeof intensityMax === 'number') {
-                    pointcloud.material.intensityRange = [0, intensityMax];
-                }
-                if (typeof ig === 'number') {
-                    pointcloud.material.intensityGamma = ig;
-                }
-                if (typeof ib === 'number') {
-                    pointcloud.material.intensityBrightness = ib;
-                }
-            } else {
-                const { elevationMin, elevationMax, ep } = initialStateRef.current;
-                const elevationRange =
-                    typeof elevationMin === 'number' &&
-                    typeof elevationMax === 'number' &&
-                    elevationMax > elevationMin
-                        ? ([elevationMin, elevationMax] as [number, number])
-                        : undefined;
-                configureMaterialForElevation(pointcloud, PotreeLib, {
-                    elevationRange,
-                    palette: ep ?? POINT_APPEARANCE_DEFAULTS.elevationPalette,
-                });
-            }
-
-            // Apply URL state overrides for rendering settings
-            const {
-                ps,
-                psm,
-                pq,
-                mns,
-                pb,
-                fov,
-                edlEnabled,
-                edlStrength,
-                edlRadius,
-                reliefEnabled,
-                reliefStrength,
-                reliefRadius,
-                psh,
-                zScale,
-            } = initialStateRef.current;
-
-            // Point size from URL overrides the default
-            if (typeof ps === 'number') {
-                pointcloud.material.size = ps;
-            }
-
-            pointcloud.material.pointSizeType = getPointSizeModeEnumValue(
-                psm ?? POINT_APPEARANCE_DEFAULTS.sizeMode,
-                PotreeLib
-            );
-
-            viewer.useHQ = (pq ?? POINT_APPEARANCE_DEFAULTS.quality) === 'high';
-
-            // Min node size from URL
-            if (typeof mns === 'number') {
-                viewer.setMinNodeSize(mns);
-            }
-
-            // Point budget from URL
-            if (typeof pb === 'number') {
-                viewer.setPointBudget(pb);
-            }
-
-            // Field of view from URL
-            if (typeof fov === 'number') {
-                viewer.setFOV(fov);
-            }
-
-            // Vertical Exaggeration from URL
-            const scale = Number(zScale);
-            if (!isNaN(scale)) {
-                // Use setTimeout to ensure scale is applied after point cloud is fully initialized
-                setTimeout(() => {
-                    if (isDisposed()) return;
-
-                    const currentX = pointcloud.scale.x;
-                    pointcloud.scale.z = currentX * scale;
-                }, 0);
-            }
-
-            // EDL settings from URL
-            if (typeof edlEnabled === 'boolean') {
-                viewer.setEDLEnabled(edlEnabled);
-            }
-            if (typeof edlStrength === 'number') {
-                viewer.setEDLStrength(edlStrength);
-            }
-            if (typeof edlRadius === 'number') {
-                viewer.setEDLRadius(edlRadius);
-            }
-
-            // Relief detail settings from URL
-            if (typeof reliefEnabled === 'boolean') {
-                viewer.setReliefEnabled(reliefEnabled);
-            }
-            if (typeof reliefStrength === 'number') {
-                viewer.setReliefStrength(reliefStrength);
-            }
-            if (typeof reliefRadius === 'number') {
-                viewer.setReliefRadius(reliefRadius);
-            }
-
-            // Point Shape - default to circle (better visuals than square)
-            const shapeValue = getShapeEnumValue(psh ?? POINT_APPEARANCE_DEFAULTS.shape, PotreeLib);
-            pointcloud.material.shape = shapeValue;
+            applyViewerDisplaySettings(viewer, initialStateRef.current);
 
             // RESTORE STATE or DEFAULT VIEW from REF
             const { x, y, z, yaw, pitch, radius } = initialStateRef.current;
@@ -545,8 +431,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             viewer.setFOV(PERFORMANCE_DEFAULTS.fov);
             viewer.setPointBudget(getDefaultPointBudget());
             viewer.setMinNodeSize(PERFORMANCE_DEFAULTS.minNodeSize);
-            viewer.useHQ =
-                (initialStateRef.current.pq ?? POINT_APPEARANCE_DEFAULTS.quality) === 'high';
+            viewer.useHQ = PERFORMANCE_DEFAULTS.highQualitySplats;
 
             // Enable EDL
             viewer.setEDLEnabled(EDL_DEFAULTS.enabled);

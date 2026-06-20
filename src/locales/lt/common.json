@@ -17,6 +17,43 @@
         "classifications": "Klasifikacijos",
         "rendering": "Atvaizdavimas"
     },
+    "presets": {
+        "title": "Rinkiniai",
+        "nameLabel": "Rinkinio pavadinimas",
+        "namePlaceholder": "Rinkinio pavadinimas",
+        "save": "Išsaugoti",
+        "empty": "Išsaugotų rinkinių dar nėra.",
+        "updatedAt": "Atnaujinta {{date}}",
+        "renameAria": "Pervadinti rinkinį {{name}}",
+        "actions": {
+            "load": "Įkelti",
+            "loadAria": "Įkelti rinkinį {{name}}",
+            "update": "Atnaujinti",
+            "updateAria": "Atnaujinti rinkinį {{name}} dabartiniais nustatymais",
+            "rename": "Pervadinti",
+            "renameAria": "Pervadinti rinkinį {{name}}",
+            "delete": "Ištrinti",
+            "deleteAria": "Ištrinti rinkinį {{name}}",
+            "confirmDelete": "Patvirtinti",
+            "saveRenameAria": "Išsaugoti rinkinio {{name}} pavadinimą",
+            "cancelRename": "Atšaukti rinkinio pervadinimą"
+        },
+        "errors": {
+            "emptyName": "Įveskite rinkinio pavadinimą.",
+            "nameTooLong": "Rinkinio pavadinimas turi būti iki {{max}} simbolių.",
+            "duplicateName": "Rinkinys tokiu pavadinimu jau yra.",
+            "limitReached": "Galite išsaugoti iki {{limit}} rinkinių.",
+            "notFound": "Šis rinkinys nebepasiekiamas."
+        },
+        "toasts": {
+            "saved": "Rinkinys išsaugotas",
+            "loaded": "Rinkinys įkeltas",
+            "updated": "Rinkinys atnaujintas",
+            "renamed": "Rinkinys pervadintas",
+            "deleted": "Rinkinys ištrintas",
+            "errorTitle": "Rinkinio veiksmas nepavyko"
+        }
+    },
     "classification": {
         "unclassified": "Neklasifikuoti",
         "ground": "Žemė",

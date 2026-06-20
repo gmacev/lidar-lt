@@ -17,6 +17,43 @@
         "classifications": "Classifications",
         "rendering": "Rendering"
     },
+    "presets": {
+        "title": "Presets",
+        "nameLabel": "Preset name",
+        "namePlaceholder": "Preset name",
+        "save": "Save",
+        "empty": "No presets saved yet.",
+        "updatedAt": "Updated {{date}}",
+        "renameAria": "Rename preset {{name}}",
+        "actions": {
+            "load": "Load",
+            "loadAria": "Load preset {{name}}",
+            "update": "Update",
+            "updateAria": "Update preset {{name}} with current settings",
+            "rename": "Rename",
+            "renameAria": "Rename preset {{name}}",
+            "delete": "Delete",
+            "deleteAria": "Delete preset {{name}}",
+            "confirmDelete": "Confirm",
+            "saveRenameAria": "Save preset name for {{name}}",
+            "cancelRename": "Cancel preset rename"
+        },
+        "errors": {
+            "emptyName": "Enter a preset name.",
+            "nameTooLong": "Preset names must be {{max}} characters or fewer.",
+            "duplicateName": "A preset with this name already exists.",
+            "limitReached": "You can save up to {{limit}} presets.",
+            "notFound": "This preset is no longer available."
+        },
+        "toasts": {
+            "saved": "Preset saved",
+            "loaded": "Preset loaded",
+            "updated": "Preset updated",
+            "renamed": "Preset renamed",
+            "deleted": "Preset deleted",
+            "errorTitle": "Preset action failed"
+        }
+    },
     "classification": {
         "unclassified": "Unclassified",
         "ground": "Ground",
