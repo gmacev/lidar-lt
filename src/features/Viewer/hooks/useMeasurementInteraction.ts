@@ -15,17 +15,48 @@ interface UseMeasurementInteractionOptions {
     blockRightClick?: boolean;
 }
 
+interface UseDoubleClickFinishOptions {
+    viewerRef: RefObject<PotreeViewer | null>;
+    isActive: boolean;
+    onFinish: () => void;
+}
+
 interface UseMeasurementInteractionReturn {
     menuPosition: { x: number; y: number } | null;
     setMenuPosition: (pos: { x: number; y: number } | null) => void;
 }
 
-export function hookMeasurementEvents(measurement: Measure, onChange: () => void) {
+interface DispatchableViewer extends PotreeViewer {
+    dispatchEvent: (event: { type: string }) => void;
+}
+
+export function cancelPotreeInsertion(viewer: PotreeViewer) {
+    (viewer as DispatchableViewer).dispatchEvent({ type: 'cancel_insertions' });
+}
+
+export function removeDuplicateTrailingMarker(measurement: Measure, tolerance = 0.01) {
+    const { points } = measurement;
+    if (points.length < 2) return false;
+
+    const previous = points[points.length - 2].position;
+    const current = points[points.length - 1].position;
+    if (previous.distanceTo(current) > tolerance) return false;
+
+    measurement.removeMarker(points.length - 1);
+    return true;
+}
+
+export function hookMeasurementEvents(
+    measurement: Measure,
+    onChange: () => void,
+    onAdd?: () => void
+) {
     const originalAdd = measurement.addMarker.bind(measurement);
     const originalRemove = measurement.removeMarker.bind(measurement);
 
     measurement.addMarker = (pos) => {
         originalAdd(pos);
+        onAdd?.();
         onChange();
     };
 
@@ -33,6 +64,27 @@ export function hookMeasurementEvents(measurement: Measure, onChange: () => void
         originalRemove(index);
         onChange();
     };
+}
+
+export function useDoubleClickFinish({
+    viewerRef,
+    isActive,
+    onFinish,
+}: UseDoubleClickFinishOptions) {
+    useEffect(() => {
+        const element = viewerRef.current?.renderer.domElement;
+        if (!element || !isActive) return;
+
+        const handleDoubleClick = (event: MouseEvent) => {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            onFinish();
+        };
+
+        element.addEventListener('dblclick', handleDoubleClick, true);
+        return () => element.removeEventListener('dblclick', handleDoubleClick, true);
+    }, [viewerRef, isActive, onFinish]);
 }
 
 /**

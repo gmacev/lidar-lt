@@ -1,5 +1,6 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import type { Measure, PotreeScene, PotreeViewer, Profile } from '@/common/types/potree';
+import { cancelPotreeInsertion, useDoubleClickFinish } from './useMeasurementInteraction';
 
 interface UseProfileToolOptions {
     viewerRef: RefObject<PotreeViewer | null>;
@@ -19,15 +20,23 @@ interface UseProfileToolReturn {
     setProfileWidth: (width: number) => void;
 }
 
-interface DispatchableViewer {
-    dispatchEvent: (event: { type: string }) => void;
-}
-
 interface ExtendedPotreeScene extends PotreeScene {
     removeProfile?: (profile: Profile) => void;
 }
 
 const DEFAULT_WIDTH = 1;
+
+function removeDuplicateTrailingProfilePoint(profile: Profile, tolerance = 0.01) {
+    const { points } = profile;
+    if (points.length < 2) return false;
+
+    const previous = points[points.length - 2];
+    const current = points[points.length - 1];
+    if (previous.distanceTo(current) > tolerance) return false;
+
+    profile.removeMarker(points.length - 1);
+    return true;
+}
 
 export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfileToolReturn {
     const [phase, setPhase] = useState<ProfilePhase>('idle');
@@ -54,7 +63,7 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         if (!viewer?.profileTool) return;
 
         if (activeProfileRef.current) {
-            (viewer as unknown as DispatchableViewer).dispatchEvent({ type: 'cancel_insertions' });
+            cancelPotreeInsertion(viewer);
             removeProfile(activeProfileRef.current);
         }
 
@@ -73,7 +82,8 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         const profile = activeProfileRef.current;
         if (!viewer || !profile || phase !== 'drawing') return;
 
-        (viewer as unknown as DispatchableViewer).dispatchEvent({ type: 'cancel_insertions' });
+        cancelPotreeInsertion(viewer);
+        removeDuplicateTrailingProfilePoint(profile);
 
         if (profile.points.length < 2) {
             removeProfile(profile);
@@ -89,7 +99,7 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
     const closeProfile = useCallback(() => {
         const viewer = viewerRef.current;
         if (viewer) {
-            (viewer as unknown as DispatchableViewer).dispatchEvent({ type: 'cancel_insertions' });
+            cancelPotreeInsertion(viewer);
         }
         removeProfile(activeProfileRef.current);
         activeProfileRef.current = null;
@@ -145,6 +155,12 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [deleteLastPoint, finishProfile, phase]);
 
+    useDoubleClickFinish({
+        viewerRef,
+        isActive: phase === 'drawing',
+        onFinish: finishProfile,
+    });
+
     useEffect(() => {
         const element = viewerRef.current?.renderer.domElement;
         if (!element || phase !== 'drawing') return;
@@ -170,9 +186,7 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         return () => {
             const viewer = viewerRef.current;
             if (viewer) {
-                (viewer as unknown as DispatchableViewer).dispatchEvent({
-                    type: 'cancel_insertions',
-                });
+                cancelPotreeInsertion(viewer);
             }
             removeProfile(activeProfileRef.current);
             activeProfileRef.current = null;

@@ -1,7 +1,13 @@
 import { useEffect, useState, useRef, type RefObject } from 'react';
 import type { PotreeViewer, Measure } from '@/common/types/potree';
 import { Vector3 } from 'three';
-import { useMeasurementInteraction, hookMeasurementEvents } from './useMeasurementInteraction';
+import {
+    cancelPotreeInsertion,
+    hookMeasurementEvents,
+    removeDuplicateTrailingMarker,
+    useDoubleClickFinish,
+    useMeasurementInteraction,
+} from './useMeasurementInteraction';
 
 interface UseDistanceMeasurementToolOptions {
     viewerRef: RefObject<PotreeViewer | null>;
@@ -40,6 +46,8 @@ export function useDistanceMeasurementTool({
     const [totalDistance, setTotalDistance] = useState(0);
 
     const activeMeasurementRef = useRef<Measure | null>(null);
+    const lastCommittedMeasurementRef = useRef<Measure | null>(null);
+    const markersAddedSinceStartRef = useRef(0);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const { menuPosition, setMenuPosition } = useMeasurementInteraction({
@@ -74,6 +82,80 @@ export function useDistanceMeasurementTool({
         setTotalDistance(total);
     };
 
+    const isValidDistanceMeasurement = (measurement: Measure) => {
+        return measurement.points.length >= 2 && calculateMeasurementDistance(measurement) > 0.01;
+    };
+
+    const findLastCommittedDistanceMeasurement = () => {
+        const viewer = viewerRef.current;
+        if (!viewer?.scene?.measurements) return null;
+
+        return (
+            viewer.scene.measurements
+                .filter((measurement) => {
+                    return (
+                        measurement !== activeMeasurementRef.current &&
+                        measurement.name === 'Atstumas' &&
+                        isValidDistanceMeasurement(measurement)
+                    );
+                })
+                .at(-1) ?? null
+        );
+    };
+
+    const removeDistanceMeasurements = (viewer: PotreeViewer) => {
+        const measurements = [...viewer.scene.measurements].filter((measurement) => {
+            return measurement.name === 'Atstumas';
+        });
+
+        measurements.forEach((measurement) => viewer.scene.removeMeasurement(measurement));
+        lastCommittedMeasurementRef.current = null;
+    };
+
+    const startDistanceMeasurement = (viewer: PotreeViewer) => {
+        markersAddedSinceStartRef.current = 0;
+
+        const measurement = viewer.measuringTool.startInsertion({
+            showDistances: true,
+            showArea: false,
+            showAngles: false,
+            closed: false,
+            name: 'Atstumas',
+        });
+
+        activeMeasurementRef.current = measurement;
+        hookMeasurementEvents(measurement, updateTotalDistance, () => {
+            markersAddedSinceStartRef.current += 1;
+        });
+        return measurement;
+    };
+
+    const finishDistanceMeasurement = () => {
+        const viewer = viewerRef.current;
+        const measurement = activeMeasurementRef.current;
+        if (!viewer || !measurement) return;
+
+        cancelPotreeInsertion(viewer);
+        removeDuplicateTrailingMarker(measurement);
+        clearTimers();
+
+        if (markersAddedSinceStartRef.current > 2 && isValidDistanceMeasurement(measurement)) {
+            lastCommittedMeasurementRef.current = measurement;
+        } else {
+            viewer.scene.removeMeasurement(measurement);
+            lastCommittedMeasurementRef.current = findLastCommittedDistanceMeasurement();
+        }
+
+        startDistanceMeasurement(viewer);
+        updateTotalDistance();
+    };
+
+    useDoubleClickFinish({
+        viewerRef,
+        isActive: isMeasuring,
+        onFinish: finishDistanceMeasurement,
+    });
+
     // Update distance when component mounts (to show existing)
     useEffect(() => {
         const t = setTimeout(() => {
@@ -91,14 +173,13 @@ export function useDistanceMeasurementTool({
 
         if (isMeasuring) {
             // Cancel
-            (
-                viewer as unknown as { dispatchEvent: (event: { type: string }) => void }
-            ).dispatchEvent({ type: 'cancel_insertions' });
+            cancelPotreeInsertion(viewer);
 
             if (activeMeasurementRef.current) {
                 viewer.scene.removeMeasurement(activeMeasurementRef.current);
                 activeMeasurementRef.current = null;
             }
+            removeDistanceMeasurements(viewer);
 
             setIsMeasuring(false);
             clearTimers();
@@ -108,43 +189,36 @@ export function useDistanceMeasurementTool({
 
         clearTimers();
         setIsMeasuring(true);
-
-        const measurement = viewer.measuringTool.startInsertion({
-            showDistances: true,
-            showArea: false,
-            showAngles: false,
-            closed: false,
-            name: 'Atstumas',
-        });
-
-        activeMeasurementRef.current = measurement;
-        // Hook events for immediate updates
-        hookMeasurementEvents(measurement, updateTotalDistance);
+        startDistanceMeasurement(viewer);
     };
 
     const deleteLastPoint = () => {
         const viewer = viewerRef.current;
-        if (!activeMeasurementRef.current || !viewer) return;
-        const measurement = activeMeasurementRef.current;
-        if (measurement.points.length > 0) {
-            measurement.removeMarker(measurement.points.length - 1);
+        if (!viewer) return;
 
-            // If all points deleted, restart the measurement
-            if (measurement.points.length === 0) {
-                setTimeout(() => {
-                    viewer.scene.removeMeasurement(measurement);
-                    const newMeasurement = viewer.measuringTool.startInsertion({
-                        showDistances: true,
-                        showArea: false,
-                        showAngles: false,
-                        closed: false,
-                        name: 'Atstumas',
-                    });
-                    activeMeasurementRef.current = newMeasurement;
-                    hookMeasurementEvents(newMeasurement, updateTotalDistance);
-                }, 0);
-            }
+        const activeMeasurement = activeMeasurementRef.current;
+        if (activeMeasurement && activeMeasurement.points.length > 1) {
+            activeMeasurement.removeMarker(activeMeasurement.points.length - 2);
+            updateTotalDistance();
+            return;
         }
+
+        const measurement =
+            lastCommittedMeasurementRef.current ?? findLastCommittedDistanceMeasurement();
+        if (!measurement) return;
+
+        measurement.removeMarker(measurement.points.length - 1);
+
+        if (!isValidDistanceMeasurement(measurement)) {
+            viewer.scene.removeMeasurement(measurement);
+            if (lastCommittedMeasurementRef.current === measurement) {
+                lastCommittedMeasurementRef.current = findLastCommittedDistanceMeasurement();
+            }
+        } else {
+            lastCommittedMeasurementRef.current = measurement;
+        }
+
+        updateTotalDistance();
     };
 
     const deleteAll = () => {
@@ -152,19 +226,12 @@ export function useDistanceMeasurementTool({
         if (!viewer) return;
 
         activeMeasurementRef.current = null;
+        lastCommittedMeasurementRef.current = null;
         viewer.scene.removeAllMeasurements();
         updateTotalDistance(); // Force update since we wiped everything
 
         if (isMeasuring) {
-            const measurement = viewer.measuringTool.startInsertion({
-                showDistances: true,
-                showArea: false,
-                showAngles: false,
-                closed: false,
-                name: 'Atstumas',
-            });
-            activeMeasurementRef.current = measurement;
-            hookMeasurementEvents(measurement, updateTotalDistance);
+            startDistanceMeasurement(viewer);
         }
     };
 

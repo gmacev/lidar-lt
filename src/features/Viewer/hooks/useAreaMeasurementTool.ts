@@ -1,6 +1,12 @@
 import { useEffect, useState, useRef, type RefObject } from 'react';
 import type { PotreeViewer, Measure } from '@/common/types/potree';
-import { useMeasurementInteraction, hookMeasurementEvents } from './useMeasurementInteraction';
+import {
+    cancelPotreeInsertion,
+    hookMeasurementEvents,
+    removeDuplicateTrailingMarker,
+    useDoubleClickFinish,
+    useMeasurementInteraction,
+} from './useMeasurementInteraction';
 
 interface UseAreaMeasurementToolOptions {
     viewerRef: RefObject<PotreeViewer | null>;
@@ -38,6 +44,7 @@ export function useAreaMeasurementTool({
 
     // Track current active measurement to remove it on cancel
     const activeMeasurementRef = useRef<Measure | null>(null);
+    const lastCommittedMeasurementRef = useRef<Measure | null>(null);
 
     // Track active timers for cleanup
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -82,6 +89,76 @@ export function useAreaMeasurementTool({
         setTotalArea(total);
     };
 
+    const isValidAreaMeasurement = (measurement: Measure) => {
+        return measurement.points.length >= 3;
+    };
+
+    const findLastCommittedAreaMeasurement = () => {
+        const viewer = viewerRef.current;
+        if (!viewer?.scene?.measurements) return null;
+
+        return (
+            viewer.scene.measurements
+                .filter((measurement) => {
+                    return (
+                        measurement !== activeMeasurementRef.current &&
+                        measurement.name === 'Plotas' &&
+                        isValidAreaMeasurement(measurement)
+                    );
+                })
+                .at(-1) ?? null
+        );
+    };
+
+    const removeAreaMeasurements = (viewer: PotreeViewer) => {
+        const measurements = [...viewer.scene.measurements].filter((measurement) => {
+            return measurement.name === 'Plotas';
+        });
+
+        measurements.forEach((measurement) => viewer.scene.removeMeasurement(measurement));
+        lastCommittedMeasurementRef.current = null;
+    };
+
+    const startAreaMeasurement = (viewer: PotreeViewer) => {
+        const measurement = viewer.measuringTool.startInsertion({
+            showDistances: true,
+            showArea: true,
+            showAngles: false,
+            closed: true,
+            name: 'Plotas',
+        });
+
+        activeMeasurementRef.current = measurement;
+        hookMeasurementEvents(measurement, updateTotalArea);
+        return measurement;
+    };
+
+    const finishAreaMeasurement = () => {
+        const viewer = viewerRef.current;
+        const measurement = activeMeasurementRef.current;
+        if (!viewer || !measurement) return;
+
+        cancelPotreeInsertion(viewer);
+        removeDuplicateTrailingMarker(measurement);
+        clearTimers();
+
+        if (isValidAreaMeasurement(measurement)) {
+            lastCommittedMeasurementRef.current = measurement;
+        } else {
+            viewer.scene.removeMeasurement(measurement);
+            lastCommittedMeasurementRef.current = findLastCommittedAreaMeasurement();
+        }
+
+        startAreaMeasurement(viewer);
+        updateTotalArea();
+    };
+
+    useDoubleClickFinish({
+        viewerRef,
+        isActive: isMeasuring,
+        onFinish: finishAreaMeasurement,
+    });
+
     // Initial update
     useEffect(() => {
         const t = setTimeout(() => {
@@ -101,15 +178,14 @@ export function useAreaMeasurementTool({
         // If already measuring, cancel it
         if (isMeasuring) {
             // Dispatch cancel_insertions to stop the tool
-            (
-                viewer as unknown as { dispatchEvent: (event: { type: string }) => void }
-            ).dispatchEvent({ type: 'cancel_insertions' });
+            cancelPotreeInsertion(viewer);
 
             // Remove the incomplete measurement if it exists
             if (activeMeasurementRef.current) {
                 viewer.scene.removeMeasurement(activeMeasurementRef.current);
                 activeMeasurementRef.current = null;
             }
+            removeAreaMeasurements(viewer);
 
             setIsMeasuring(false);
             clearTimers();
@@ -121,45 +197,44 @@ export function useAreaMeasurementTool({
         clearTimers();
 
         setIsMeasuring(true);
-
-        // Start area measurement with Potree's built-in tool
-        const measurement = viewer.measuringTool.startInsertion({
-            showDistances: true,
-            showArea: true,
-            showAngles: false,
-            closed: true, // Auto-close polygon
-            name: 'Plotas',
-        });
-
-        activeMeasurementRef.current = measurement;
-        // Hook events for immediate updates
-        hookMeasurementEvents(measurement, updateTotalArea);
+        startAreaMeasurement(viewer);
     };
 
     // Delete last point
     const deleteLastPoint = () => {
         const viewer = viewerRef.current;
-        if (!activeMeasurementRef.current || !viewer) return;
-        const measurement = activeMeasurementRef.current;
-        if (measurement.points.length > 0) {
-            measurement.removeMarker(measurement.points.length - 1);
+        if (!viewer) return;
 
-            // If all points deleted, restart the measurement
-            if (measurement.points.length === 0) {
-                setTimeout(() => {
-                    viewer.scene.removeMeasurement(measurement);
-                    const newMeasurement = viewer.measuringTool.startInsertion({
-                        showDistances: false,
-                        showArea: true,
-                        showAngles: false,
-                        closed: true,
-                        name: 'Plotas',
-                    });
-                    activeMeasurementRef.current = newMeasurement;
-                    hookMeasurementEvents(newMeasurement, updateTotalArea);
-                }, 0);
+        const activeMeasurement = activeMeasurementRef.current;
+        if (activeMeasurement && activeMeasurement.points.length > 1) {
+            activeMeasurement.removeMarker(activeMeasurement.points.length - 2);
+
+            const realPointCount = activeMeasurement.points.length - 1;
+            if (realPointCount < 3) {
+                viewer.scene.removeMeasurement(activeMeasurement);
+                startAreaMeasurement(viewer);
             }
+
+            updateTotalArea();
+            return;
         }
+
+        const measurement =
+            lastCommittedMeasurementRef.current ?? findLastCommittedAreaMeasurement();
+        if (!measurement) return;
+
+        measurement.removeMarker(measurement.points.length - 1);
+
+        if (!isValidAreaMeasurement(measurement)) {
+            viewer.scene.removeMeasurement(measurement);
+            if (lastCommittedMeasurementRef.current === measurement) {
+                lastCommittedMeasurementRef.current = findLastCommittedAreaMeasurement();
+            }
+        } else {
+            lastCommittedMeasurementRef.current = measurement;
+        }
+
+        updateTotalArea();
     };
 
     // Delete all measurements
@@ -168,19 +243,12 @@ export function useAreaMeasurementTool({
         if (!viewer) return;
 
         activeMeasurementRef.current = null;
+        lastCommittedMeasurementRef.current = null;
         viewer.scene.removeAllMeasurements();
         updateTotalArea();
 
         if (isMeasuring) {
-            const measurement = viewer.measuringTool.startInsertion({
-                showDistances: false,
-                showArea: true,
-                showAngles: false,
-                closed: true,
-                name: 'Plotas',
-            });
-            activeMeasurementRef.current = measurement;
-            hookMeasurementEvents(measurement, updateTotalArea);
+            startAreaMeasurement(viewer);
         }
     };
 
