@@ -51859,7 +51859,7 @@
 			this.sprite = new Sprite(this.material);
 			this.add(this.sprite);
 
-			this.borderThickness = 4;
+			this.borderThickness = 2;
 			this.fontface = 'Arial';
 			this.fontsize = 28;
 			this.borderColor = { r: 0, g: 0, b: 0, a: 1.0 };
@@ -51904,7 +51904,7 @@
 			// get size data (height depends only on font size)
 			let metrics = context.measureText(this.text);
 			let textWidth = metrics.width;
-			let margin = 5;
+			let margin = 3;
 			let spriteWidth = 2 * margin + textWidth + 2 * this.borderThickness;
 			let spriteHeight = this.fontsize * 1.4 + 2 * this.borderThickness;
 
@@ -51921,7 +51921,7 @@
 
 			context.lineWidth = this.borderThickness;
 			this.roundRect(context, this.borderThickness / 2, this.borderThickness / 2,
-				textWidth + this.borderThickness + 2 * margin, this.fontsize * 1.4 + this.borderThickness, 6);
+				textWidth + this.borderThickness + 2 * margin, this.fontsize * 1.4 + this.borderThickness, 4);
 
 			// text color
 			context.strokeStyle = 'rgba(0, 0, 0, 1.0)';
@@ -53636,9 +53636,9 @@
 		const heightLabel = new TextSprite('');
 
 		heightLabel.setTextColor({ r: 140, g: 250, b: 140, a: 1.0 });
-		heightLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 1.0 });
-		heightLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 1.0 });
-		heightLabel.fontsize = 16;
+		heightLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 0.45 });
+		heightLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0.62 });
+		heightLabel.fontsize = 15;
 		heightLabel.material.depthTest = false;
 		heightLabel.material.opacity = 1;
 		heightLabel.visible = false;
@@ -53650,9 +53650,9 @@
 		const areaLabel = new TextSprite('');
 
 		areaLabel.setTextColor({ r: 140, g: 250, b: 140, a: 1.0 });
-		areaLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 1.0 });
-		areaLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 1.0 });
-		areaLabel.fontsize = 16;
+		areaLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 0.45 });
+		areaLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0.62 });
+		areaLabel.fontsize = 15;
 		areaLabel.material.depthTest = false;
 		areaLabel.material.opacity = 1;
 		areaLabel.visible = false;
@@ -53664,9 +53664,9 @@
 		const circleRadiusLabel = new TextSprite("");
 
 		circleRadiusLabel.setTextColor({ r: 140, g: 250, b: 140, a: 1.0 });
-		circleRadiusLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 1.0 });
-		circleRadiusLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 1.0 });
-		circleRadiusLabel.fontsize = 16;
+		circleRadiusLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 0.45 });
+		circleRadiusLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0.62 });
+		circleRadiusLabel.fontsize = 15;
 		circleRadiusLabel.material.depthTest = false;
 		circleRadiusLabel.material.opacity = 1;
 		circleRadiusLabel.visible = false;
@@ -53847,9 +53847,9 @@
 			const label = new TextSprite("");
 
 			label.setTextColor({ r: 140, g: 250, b: 140, a: 1.0 });
-			label.setBorderColor({ r: 0, g: 0, b: 0, a: 1.0 });
-			label.setBackgroundColor({ r: 0, g: 0, b: 0, a: 1.0 });
-			label.fontsize = 16;
+			label.setBorderColor({ r: 0, g: 0, b: 0, a: 0.45 });
+			label.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0.62 });
+			label.fontsize = 15;
 			label.material.depthTest = false;
 			label.material.opacity = 1;
 
@@ -53982,20 +53982,20 @@
 
 			{ // edge labels
 				let edgeLabel = new TextSprite();
-				edgeLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 1.0 });
-				edgeLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 1.0 });
+				edgeLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 0.45 });
+				edgeLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0.62 });
 				edgeLabel.material.depthTest = false;
 				edgeLabel.visible = false;
-				edgeLabel.fontsize = 16;
+				edgeLabel.fontsize = 15;
 				this.edgeLabels.push(edgeLabel);
 				this.add(edgeLabel);
 			}
 
 			{ // angle labels
 				let angleLabel = new TextSprite();
-				angleLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 1.0 });
-				angleLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 1.0 });
-				angleLabel.fontsize = 16;
+				angleLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 0.45 });
+				angleLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0.62 });
+				angleLabel.fontsize = 15;
 				angleLabel.material.depthTest = false;
 				angleLabel.material.opacity = 1;
 				angleLabel.visible = false;
@@ -54005,9 +54005,9 @@
 
 			{ // coordinate labels
 				let coordinateLabel = new TextSprite();
-				coordinateLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 1.0 });
-				coordinateLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 1.0 });
-				coordinateLabel.fontsize = 16;
+				coordinateLabel.setBorderColor({ r: 0, g: 0, b: 0, a: 0.45 });
+				coordinateLabel.setBackgroundColor({ r: 0, g: 0, b: 0, a: 0.62 });
+				coordinateLabel.fontsize = 15;
 				coordinateLabel.material.depthTest = false;
 				coordinateLabel.material.opacity = 1;
 				coordinateLabel.visible = false;
