@@ -95,12 +95,28 @@ function isClassificationVisible(viewer: PotreeViewer | null, classification: nu
     return entry.visible !== false && entry.color[3] !== 0;
 }
 
-function buildClassificationVisibility(viewer: PotreeViewer | null) {
+function createClassificationVisibility() {
     const visibility = new Uint8Array(256);
+    visibility.fill(1);
+    return visibility;
+}
+
+function updateClassificationVisibility(viewer: PotreeViewer | null, visibility: Uint8Array) {
     for (let classification = 0; classification < visibility.length; classification++) {
         visibility[classification] = isClassificationVisible(viewer, classification) ? 1 : 0;
     }
     return visibility;
+}
+
+function lowerBoundBinIndex(bins: ProfileBin[], distance: number) {
+    let low = 0;
+    let high = bins.length;
+    while (low < high) {
+        const mid = (low + high) >>> 1;
+        if (bins[mid].distance < distance) low = mid + 1;
+        else high = mid;
+    }
+    return low;
 }
 
 function formatMeters(value: number | null, digits = 1) {
@@ -138,6 +154,9 @@ export function HeightProfilePanel({
     const cacheRef = useRef<ProjectionCache | null>(null);
     const hoverIndexRef = useRef<HoverIndex | null>(null);
     const pointRendererRef = useRef<ProfilePointRenderer | null>(null);
+    const classificationVisibilityRef = useRef(createClassificationVisibility());
+    const drawRef = useRef<() => void>(() => undefined);
+    const wheelHandlerRef = useRef<(event: WheelEvent) => void>(() => undefined);
     const viewRef = useRef<ViewBounds>(EMPTY_BOUNDS);
     const hasFittedRef = useRef(false);
     const userAdjustedViewRef = useRef(false);
@@ -177,7 +196,7 @@ export function HeightProfilePanel({
         if (redrawFrameRef.current !== null) return;
         redrawFrameRef.current = requestAnimationFrame(() => {
             redrawFrameRef.current = null;
-            setCanvasSize((size) => ({ ...size }));
+            drawRef.current();
         });
     };
 
@@ -235,7 +254,7 @@ export function HeightProfilePanel({
         hoverIndexRef.current = { buckets, minX, maxX };
     }, [revision, sample, summary.length]);
 
-    useEffect(() => {
+    const drawGraph = () => {
         if (collapsed || canvasSize.width === 0 || canvasSize.height === 0) return;
         const canvas = dataCanvasRef.current;
         const pointsCanvas = pointsCanvasRef.current;
@@ -343,6 +362,10 @@ export function HeightProfilePanel({
         const viewer = viewerRef.current;
         const colorMin = summary.minElevation ?? bounds.minY;
         const colorMax = summary.maxElevation ?? bounds.maxY;
+        const classificationVisibility = updateClassificationVisibility(
+            viewer,
+            classificationVisibilityRef.current
+        );
 
         context.save();
         context.beginPath();
@@ -353,7 +376,16 @@ export function HeightProfilePanel({
             context.lineWidth = 1.5;
             context.beginPath();
             let previousGround: ProfileBin | null = null;
-            for (const point of bins) {
+            const firstBinIndex = lowerBoundBinIndex(
+                bins,
+                bounds.minX - GROUND_TRACE_MAX_GAP_METERS
+            );
+            const lastBinIndex = lowerBoundBinIndex(
+                bins,
+                bounds.maxX + GROUND_TRACE_MAX_GAP_METERS
+            );
+            for (let i = firstBinIndex; i < lastBinIndex; i++) {
+                const point = bins[i];
                 if (point.groundElevation === null) continue;
                 const x = scaleX(point.distance);
                 const y = scaleY(point.groundElevation);
@@ -395,12 +427,20 @@ export function HeightProfilePanel({
             dpr,
             colorMin,
             colorMax,
-            classificationVisibility: buildClassificationVisibility(viewer),
+            classificationVisibility,
         });
 
         cacheRef.current = { bounds, plot };
         clearSelection();
-    }, [bins, canvasSize, collapsed, phase, revision, sample, segments, t, viewerRef]);
+    };
+
+    useEffect(() => {
+        drawRef.current = drawGraph;
+    });
+
+    useEffect(() => {
+        drawGraph();
+    }, [bins, canvasSize, collapsed, phase, revision, sample, segments, summary, t, viewerRef]);
 
     useEffect(() => {
         const viewer = viewerRef.current;
@@ -529,10 +569,10 @@ export function HeightProfilePanel({
             );
             let closest = -1;
             let closestDistance = 10;
-            const viewer = viewerRef.current;
+            const classificationVisibility = classificationVisibilityRef.current;
             for (let bucketIndex = firstBucket; bucketIndex <= lastBucket; bucketIndex++) {
                 for (const index of hoverIndex.buckets[bucketIndex]) {
-                    if (!isClassificationVisible(viewer, sample.classification[index])) continue;
+                    if (!classificationVisibility[sample.classification[index]]) continue;
                     const projectedX =
                         cache.plot.left +
                         ((sample.mileage[index] - cache.bounds.minX) /
@@ -584,12 +624,17 @@ export function HeightProfilePanel({
     };
 
     useEffect(() => {
+        wheelHandlerRef.current = handleWheel;
+    });
+
+    useEffect(() => {
         const canvas = overlayCanvasRef.current;
         if (!canvas || collapsed) return;
 
-        canvas.addEventListener('wheel', handleWheel, { passive: false });
-        return () => canvas.removeEventListener('wheel', handleWheel);
-    });
+        const handleStableWheel = (event: WheelEvent) => wheelHandlerRef.current(event);
+        canvas.addEventListener('wheel', handleStableWheel, { passive: false });
+        return () => canvas.removeEventListener('wheel', handleStableWheel);
+    }, [collapsed]);
 
     const resetView = () => {
         viewRef.current = fitBounds(sample, summary);

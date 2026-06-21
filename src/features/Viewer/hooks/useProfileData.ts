@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { Vector3 } from 'three';
 import type {
     PointCloud,
@@ -26,6 +26,7 @@ export interface ProfileSegment {
 export interface ProfileSample {
     mileage: Float64Array;
     elevation: Float32Array;
+    packedPosition: Float32Array;
     displayElevation: Float32Array;
     x: Float64Array;
     y: Float64Array;
@@ -95,6 +96,7 @@ function createEmptySample(): ProfileSample {
     return {
         mileage: new Float64Array(),
         elevation: new Float32Array(),
+        packedPosition: new Float32Array(),
         displayElevation: new Float32Array(),
         x: new Float64Array(),
         y: new Float64Array(),
@@ -107,6 +109,7 @@ function createEmptySample(): ProfileSample {
 function replaceSample(target: ProfileSample, source: ProfileSample) {
     target.mileage = source.mileage;
     target.elevation = source.elevation;
+    target.packedPosition = source.packedPosition;
     target.displayElevation = source.displayElevation;
     target.x = source.x;
     target.y = source.y;
@@ -118,6 +121,23 @@ function replaceSample(target: ProfileSample, source: ProfileSample) {
 function replaceBins(target: ProfileBin[], source: ProfileBin[]) {
     target.length = source.length;
     for (let i = 0; i < source.length; i++) target[i] = source[i];
+}
+
+function createSummary(
+    segments: ProfileSegment[],
+    acceptedPointCount: number,
+    sampledPointCount: number,
+    minElevation: number | null,
+    maxElevation: number | null
+): ProfileSummary {
+    return {
+        length: segments.at(-1)?.endDistance ?? 0,
+        segmentCount: segments.length,
+        acceptedPointCount,
+        sampledPointCount,
+        minElevation,
+        maxElevation,
+    };
 }
 
 function buildSegments(profile: Profile | null): ProfileSegment[] {
@@ -159,6 +179,7 @@ function toTypedSample(points: MutablePoint[]): ProfileSample {
     const sample: ProfileSample = {
         mileage: new Float64Array(count),
         elevation: new Float32Array(count),
+        packedPosition: new Float32Array(count * 2),
         displayElevation: new Float32Array(count),
         x: new Float64Array(count),
         y: new Float64Array(count),
@@ -171,6 +192,8 @@ function toTypedSample(points: MutablePoint[]): ProfileSample {
         const point = points[i];
         sample.mileage[i] = point.mileage;
         sample.elevation[i] = point.elevation;
+        sample.packedPosition[i * 2] = point.mileage;
+        sample.packedPosition[i * 2 + 1] = point.elevation;
         sample.displayElevation[i] = point.displayElevation;
         sample.x[i] = point.x;
         sample.y[i] = point.y;
@@ -231,23 +254,15 @@ export function useProfileData({
 }: UseProfileDataOptions): UseProfileDataReturn {
     const sampleRef = useRef<ProfileSample>(createEmptySample());
     const binsRef = useRef<ProfileBin[]>([]);
+    const segmentsRef = useRef<ProfileSegment[]>([]);
+    const summaryRef = useRef<ProfileSummary>(createSummary([], 0, 0, null, null));
     const [status, setStatus] = useState<ProfileDataStatus>('idle');
-    const [acceptedPointCount, setAcceptedPointCount] = useState(0);
     const [revision, setRevision] = useState(0);
     const [geometryRevision, setGeometryRevision] = useState(0);
     const requestsRef = useRef<ProfileRequest[]>([]);
     const publishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const generationRef = useRef(0);
     const profileUuidRef = useRef<string | null>(null);
-
-    const cancelRequests = useCallback(() => {
-        for (const request of requestsRef.current) request.cancel();
-        requestsRef.current = [];
-        if (publishTimerRef.current) {
-            clearTimeout(publishTimerRef.current);
-            publishTimerRef.current = null;
-        }
-    }, []);
 
     useEffect(() => {
         if (!profile) return;
@@ -270,6 +285,15 @@ export function useProfileData({
     }, [profile]);
 
     useEffect(() => {
+        const cancelRequests = () => {
+            for (const request of requestsRef.current) request.cancel();
+            requestsRef.current = [];
+            if (publishTimerRef.current) {
+                clearTimeout(publishTimerRef.current);
+                publishTimerRef.current = null;
+            }
+        };
+
         const viewer = viewerRef.current;
         generationRef.current++;
         const generation = generationRef.current;
@@ -281,7 +305,8 @@ export function useProfileData({
                 if (generation !== generationRef.current) return;
                 replaceSample(sampleRef.current, createEmptySample());
                 binsRef.current.length = 0;
-                setAcceptedPointCount(0);
+                segmentsRef.current = [];
+                summaryRef.current = createSummary([], 0, 0, null, null);
                 setRevision((value) => value + 1);
             });
         }
@@ -298,7 +323,8 @@ export function useProfileData({
                 if (generation !== generationRef.current) return;
                 replaceSample(sampleRef.current, createEmptySample());
                 binsRef.current.length = 0;
-                setAcceptedPointCount(0);
+                segmentsRef.current = [];
+                summaryRef.current = createSummary([], 0, 0, null, null);
                 setStatus('waiting');
                 setRevision((value) => value + 1);
             });
@@ -307,6 +333,11 @@ export function useProfileData({
 
         const requestSegments = buildSegments(requestProfile);
         const profileLength = requestSegments.at(-1)?.endDistance ?? 0;
+        segmentsRef.current = requestSegments;
+        summaryRef.current = createSummary(requestSegments, 0, 0, null, null);
+        queueMicrotask(() => {
+            if (generation === generationRef.current) setRevision((value) => value + 1);
+        });
         const mutablePoints: MutablePoint[] = [];
         const mutableBins = new Map<string, MutableBin>();
         let totalAccepted = 0;
@@ -319,26 +350,38 @@ export function useProfileData({
             if (publishTimerRef.current) clearTimeout(publishTimerRef.current);
             publishPending = false;
             publishTimerRef.current = null;
-            replaceSample(
-                sampleRef.current,
-                toTypedSample(createDistanceAwareSample(mutablePoints, profileLength))
+            const nextSample = toTypedSample(
+                createDistanceAwareSample(mutablePoints, profileLength)
             );
-            replaceBins(
-                binsRef.current,
-                Array.from(mutableBins.values())
-                    .sort((a, b) => a.binIndex - b.binIndex || a.segmentIndex - b.segmentIndex)
-                    .map((bin) => ({
-                        distance: bin.binIndex * CSV_BIN_SIZE,
-                        segmentIndex: bin.segmentIndex,
-                        minElevation: bin.min,
-                        maxElevation: bin.max,
-                        groundElevation:
-                            bin.groundCount > 0 ? bin.groundSum / bin.groundCount : null,
-                        minPoint: bin.minPoint,
-                        maxPoint: bin.maxPoint,
-                    }))
+            const sortedBins = Array.from(mutableBins.values()).sort(
+                (a, b) => a.binIndex - b.binIndex || a.segmentIndex - b.segmentIndex
             );
-            setAcceptedPointCount(totalAccepted);
+            const nextBins = new Array<ProfileBin>(sortedBins.length);
+            let minElevation = Infinity;
+            let maxElevation = -Infinity;
+            for (let i = 0; i < sortedBins.length; i++) {
+                const bin = sortedBins[i];
+                minElevation = Math.min(minElevation, bin.min);
+                maxElevation = Math.max(maxElevation, bin.max);
+                nextBins[i] = {
+                    distance: bin.binIndex * CSV_BIN_SIZE,
+                    segmentIndex: bin.segmentIndex,
+                    minElevation: bin.min,
+                    maxElevation: bin.max,
+                    groundElevation: bin.groundCount > 0 ? bin.groundSum / bin.groundCount : null,
+                    minPoint: bin.minPoint,
+                    maxPoint: bin.maxPoint,
+                };
+            }
+            replaceSample(sampleRef.current, nextSample);
+            replaceBins(binsRef.current, nextBins);
+            summaryRef.current = createSummary(
+                requestSegments,
+                totalAccepted,
+                nextSample.count,
+                minElevation === Infinity ? null : minElevation,
+                maxElevation === -Infinity ? null : maxElevation
+            );
             if (finalStatus) setStatus(finalStatus);
             setRevision((value) => value + 1);
         };
@@ -468,20 +511,13 @@ export function useProfileData({
         return () => {
             cancelRequests();
         };
-    }, [cancelRequests, geometryRevision, profile, viewerRef]);
+    }, [geometryRevision, profile, viewerRef]);
 
     /* eslint-disable react-hooks/refs -- High-volume profile buffers keep stable identities so React DevTools does not clone their contents. */
     const sample = sampleRef.current;
     const bins = binsRef.current;
-    const segments = buildSegments(profile);
-    const summary: ProfileSummary = {
-        length: segments.at(-1)?.endDistance ?? 0,
-        segmentCount: segments.length,
-        acceptedPointCount,
-        sampledPointCount: sample.count,
-        minElevation: bins.length > 0 ? Math.min(...bins.map((point) => point.minElevation)) : null,
-        maxElevation: bins.length > 0 ? Math.max(...bins.map((point) => point.maxElevation)) : null,
-    };
+    const segments = segmentsRef.current;
+    const summary = summaryRef.current;
 
     const exportToCsv = (cellId: string) => {
         if (bins.length === 0) return;

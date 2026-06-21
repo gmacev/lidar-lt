@@ -1,4 +1,4 @@
-import { useState, useEffect, type RefObject } from 'react';
+import { useState, useEffect, useRef, type RefObject } from 'react';
 import type { Measure, PotreeViewer } from '@/common/types/potree';
 
 interface UseMeasurementInteractionOptions {
@@ -71,6 +71,12 @@ export function useDoubleClickFinish({
     isActive,
     onFinish,
 }: UseDoubleClickFinishOptions) {
+    const onFinishRef = useRef(onFinish);
+
+    useEffect(() => {
+        onFinishRef.current = onFinish;
+    });
+
     useEffect(() => {
         const element = viewerRef.current?.renderer.domElement;
         if (!element || !isActive) return;
@@ -79,12 +85,12 @@ export function useDoubleClickFinish({
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
-            onFinish();
+            onFinishRef.current();
         };
 
         element.addEventListener('dblclick', handleDoubleClick, true);
         return () => element.removeEventListener('dblclick', handleDoubleClick, true);
-    }, [viewerRef, isActive, onFinish]);
+    }, [viewerRef, isActive]);
 }
 
 /**

@@ -117,6 +117,8 @@ export function MeasurementToolbar({
     const contentRef = useRef<HTMLDivElement>(null);
     const [scrollState, setScrollState] = useState({
         canScroll: false,
+        canScrollUp: false,
+        canScrollDown: false,
         thumbHeight: 0,
         thumbTop: 0,
     });
@@ -129,6 +131,8 @@ export function MeasurementToolbar({
             const { clientHeight, scrollHeight, scrollTop } = scrollEl;
             const canScroll = scrollHeight > clientHeight + 1;
             const maxScrollTop = scrollHeight - clientHeight;
+            const canScrollUp = canScroll && scrollTop > 1;
+            const canScrollDown = canScroll && scrollTop < maxScrollTop - 1;
             const thumbHeight = canScroll
                 ? Math.min(56, Math.max(28, (clientHeight / scrollHeight) * clientHeight))
                 : 0;
@@ -137,7 +141,7 @@ export function MeasurementToolbar({
                     ? (scrollTop / maxScrollTop) * (clientHeight - thumbHeight)
                     : 0;
 
-            setScrollState({ canScroll, thumbHeight, thumbTop });
+            setScrollState({ canScroll, canScrollUp, canScrollDown, thumbHeight, thumbTop });
         };
 
         updateScrollIndicator();
@@ -155,13 +159,26 @@ export function MeasurementToolbar({
         };
     }, []);
 
+    const scrollMask =
+        scrollState.canScrollUp || scrollState.canScrollDown
+            ? `linear-gradient(to bottom, ${
+                  scrollState.canScrollUp ? 'transparent 0, black 20px' : 'black 0'
+              }, black calc(100% - 20px), ${
+                  scrollState.canScrollDown ? 'transparent 100%' : 'black 100%'
+              })`
+            : undefined;
+
     return (
         <div className={`relative ${className}`}>
             <div
                 ref={scrollRef}
-                className="viewer-control-scroll h-full w-full overflow-x-visible overflow-y-auto"
+                className="viewer-control-scroll h-full w-full overflow-x-visible overflow-y-auto scroll-smooth"
+                style={{
+                    maskImage: scrollMask,
+                    WebkitMaskImage: scrollMask,
+                }}
             >
-                <div ref={contentRef} className="flex flex-col items-end gap-1">
+                <div ref={contentRef} className="flex flex-col items-end gap-1 pb-3">
                     {/* Measurement tools only shown on non-touch devices */}
                     {!isTouch && (
                         <>
@@ -226,6 +243,19 @@ export function MeasurementToolbar({
                     />
                 </div>
             </div>
+
+            {scrollState.canScrollUp && (
+                <div className="pointer-events-none absolute -top-2 left-1/2 z-10 flex h-3 w-3 -translate-x-1/2 items-center justify-center text-white/55">
+                    <span className="block h-1.5 w-1.5 rotate-45 border-l border-t border-current" />
+                </div>
+            )}
+
+            {scrollState.canScrollDown && (
+                <div className="pointer-events-none absolute -bottom-2 left-1/2 z-10 flex h-3 w-3 -translate-x-1/2 items-center justify-center text-white/55">
+                    <span className="block h-1.5 w-1.5 rotate-45 border-b border-r border-current" />
+                </div>
+            )}
+
             {scrollState.canScroll && (
                 <div className="pointer-events-none absolute -right-1 top-0 bottom-0 w-0.5">
                     <div

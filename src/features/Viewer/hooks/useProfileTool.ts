@@ -1,4 +1,4 @@
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import type { Measure, PotreeScene, PotreeViewer, Profile } from '@/common/types/potree';
 import { PROFILE_WIDTH_DEFAULTS } from '@/features/Viewer/config';
 import { cancelPotreeInsertion, useDoubleClickFinish } from './useMeasurementInteraction';
@@ -41,23 +41,23 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
     const [phase, setPhase] = useState<ProfilePhase>('idle');
     const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
     const activeProfileRef = useRef<Profile | null>(null);
+    const finishProfileRef = useRef<() => void>(() => undefined);
+    const deleteLastPointRef = useRef<() => void>(() => undefined);
+    const closeProfileRef = useRef<() => void>(() => undefined);
 
-    const removeProfile = useCallback(
-        (profile: Profile | null) => {
-            const viewer = viewerRef.current;
-            if (!viewer || !profile) return;
+    const removeProfile = (profile: Profile | null) => {
+        const viewer = viewerRef.current;
+        if (!viewer || !profile) return;
 
-            const scene = viewer.scene as ExtendedPotreeScene;
-            if (scene.removeProfile) {
-                scene.removeProfile(profile);
-            } else {
-                scene.removeMeasurement(profile as unknown as Measure);
-            }
-        },
-        [viewerRef]
-    );
+        const scene = viewer.scene as ExtendedPotreeScene;
+        if (scene.removeProfile) {
+            scene.removeProfile(profile);
+        } else {
+            scene.removeMeasurement(profile as unknown as Measure);
+        }
+    };
 
-    const startNewProfile = useCallback(() => {
+    const startNewProfile = () => {
         const viewer = viewerRef.current;
         if (!viewer?.profileTool) return;
 
@@ -74,9 +74,9 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         activeProfileRef.current = profile;
         setActiveProfile(profile);
         setPhase('drawing');
-    }, [removeProfile, viewerRef]);
+    };
 
-    const finishProfile = useCallback(() => {
+    const finishProfile = () => {
         const viewer = viewerRef.current;
         const profile = activeProfileRef.current;
         if (!viewer || !profile || phase !== 'drawing') return;
@@ -93,9 +93,9 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         }
 
         setPhase('ready');
-    }, [phase, removeProfile, viewerRef]);
+    };
 
-    const closeProfile = useCallback(() => {
+    const closeProfile = () => {
         const viewer = viewerRef.current;
         if (viewer) {
             cancelPotreeInsertion(viewer);
@@ -104,21 +104,21 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         activeProfileRef.current = null;
         setActiveProfile(null);
         setPhase('idle');
-    }, [removeProfile, viewerRef]);
+    };
 
-    const toggleProfileMeasurement = useCallback(() => {
+    const toggleProfileMeasurement = () => {
         if (phase === 'idle') {
             startNewProfile();
         } else {
             closeProfile();
         }
-    }, [closeProfile, phase, startNewProfile]);
+    };
 
-    const resetProfile = useCallback(() => {
+    const resetProfile = () => {
         startNewProfile();
-    }, [startNewProfile]);
+    };
 
-    const deleteLastPoint = useCallback(() => {
+    const deleteLastPoint = () => {
         const profile = activeProfileRef.current;
         if (!profile) return;
 
@@ -129,13 +129,19 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         if (phase === 'ready' && profile.points.length < 2) {
             setPhase('drawing');
         }
-    }, [phase]);
+    };
 
-    const setProfileWidth = useCallback((width: number) => {
+    const setProfileWidth = (width: number) => {
         const profile = activeProfileRef.current;
         if (!profile || Math.abs(profile.width - width) < 0.001) return;
         profile.setWidth(width);
-    }, []);
+    };
+
+    useEffect(() => {
+        finishProfileRef.current = finishProfile;
+        deleteLastPointRef.current = deleteLastPoint;
+        closeProfileRef.current = closeProfile;
+    });
 
     useEffect(() => {
         if (phase !== 'drawing') return;
@@ -143,16 +149,16 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                finishProfile();
+                finishProfileRef.current();
             } else if (event.key === 'Backspace') {
                 event.preventDefault();
-                deleteLastPoint();
+                deleteLastPointRef.current();
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [deleteLastPoint, finishProfile, phase]);
+    }, [phase]);
 
     useDoubleClickFinish({
         viewerRef,
@@ -172,25 +178,33 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
                 if (profile.points.length >= 2) {
                     setPhase('ready');
                 } else {
-                    closeProfile();
+                    closeProfileRef.current();
                 }
             });
         };
 
         element.addEventListener('mouseup', handlePointerFinish);
         return () => element.removeEventListener('mouseup', handlePointerFinish);
-    }, [closeProfile, phase, viewerRef]);
+    }, [phase, viewerRef]);
 
     useEffect(() => {
         return () => {
             const viewer = viewerRef.current;
             if (viewer) {
                 cancelPotreeInsertion(viewer);
+                const profile = activeProfileRef.current;
+                if (profile) {
+                    const scene = viewer.scene as ExtendedPotreeScene;
+                    if (scene.removeProfile) {
+                        scene.removeProfile(profile);
+                    } else {
+                        scene.removeMeasurement(profile as unknown as Measure);
+                    }
+                }
             }
-            removeProfile(activeProfileRef.current);
             activeProfileRef.current = null;
         };
-    }, [removeProfile, viewerRef]);
+    }, [viewerRef]);
 
     return {
         phase,

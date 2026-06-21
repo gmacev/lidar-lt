@@ -158,8 +158,7 @@ export class ProfilePointRenderer {
     private readonly resolutionLocation: WebGLUniformLocation;
     private readonly colorRangeLocation: WebGLUniformLocation;
     private readonly pointSizeLocation: WebGLUniformLocation;
-    private uploadedMileage: Float64Array | null = null;
-    private uploadedElevation: Float32Array | null = null;
+    private uploadedPosition: Float32Array | null = null;
     private visibilityMask = new Uint8Array(256);
     private pointCount = 0;
 
@@ -252,27 +251,15 @@ export class ProfilePointRenderer {
     }
 
     private uploadSample(sample: ProfileSample) {
-        if (
-            sample.mileage === this.uploadedMileage &&
-            sample.elevation === this.uploadedElevation
-        ) {
-            return;
-        }
-
-        const positions = new Float32Array(sample.count * 2);
-        for (let i = 0; i < sample.count; i++) {
-            positions[i * 2] = sample.mileage[i];
-            positions[i * 2 + 1] = sample.elevation[i];
-        }
+        if (sample.packedPosition === this.uploadedPosition) return;
 
         const gl = this.gl;
         gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, sample.packedPosition, gl.STATIC_DRAW);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.visibilityBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Uint8Array(sample.count), gl.DYNAMIC_DRAW);
 
-        this.uploadedMileage = sample.mileage;
-        this.uploadedElevation = sample.elevation;
+        this.uploadedPosition = sample.packedPosition;
         this.visibilityMask.fill(2);
         this.pointCount = sample.count;
     }
