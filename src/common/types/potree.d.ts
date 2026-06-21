@@ -432,6 +432,7 @@ export interface Potree {
     ProfileRequest: typeof ProfileRequest;
     CameraMode: typeof CameraMode;
     Utils: {
+        createBackgroundTexture(width: number, height: number): THREE.DataTexture;
         loadSkybox(path: string): {
             camera: THREE.Camera;
             scene: THREE.Scene;

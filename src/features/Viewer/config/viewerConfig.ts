@@ -120,6 +120,12 @@ export type Background = z.infer<typeof BackgroundSchema>;
 export const SkyboxVariantSchema = z.enum(['1', '2']);
 export type SkyboxVariant = z.infer<typeof SkyboxVariantSchema>;
 
+export const POTREE_BACKGROUND_GRADIENT = {
+    center: '#1f3440',
+    edge: '#05080c',
+    noise: 0.012,
+} as const;
+
 export const ViewerStateSchema = z.object({
     // Camera position
     x: optionalSearchNumber,

@@ -8,6 +8,7 @@ import {
 } from '@/features/Viewer/config';
 import { getCurrentCameraState } from '@/features/Viewer/utils/viewerDefaults';
 import { applyViewerDisplaySettings } from '@/features/Viewer/utils/viewerDisplaySettings';
+import { configurePotreeBackgroundTexture } from '@/features/Viewer/utils/potreeBackground';
 import { isTouchDevice } from '@/common/utils/screenSize';
 import type { LoadPointCloudResult, Potree, PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -422,6 +423,8 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
                 setState({ isLoading: false, error: metadataError });
                 return;
             }
+
+            configurePotreeBackgroundTexture(PotreeLib);
 
             // Create Potree Viewer
             viewer = new PotreeLib.Viewer(container);
