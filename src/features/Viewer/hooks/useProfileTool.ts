@@ -1,5 +1,6 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import type { Measure, PotreeScene, PotreeViewer, Profile } from '@/common/types/potree';
+import { PROFILE_WIDTH_DEFAULTS } from '@/features/Viewer/config';
 import { cancelPotreeInsertion, useDoubleClickFinish } from './useMeasurementInteraction';
 
 interface UseProfileToolOptions {
@@ -23,8 +24,6 @@ interface UseProfileToolReturn {
 interface ExtendedPotreeScene extends PotreeScene {
     removeProfile?: (profile: Profile) => void;
 }
-
-const DEFAULT_WIDTH = 1;
 
 function removeDuplicateTrailingProfilePoint(profile: Profile, tolerance = 0.01) {
     const { points } = profile;
@@ -68,10 +67,10 @@ export function useProfileTool({ viewerRef }: UseProfileToolOptions): UseProfile
         }
 
         const profile = viewer.profileTool.startInsertion({
-            width: DEFAULT_WIDTH,
+            width: PROFILE_WIDTH_DEFAULTS.default,
             name: 'Profilis',
         });
-        profile.setWidth(DEFAULT_WIDTH);
+        profile.setWidth(PROFILE_WIDTH_DEFAULTS.default);
         activeProfileRef.current = profile;
         setActiveProfile(profile);
         setPhase('drawing');

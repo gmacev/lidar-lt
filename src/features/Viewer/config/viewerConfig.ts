@@ -45,6 +45,13 @@ export const POINT_SIZE_DEFAULTS: { size: number } = {
     size: 1.0,
 };
 
+export const PROFILE_WIDTH_DEFAULTS = {
+    default: 10,
+    min: 0.25,
+    max: 50,
+    step: 0.25,
+} as const;
+
 export const Z_SCALE_DEFAULTS: { scale: number } = {
     scale: 1.0,
 };

@@ -4,6 +4,7 @@ export {
     PERFORMANCE_DEFAULTS,
     POINT_BUDGET_LIMITS,
     POINT_SIZE_DEFAULTS,
+    PROFILE_WIDTH_DEFAULTS,
     POINT_APPEARANCE_DEFAULTS,
     getDefaultPointBudget,
     type ColorMode,

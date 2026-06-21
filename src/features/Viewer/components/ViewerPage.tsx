@@ -39,7 +39,7 @@ import { SourceAttribution } from './SourceAttribution';
 
 import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
 import { MeasurementContext } from './MeasurementContext';
-import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { PROFILE_WIDTH_DEFAULTS, type ViewerState } from '@/features/Viewer/config/viewerConfig';
 import {
     getCurrentCameraState,
     resetPotreeViewerDisplayDefaults,
@@ -255,7 +255,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         setProfileWidth,
     } = useProfileTool({ viewerRef });
     const isProfileMeasuring = profilePhase !== 'idle';
-    const [profileWidth, setProfileWidthState] = useState(1);
+    const [profileWidth, setProfileWidthState] = useState<number>(PROFILE_WIDTH_DEFAULTS.default);
     const [isProfilePanelCollapsed, setIsProfilePanelCollapsed] = useState(false);
     const {
         sample: profileSample,
@@ -355,7 +355,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleToggleVolume = createHandler('volume', _toggleVolumeMeasurement);
     const handleToggleProfile = createHandler('profile', () => {
         if (!isProfileMeasuring) {
-            setProfileWidthState(1);
+            setProfileWidthState(PROFILE_WIDTH_DEFAULTS.default);
             setIsProfilePanelCollapsed(false);
         }
         _toggleProfileMeasurement();
@@ -750,7 +750,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                     onWidthChange={handleProfileWidthChange}
                     onFinish={finishProfile}
                     onNewProfile={() => {
-                        setProfileWidthState(1);
+                        setProfileWidthState(PROFILE_WIDTH_DEFAULTS.default);
                         setIsProfilePanelCollapsed(false);
                         startNewProfile();
                     }}

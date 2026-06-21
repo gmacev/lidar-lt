@@ -69465,6 +69465,10 @@ void main() {
 
 			let profile = new Profile();
 			profile.name = args.name || 'Profile';
+			let hasExplicitWidth = args.width !== undefined;
+			if (hasExplicitWidth) {
+				profile.setWidth(args.width);
+			}
 
 			this.dispatchEvent({
 				type: 'start_inserting_profile',
@@ -69479,7 +69483,7 @@ void main() {
 
 			let insertionCallback = (e) => {
 				if (e.button === MOUSE.LEFT) {
-					if (profile.points.length <= 1) {
+					if (!hasExplicitWidth && profile.points.length <= 1) {
 						let camera = this.viewer.scene.getActiveCamera();
 						let distance = camera.position.distanceTo(profile.points[0]);
 						let clientSize = this.viewer.renderer.getSize(new Vector2());

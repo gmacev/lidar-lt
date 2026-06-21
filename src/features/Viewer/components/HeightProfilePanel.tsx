@@ -18,6 +18,7 @@ import type {
 } from '@/features/Viewer/hooks/useProfileData';
 import type { ProfilePhase } from '@/features/Viewer/hooks/useProfileTool';
 import { ProfilePointRenderer } from '@/features/Viewer/utils/ProfilePointRenderer';
+import { PROFILE_WIDTH_DEFAULTS } from '@/features/Viewer/config';
 import { Icon } from '@/common/components';
 
 interface HeightProfilePanelProps {
@@ -663,9 +664,9 @@ export function HeightProfilePanel({
                                 {t('profile.width')}
                                 <input
                                     type="range"
-                                    min="0.25"
-                                    max="10"
-                                    step="0.25"
+                                    min={PROFILE_WIDTH_DEFAULTS.min}
+                                    max={PROFILE_WIDTH_DEFAULTS.max}
+                                    step={PROFILE_WIDTH_DEFAULTS.step}
                                     value={widthInput}
                                     onChange={(event) => {
                                         const nextWidth = Number(event.currentTarget.value);
