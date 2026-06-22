@@ -102,6 +102,9 @@
         "helpAria": "Explain hillshade settings",
         "helpTitle": "Hillshade",
         "helpDescription": "Applies directional terrain shading so mounds, slopes, and depressions are easier to read.",
+        "azimuth": "Azimuth",
+        "azimuthHelpAria": "Explain hillshade azimuth",
+        "azimuthHelp": "Rotates the simulated light direction. 315° is northwest, the common default for hillshade.",
         "strength": "Strength",
         "strengthHelpAria": "Explain hillshade strength",
         "strengthHelp": "Controls how strongly the directional light and shadow affect the point cloud."

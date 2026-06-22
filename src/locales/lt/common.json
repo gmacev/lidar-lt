@@ -102,6 +102,9 @@
         "helpAria": "Paaiškinti šešėlinio reljefo nustatymus",
         "helpTitle": "Šešėlinis reljefas",
         "helpDescription": "Pritaiko kryptinį reljefo šešėliavimą, kad pylimai, šlaitai ir įdubos būtų aiškiau matomi.",
+        "azimuth": "Azimutas",
+        "azimuthHelpAria": "Paaiškinti šešėlinio reljefo azimutą",
+        "azimuthHelp": "Pasuka imituojamos šviesos kryptį. 315° yra šiaurės vakarai, įprasta šešėlinio reljefo reikšmė.",
         "strength": "Stiprumas",
         "strengthHelpAria": "Paaiškinti šešėlinio reljefo stiprumą",
         "strengthHelp": "Nustato, kaip stipriai kryptinė šviesa ir šešėlis veikia taškų debesį."

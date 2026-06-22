@@ -445,6 +445,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             viewer.setReliefEnabled(RELIEF_DEFAULTS.enabled);
             viewer.setReliefStrength(RELIEF_DEFAULTS.strength);
             viewer.setReliefRadius(RELIEF_DEFAULTS.radius);
+            viewer.setReliefAzimuth(RELIEF_DEFAULTS.azimuth);
 
             // Background (handled by separate effect)
             // viewer.setBackground('gradient'); // Default will be set by the other effect

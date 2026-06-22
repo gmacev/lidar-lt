@@ -65664,13 +65664,15 @@ void main() {
 	// http://www.kitware.com/source/home/post/9
 	// https://tel.archives-ouvertes.fr/tel-00438464/document p. 115+ (french)
 
-	const RELIEF_WORLD_LIGHT_X = -Math.SQRT1_2;
-	const RELIEF_WORLD_LIGHT_Y = Math.SQRT1_2;
+	const RELIEF_DEFAULT_AZIMUTH = 315;
 
-	function setWorldLockedReliefLightDirection(uniform, camera) {
+	function setWorldLockedReliefLightDirection(uniform, camera, azimuth) {
+		const radians = (Number.isFinite(azimuth) ? azimuth : RELIEF_DEFAULT_AZIMUTH) * Math.PI / 180;
+		const worldX = Math.sin(radians);
+		const worldY = Math.cos(radians);
 		const elements = camera.matrixWorld.elements;
-		let screenX = RELIEF_WORLD_LIGHT_X * elements[0] + RELIEF_WORLD_LIGHT_Y * elements[1];
-		let screenY = RELIEF_WORLD_LIGHT_X * elements[4] + RELIEF_WORLD_LIGHT_Y * elements[5];
+		let screenX = worldX * elements[0] + worldY * elements[1];
+		let screenY = worldX * elements[4] + worldY * elements[5];
 		const length = Math.sqrt(screenX * screenX + screenY * screenY);
 
 		if (length > 0.0001) {
@@ -71310,7 +71312,7 @@ void main() {
 				uniforms.reliefEnabled.value = viewer.useRelief ? 1.0 : 0.0;
 				uniforms.reliefStrength.value = viewer.reliefStrength;
 				uniforms.reliefRadius.value = viewer.reliefRadius;
-				setWorldLockedReliefLightDirection(uniforms.reliefLightDirection, camera);
+				setWorldLockedReliefLightDirection(uniforms.reliefLightDirection, camera, viewer.reliefAzimuth);
 				uniforms.opacity.value = viewer.edlOpacity; // HACK
 
 				Utils.screenPass.render(viewer.renderer, this.edlMaterial);
@@ -71622,7 +71624,7 @@ void main() {
 					normalizationMaterial.uniforms.reliefEnabled.value = viewer.useRelief ? 1.0 : 0.0;
 					normalizationMaterial.uniforms.reliefStrength.value = viewer.reliefStrength;
 					normalizationMaterial.uniforms.reliefRadius.value = viewer.reliefRadius;
-					setWorldLockedReliefLightDirection(normalizationMaterial.uniforms.reliefLightDirection, camera);
+					setWorldLockedReliefLightDirection(normalizationMaterial.uniforms.reliefLightDirection, camera, viewer.reliefAzimuth);
 					normalizationMaterial.uniforms.screenWidth.value = width;
 					normalizationMaterial.uniforms.screenHeight.value = height;
 					normalizationMaterial.uniforms.uEDLMap.value = this.rtDepth.texture;
@@ -88791,6 +88793,7 @@ ENDSEC
 				this.useEDL = false;
 				this.reliefStrength = 1.0;
 				this.reliefRadius = 1.0;
+				this.reliefAzimuth = RELIEF_DEFAULT_AZIMUTH;
 				this.useRelief = false;
 				this.description = "";
 
@@ -89333,6 +89336,22 @@ ENDSEC
 
 		getReliefRadius() {
 			return this.reliefRadius;
+		};
+
+		setReliefAzimuth(value) {
+			const numericValue = Number(value);
+			const normalized = Number.isFinite(numericValue)
+				? ((numericValue % 360) + 360) % 360
+				: RELIEF_DEFAULT_AZIMUTH;
+
+			if (this.reliefAzimuth !== normalized) {
+				this.reliefAzimuth = normalized;
+				this.dispatchEvent({ 'type': 'relief_azimuth_changed', 'viewer': this });
+			}
+		};
+
+		getReliefAzimuth() {
+			return this.reliefAzimuth;
 		};
 
 		setReliefStrength(value) {

@@ -49,6 +49,7 @@ const VIEWER_DISPLAY_SETTING_KEYS = [
     'reliefEnabled',
     'reliefStrength',
     'reliefRadius',
+    'reliefAzimuth',
     'ps',
     'psm',
     'pq',
@@ -74,6 +75,7 @@ const viewerDisplaySettingsPick = {
     reliefEnabled: true,
     reliefStrength: true,
     reliefRadius: true,
+    reliefAzimuth: true,
     ps: true,
     psm: true,
     pq: true,
@@ -244,6 +246,7 @@ export function applyViewerDisplaySettings(
     viewer.setReliefEnabled(settings.reliefEnabled ?? RELIEF_DEFAULTS.enabled);
     viewer.setReliefStrength(settings.reliefStrength ?? RELIEF_DEFAULTS.strength);
     viewer.setReliefRadius(settings.reliefRadius ?? RELIEF_DEFAULTS.radius);
+    viewer.setReliefAzimuth(settings.reliefAzimuth ?? RELIEF_DEFAULTS.azimuth);
 
     const PotreeLib: Potree | undefined = window.Potree;
     if (PotreeLib) {

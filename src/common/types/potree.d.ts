@@ -259,6 +259,8 @@ export interface PotreeViewer {
     getReliefStrength(): number;
     setReliefRadius(radius: number): void;
     getReliefRadius(): number;
+    setReliefAzimuth(azimuth: number): void;
+    getReliefAzimuth(): number;
     setFOV(fov: number): void;
     setPointBudget(budget: number): void;
     getPointBudget(): number;

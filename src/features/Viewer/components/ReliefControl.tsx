@@ -21,8 +21,14 @@ export function ReliefControl({ viewerRef, initialState, updateUrl }: ReliefCont
     const [reliefStrength, setReliefStrength] = useState(
         initialState.reliefStrength ?? RELIEF_DEFAULTS.strength
     );
+    const [reliefAzimuth, setReliefAzimuth] = useState(
+        initialState.reliefAzimuth ?? RELIEF_DEFAULTS.azimuth
+    );
     const commitReliefStrength = useCommittedRange(reliefStrength, (value) =>
         updateUrl({ reliefStrength: value })
+    );
+    const commitReliefAzimuth = useCommittedRange(reliefAzimuth, (value) =>
+        updateUrl({ reliefAzimuth: value })
     );
 
     const handleStrengthChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -31,6 +37,15 @@ export function ReliefControl({ viewerRef, initialState, updateUrl }: ReliefCont
         const viewer = viewerRef.current;
         if (viewer) {
             viewer.setReliefStrength(value);
+        }
+    };
+
+    const handleAzimuthChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const value = parseFloat(e.target.value);
+        setReliefAzimuth(value);
+        const viewer = viewerRef.current;
+        if (viewer) {
+            viewer.setReliefAzimuth(value);
         }
     };
 
@@ -86,6 +101,39 @@ export function ReliefControl({ viewerRef, initialState, updateUrl }: ReliefCont
                     disabled={!reliefEnabled}
                     className="w-full accent-laser-green disabled:cursor-not-allowed"
                 />
+            </div>
+
+            <div className={`flex flex-col gap-1 ${!reliefEnabled ? 'opacity-40' : ''}`}>
+                <label className="flex justify-between text-xs text-white/70">
+                    <span className="flex items-center gap-1.5">
+                        {t('relief.azimuth')}
+                        <HelpHint
+                            ariaLabel={t('relief.azimuthHelpAria')}
+                            title={t('relief.azimuth')}
+                        >
+                            {t('relief.azimuthHelp')}
+                        </HelpHint>
+                    </span>
+                    <span className="text-laser-green">{Math.round(reliefAzimuth)}&deg;</span>
+                </label>
+                <input
+                    type="range"
+                    min="0"
+                    max="359"
+                    step="1"
+                    value={reliefAzimuth}
+                    onChange={handleAzimuthChange}
+                    {...commitReliefAzimuth}
+                    disabled={!reliefEnabled}
+                    className="w-full accent-laser-green disabled:cursor-not-allowed"
+                />
+                <div className="flex justify-between text-[10px] text-white/45">
+                    <span>N</span>
+                    <span>E</span>
+                    <span>S</span>
+                    <span>W</span>
+                    <span>N</span>
+                </div>
             </div>
         </div>
     );
