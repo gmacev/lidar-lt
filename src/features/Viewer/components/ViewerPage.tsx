@@ -1,56 +1,21 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useTranslation } from 'react-i18next';
-import debounce from 'lodash/debounce';
+import { useState } from 'react';
+import { usePotree } from '@/features/Viewer/hooks';
+import { useViewerDataOriginPreconnect } from '@/features/Viewer/hooks/useViewerDataOriginPreconnect';
+import { useViewerUrlState } from '@/features/Viewer/hooks/useViewerUrlState';
+import { useViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNavigationActions';
+import { useViewerTools } from '@/features/Viewer/hooks/useViewerTools';
+import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import {
-    usePotree,
-    useProfileData,
-    useProfileTool,
-    useDistanceMeasurementTool,
-    useAreaMeasurementTool,
-    useAngleMeasurementTool,
-    useAzimuthMeasurementTool,
-    useCircleMeasurementTool,
-    useFloodSimulation,
-    useKvrInspectTool,
-} from '@/features/Viewer/hooks';
-import { useMarkers } from '@/features/Viewer/hooks/useMarkers';
-import { useVolumeMeasurementTool } from '@/features/Viewer/hooks/useVolumeMeasurementTool';
-import { useVolumeMeasurementData } from '@/features/Viewer/hooks/useVolumeMeasurementData';
-import { useDistanceMeasurementData } from '@/features/Viewer/hooks/useDistanceMeasurementData';
-import { useAreaMeasurementData } from '@/features/Viewer/hooks/useAreaMeasurementData';
-import { useAngleMeasurementData } from '@/features/Viewer/hooks/useAngleMeasurementData';
-import { useAzimuthMeasurementData } from '@/features/Viewer/hooks/useAzimuthMeasurementData';
-import { useCircleMeasurementData } from '@/features/Viewer/hooks/useCircleMeasurementData';
-import { useAnnotations } from '@/features/Viewer/hooks/useAnnotations';
-import { MeasurementToolbar } from './MeasurementToolbar';
-import type { MeasurementType } from '@/features/Viewer/types/measurement';
-import type { KvrMatch } from '@/features/Viewer/utils/kvrClient';
-import { ViewerSidebar } from './ViewerSidebar';
-import { Compass } from './Compass';
-import { CoordinateSearchControl } from './CoordinateSearchControl';
-import { GoogleMapsButton } from './GoogleMapsButton';
-import { KvrInspectButton } from './KvrInspectButton';
-import { MarkerOverlay } from './MarkerOverlay';
-import { SectorNavigation } from './SectorNavigation';
-import { HeightProfilePanel } from './HeightProfilePanel';
-import { ToolbarToolButton } from './ToolbarToolButton';
-import { SourceAttribution } from './SourceAttribution';
-
-import { GlassPanel, NeonButton, DataLoader, Icon, LanguageSwitcher } from '@/common/components';
-import { MeasurementContext } from './MeasurementContext';
-import { PROFILE_WIDTH_DEFAULTS, type ViewerState } from '@/features/Viewer/config/viewerConfig';
-import {
-    getCurrentCameraState,
-    resetPotreeViewerDisplayDefaults,
-} from '@/features/Viewer/utils/viewerDefaults';
-import {
-    applyViewerDisplaySettings,
-    replaceViewerDisplaySettings,
-} from '@/features/Viewer/utils/viewerDisplaySettings';
-import type { ViewerPreset } from '@/features/Viewer/utils/viewerPresetStorage';
-import { Route } from '@/routes/viewer.$cellId';
+    getViewerDataUrl,
+    getViewerSourceManifestUrl,
+} from '@/features/Viewer/utils/viewerDataUrls';
 import { isMobile } from '@/common/utils/screenSize';
+import { MarkerOverlay } from './MarkerOverlay';
+import { MeasurementContextMenus } from './MeasurementContextMenus';
+import { SourceAttribution } from './SourceAttribution';
+import { ViewerHud } from './ViewerHud';
+import { ViewerLoadOverlay } from './ViewerLoadOverlay';
+import { ViewerProfilePanel } from './ViewerProfilePanel';
 
 interface ViewerPageProps {
     cellId: string;
@@ -58,449 +23,55 @@ interface ViewerPageProps {
     initialState: ViewerState;
 }
 
-const KVR_CENTER_CAMERA_RADIUS = 55;
-const KVR_CENTER_CAMERA_Z_OFFSET = 240;
-
-function addResourceHint(rel: 'preconnect' | 'dns-prefetch', href: string) {
-    const selector = `link[rel="${rel}"][href="${href}"]`;
-    if (document.head.querySelector(selector)) return;
-
-    const link = document.createElement('link');
-    link.rel = rel;
-    link.href = href;
-
-    if (rel === 'preconnect') {
-        link.crossOrigin = 'anonymous';
-    }
-
-    document.head.appendChild(link);
-}
-
-function preconnectToDataOrigin(dataBaseUrl: string) {
-    try {
-        const origin = new URL(dataBaseUrl, window.location.href).origin;
-        if (origin === window.location.origin) return;
-
-        addResourceHint('preconnect', origin);
-        addResourceHint('dns-prefetch', `//${new URL(origin).host}`);
-    } catch {
-        // Ignore invalid or unset data URLs; Potree load will surface the real error.
-    }
-}
-
 export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
-    const { t } = useTranslation();
-    const navigate = useNavigate({ from: Route.fullPath });
-    const eptBaseUrl = import.meta.env.VITE_EPT_BASE_URL;
-    const dataUrl = `${eptBaseUrl}/${cellId}/potree_output/metadata.json`;
-    const sourceManifestUrl = `${eptBaseUrl}/${cellId}/potree_output/source_manifest.json`;
+    const dataUrl = getViewerDataUrl(cellId);
+    const sourceManifestUrl = getViewerSourceManifestUrl(cellId);
     const [uiVisible, setUiVisible] = useState(true);
     const [isSourceAttributionVisible, setIsSourceAttributionVisible] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(isMobile);
-    const [sidebarResetKey, setSidebarResetKey] = useState(0);
-    const [resetSidebarInitialState, setResetSidebarInitialState] = useState<{
-        cellId: string;
-        state: ViewerState;
-    } | null>(null);
-    const sidebarInitialState =
-        resetSidebarInitialState?.cellId === cellId ? resetSidebarInitialState.state : initialState;
-
-    const updateUrlDebounced = debounce((state: Partial<ViewerState>) => {
-        void navigate({
-            search: (prev) => ({ ...prev, ...state }),
-            replace: true,
-        });
-    }, 500);
-
-    // Create immediate URL updater for control settings (no debounce needed)
-    const updateUrl = (state: Partial<ViewerState>) => {
-        setResetSidebarInitialState((current) =>
-            current?.cellId === cellId
-                ? {
-                      cellId,
-                      state: {
-                          ...current.state,
-                          ...state,
-                      },
-                  }
-                : current
-        );
-
-        void navigate({
-            search: (prev) => ({ ...prev, ...state }),
-            replace: true,
-        });
-    };
-
-    // Cancel any pending debounced URL updates on unmount to prevent
-    // stale updates after navigation (e.g., pressing back button)
-    useEffect(() => {
-        return () => {
-            updateUrlDebounced.cancel();
-        };
-    }, [updateUrlDebounced]);
-
-    useEffect(() => {
-        preconnectToDataOrigin(eptBaseUrl);
-    }, [eptBaseUrl]);
+    const urlState = useViewerUrlState({ cellId, initialState });
+    useViewerDataOriginPreconnect();
 
     const { containerRef, viewerRef, orientNorth, recenterView, isLoading, error } = usePotree({
         dataUrl,
         initialState,
-        updateUrl: updateUrlDebounced,
+        updateUrl: urlState.updateUrlDebounced,
+    });
+    const navigation = useViewerNavigationActions({
+        cellId,
+        initialState,
+        viewerRef,
+        recenterView,
+        cancelPendingUrlUpdate: () => urlState.updateUrlDebounced.cancel(),
+        updateUrl: urlState.updateUrl,
+        setSidebarInitialState: urlState.setSidebarInitialState,
+        bumpSidebarResetKey: urlState.bumpSidebarResetKey,
+    });
+    const tools = useViewerTools({
+        viewerRef,
+        cellId,
+        dataUrl,
+        markerParam: initialState.mk,
+        onMarkerSearchChange: urlState.updateUrl,
     });
     const sectorLabel = initialState.sectorName ?? cellId;
-    const errorCopy =
-        error?.code === 'metadata-not-found'
-            ? {
-                  title: t('viewer.loadError.metadataNotFoundTitle'),
-                  message: t('viewer.loadError.metadataNotFoundMessage', {
-                      sector: sectorLabel,
-                  }),
-              }
-            : error
-              ? {
-                    title: t('viewer.loadError.unavailableTitle'),
-                    message: t('viewer.loadError.unavailableMessage'),
-                }
-              : null;
-    const { markers, addMarkerAtViewCenter, deleteMarker } = useMarkers({
-        viewerRef,
-        markerParam: initialState.mk,
-        onSearchChange: updateUrl,
-    });
-
-    // Distance Measurement Tool State
-    const {
-        isMeasuring: isDistanceMeasuring,
-        toggleDistanceMeasurement: _toggleDistanceMeasurement,
-        menuPosition: distanceMenuPosition,
-        setMenuPosition: setDistanceMenuPosition,
-        deleteLastPoint: deleteLastDistancePoint,
-        deleteAll: deleteAllDistances,
-        totalDistance,
-    } = useDistanceMeasurementTool({ viewerRef });
-
-    const { exportToCsv: exportDistanceCsv } = useDistanceMeasurementData({ viewerRef });
-    const { exportToCsv: exportAreaCsv } = useAreaMeasurementData({ viewerRef });
-    const { exportToCsv: exportAngleCsv } = useAngleMeasurementData({ viewerRef });
-    const { exportToCsv: exportAzimuthCsv } = useAzimuthMeasurementData({ viewerRef });
-    const { exportToCsv: exportCircleCsv } = useCircleMeasurementData({ viewerRef });
-
-    // Area Measurement Tool State
-    const {
-        isMeasuring: isAreaMeasuring,
-        toggleAreaMeasurement: _toggleAreaMeasurement,
-        menuPosition: areaMenuPosition,
-        setMenuPosition: setAreaMenuPosition,
-        deleteLastPoint: deleteLastAreaPoint,
-        deleteAll: deleteAllAreas,
-        totalArea,
-    } = useAreaMeasurementTool({ viewerRef });
-
-    // Angle Measurement Tool State
-    const {
-        isMeasuring: isAngleMeasuring,
-        pointCount: anglePointCount,
-        toggleAngleMeasurement: _toggleAngleMeasurement,
-        menuPosition: angleMenuPosition,
-        setMenuPosition: setAngleMenuPosition,
-        deleteLastPoint: deleteLastAnglePoint,
-        deleteAll: deleteAllAngles,
-    } = useAngleMeasurementTool({ viewerRef });
-
-    // Azimuth Measurement Tool State
-    const {
-        isMeasuring: isAzimuthMeasuring,
-        pointCount: azimuthPointCount,
-        toggleAzimuthMeasurement: _toggleAzimuthMeasurement,
-        menuPosition: azimuthMenuPosition,
-        setMenuPosition: setAzimuthMenuPosition,
-        deleteLastPoint: deleteLastAzimuthPoint,
-        deleteAll: deleteAllAzimuths,
-    } = useAzimuthMeasurementTool({ viewerRef });
-
-    // Circle Measurement Tool State
-    const {
-        isMeasuring: isCircleMeasuring,
-        pointCount: circlePointCount,
-        toggleCircleMeasurement: _toggleCircleMeasurement,
-        menuPosition: circleMenuPosition,
-        setMenuPosition: setCircleMenuPosition,
-        deleteLastPoint: deleteLastCirclePoint,
-        deleteAll: deleteAllCircles,
-    } = useCircleMeasurementTool({ viewerRef });
-
-    // Volume Measurement Tool State
-    const {
-        isMeasuring: isVolumeMeasuring,
-        totalVolume,
-        toggleVolumeMeasurement: _toggleVolumeMeasurement,
-        menuPosition: volumeMenuPosition,
-        setMenuPosition: setVolumeMenuPosition,
-        deleteAll: deleteAllVolumes,
-    } = useVolumeMeasurementTool({ viewerRef });
-
-    const { exportToCsv: exportVolumeCsv } = useVolumeMeasurementData({ viewerRef });
-
-    // Profile Tool State
-    const {
-        phase: profilePhase,
-        activeProfile,
-        toggleProfileMeasurement: _toggleProfileMeasurement,
-        startNewProfile,
-        finishProfile,
-        closeProfile,
-        deleteLastPoint,
-        setProfileWidth,
-    } = useProfileTool({ viewerRef });
-    const isProfileMeasuring = profilePhase !== 'idle';
-    const [profileWidth, setProfileWidthState] = useState<number>(PROFILE_WIDTH_DEFAULTS.default);
-    const [isProfilePanelCollapsed, setIsProfilePanelCollapsed] = useState(false);
-    const {
-        sample: profileSample,
-        bins: profileBins,
-        segments: profileSegments,
-        status: profileStatus,
-        summary: profileSummary,
-        revision: profileRevision,
-        exportToCsv: exportProfileCsv,
-    } = useProfileData({ viewerRef, profile: activeProfile });
-
-    const handleProfileWidthChange = (width: number) => {
-        setProfileWidthState(width);
-        setProfileWidth(width);
-    };
-
-    // Flood Simulation Tool State
-    const {
-        isActive: isFloodActive,
-        waterLevel: floodWaterLevel,
-        minElevation: floodMinLevel,
-        maxElevation: floodMaxLevel,
-        precision: floodPrecision,
-        start: _startFlood,
-        setWaterLevel: setFloodWaterLevel,
-        setPrecision: setFloodPrecision,
-        reset: resetFlood,
-    } = useFloodSimulation({ viewerRef, metadataUrl: dataUrl });
-
-    // Annotation Tool State
-    const {
-        annotations,
-        isPanelOpen: isAnnotationPanelOpen,
-        togglePanel: toggleAnnotationPanel,
-        closePanel: closeAnnotationPanel,
-        isPlacing: isAnnotationPlacing,
-        startPlacement: startAnnotationPlacement,
-        toggleVisibility: toggleAnnotationVisibility,
-        toggleAllVisibility: toggleAllAnnotationVisibility,
-        navigateToAnnotation,
-        deleteAnnotation,
-        deleteAllAnnotations,
-        allVisible: allAnnotationsVisible,
-        someVisible: someAnnotationsVisible,
-    } = useAnnotations({ viewerRef, sectorId: cellId });
-    const {
-        closePopover: closeKvrInspect,
-        inspectState: kvrInspectState,
-        isInspecting: isKvrInspecting,
-        isPopoverOpen: isKvrPopoverOpen,
-        retryLastInspection: retryKvrInspection,
-        toggleInspectMode: toggleKvrInspectMode,
-    } = useKvrInspectTool({ viewerRef });
-
-    // Mutual exclusivity handlers - cancel other tools when starting a new one
-    const measurements: Record<
-        MeasurementType | 'annotation' | 'kvr',
-        { isActive: boolean; deactivate: () => void }
-    > = {
-        distance: { isActive: isDistanceMeasuring, deactivate: _toggleDistanceMeasurement },
-        area: { isActive: isAreaMeasuring, deactivate: _toggleAreaMeasurement },
-        volume: { isActive: isVolumeMeasuring, deactivate: _toggleVolumeMeasurement },
-        profile: { isActive: isProfileMeasuring, deactivate: _toggleProfileMeasurement },
-        flood: { isActive: isFloodActive, deactivate: resetFlood },
-        angle: { isActive: isAngleMeasuring, deactivate: _toggleAngleMeasurement },
-        azimuth: { isActive: isAzimuthMeasuring, deactivate: _toggleAzimuthMeasurement },
-        circle: { isActive: isCircleMeasuring, deactivate: _toggleCircleMeasurement },
-        annotation: { isActive: isAnnotationPanelOpen, deactivate: closeAnnotationPanel },
-        kvr: { isActive: isKvrInspecting || isKvrPopoverOpen, deactivate: closeKvrInspect },
-    };
-
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key !== 'Escape') return;
-
-            const activeTool = Object.values(measurements).find(({ isActive }) => isActive);
-            if (!activeTool) return;
-
-            event.preventDefault();
-            activeTool.deactivate();
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [measurements]);
-
-    const createHandler =
-        (type: MeasurementType | 'annotation' | 'kvr', action: () => void) => () => {
-            Object.entries(measurements).forEach(([key, { isActive, deactivate }]) => {
-                if (key !== type && isActive) deactivate();
-            });
-            action();
-        };
-
-    const handleToggleDistance = createHandler('distance', _toggleDistanceMeasurement);
-    const handleToggleArea = createHandler('area', _toggleAreaMeasurement);
-    const handleToggleVolume = createHandler('volume', _toggleVolumeMeasurement);
-    const handleToggleProfile = createHandler('profile', () => {
-        if (!isProfileMeasuring) {
-            setProfileWidthState(PROFILE_WIDTH_DEFAULTS.default);
-            setIsProfilePanelCollapsed(false);
-        }
-        _toggleProfileMeasurement();
-    });
-    const handleStartFlood = createHandler('flood', _startFlood);
-    const handleToggleAngle = createHandler('angle', _toggleAngleMeasurement);
-    const handleToggleAzimuth = createHandler('azimuth', _toggleAzimuthMeasurement);
-    const handleToggleCircle = createHandler('circle', _toggleCircleMeasurement);
-    const handleToggleAnnotationPanel = createHandler('annotation', toggleAnnotationPanel);
-    const handleToggleKvrInspect = createHandler('kvr', toggleKvrInspectMode);
-    const handleCenterKvrMatch = (match: KvrMatch) => {
-        const viewer = viewerRef.current;
-        const center = match.center;
-        if (!viewer || !center) return;
-
-        const THREE = window.THREE;
-        const pivot = viewer.scene.view.getPivot();
-        const targetZ = Number.isFinite(pivot.z) ? pivot.z : 0;
-        updateUrlDebounced.cancel();
-        viewer.scene.view.position.set(center.x, center.y, targetZ + KVR_CENTER_CAMERA_Z_OFFSET);
-        // eslint-disable-next-line react-compiler/react-compiler
-        viewer.scene.view.pitch = -Math.PI / 2;
-        viewer.scene.view.yaw = 0;
-        viewer.scene.view.radius = KVR_CENTER_CAMERA_RADIUS;
-        viewer.scene.view.lookAt(new THREE.Vector3(center.x, center.y, targetZ));
-        updateUrl(getCurrentCameraState(viewer));
-    };
-
-    const handleSectorNavigate = (sector: { id: string; name: string | null }) => {
-        updateUrlDebounced.cancel();
-
-        const portableState = Object.fromEntries(
-            Object.entries(initialState).filter(
-                ([key]) =>
-                    !['x', 'y', 'z', 'yaw', 'pitch', 'radius', 'mk', 'sectorName'].includes(key)
-            )
-        ) as ViewerState;
-
-        void navigate({
-            to: '/viewer/$cellId',
-            params: { cellId: sector.id.replaceAll('/', '_') },
-            search: {
-                ...portableState,
-                ...(sector.name ? { sectorName: sector.name } : {}),
-            },
-        });
-    };
-
-    const handleResetDefaults = () => {
-        updateUrlDebounced.cancel();
-
-        resetPotreeViewerDisplayDefaults(viewerRef.current);
-        recenterView();
-        const resetState = {
-            ...(initialState.sectorName ? { sectorName: initialState.sectorName } : {}),
-            ...(initialState.mk ? { mk: initialState.mk } : {}),
-        };
-        setResetSidebarInitialState({ cellId, state: resetState });
-        setSidebarResetKey((value) => value + 1);
-        void navigate({
-            to: '/viewer/$cellId',
-            params: { cellId },
-            search: resetState,
-            replace: true,
-        });
-    };
-
-    const handleLoadPreset = (preset: ViewerPreset) => {
-        updateUrlDebounced.cancel();
-
-        applyViewerDisplaySettings(viewerRef.current, preset.state);
-        const nextSidebarState = replaceViewerDisplaySettings(initialState, preset.state);
-        setResetSidebarInitialState({ cellId, state: nextSidebarState });
-        setSidebarResetKey((value) => value + 1);
-
-        void navigate({
-            search: (prev) => replaceViewerDisplaySettings(prev, preset.state),
-            replace: true,
-        });
-    };
-
-    const handleRecenterView = () => {
-        updateUrlDebounced.cancel();
-        recenterView();
-        void navigate({
-            search: (prev) => ({
-                ...prev,
-                x: undefined,
-                y: undefined,
-                z: undefined,
-                yaw: undefined,
-                pitch: undefined,
-                radius: undefined,
-            }),
-            replace: true,
-        });
-    };
 
     return (
         <div className="relative h-dvh w-screen bg-void-black">
             <div
                 ref={containerRef}
-                className={`h-full w-full ${isAnnotationPlacing ? '!cursor-pointer' : ''} ${
-                    isKvrInspecting ? '!cursor-help' : ''
-                }`}
+                className={`h-full w-full ${
+                    tools.cursor.isAnnotationPlacing ? '!cursor-pointer' : ''
+                } ${tools.cursor.isKvrInspecting ? '!cursor-help' : ''}`}
             />
-            <MarkerOverlay markers={markers} onDelete={deleteMarker} />
+            <MarkerOverlay markers={tools.markers.markers} onDelete={tools.markers.deleteMarker} />
 
-            {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-void-black/90">
-                    <DataLoader message={t('viewer.loading')} />
-                </div>
-            )}
-
-            {error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-void-black/90">
-                    <GlassPanel
-                        className="mx-4 flex max-w-lg flex-col items-center gap-4 p-5 text-center"
-                        role="status"
-                    >
-                        <div className="flex size-12 items-center justify-center rounded-full border border-neon-amber/40 bg-neon-amber/10 text-neon-amber">
-                            <Icon name="warningTriangle" size={24} />
-                        </div>
-                        <div className="space-y-2">
-                            <h2 className="text-lg font-bold text-white">
-                                {errorCopy?.title ?? t('viewer.error')}
-                            </h2>
-                            <p className="text-sm leading-6 text-white/70">{errorCopy?.message}</p>
-                        </div>
-                        <dl className="grid w-full grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md border border-white/10 bg-black/30 p-3 text-left text-xs">
-                            <dt className="text-white/40">{t('viewer.loadError.sector')}</dt>
-                            <dd className="min-w-0 truncate text-white/75">{sectorLabel}</dd>
-                            <dt className="text-white/40">{t('viewer.loadError.details')}</dt>
-                            <dd className="min-w-0 truncate font-mono text-white/60">
-                                {error.status
-                                    ? t('viewer.loadError.httpStatus', { status: error.status })
-                                    : error.message}
-                            </dd>
-                        </dl>
-                        <NeonButton variant="amber" onClick={onBack} className="px-4 py-2">
-                            {t('viewer.loadError.backToMap')}
-                        </NeonButton>
-                    </GlassPanel>
-                </div>
-            )}
+            <ViewerLoadOverlay
+                isLoading={isLoading}
+                error={error}
+                sectorLabel={sectorLabel}
+                onBack={onBack}
+            />
 
             {!isLoading && !error && (
                 <SourceAttribution
@@ -510,271 +81,38 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 />
             )}
 
-            {/* UI elements that can be toggled */}
-            {uiVisible && (
-                <>
-                    {/* Sector info + Coordinate Search - bottom center, always */}
-                    {!isLoading && !error && !isProfileMeasuring && (
-                        <div
-                            className={`absolute left-1/2 z-20 flex -translate-x-1/2 items-stretch gap-2 ${
-                                isProfileMeasuring
-                                    ? isProfilePanelCollapsed
-                                        ? 'bottom-[3.25rem]'
-                                        : 'bottom-[calc(clamp(240px,34dvh,360px)+0.5rem)]'
-                                    : 'bottom-2 xl:bottom-4'
-                            }`}
-                        >
-                            <CoordinateSearchControl
-                                viewerRef={viewerRef}
-                                sectorName={initialState.sectorName}
-                                cellId={cellId}
-                                onAddMarkerAtViewCenter={addMarkerAtViewCenter}
-                            />
-                            <SectorNavigation cellId={cellId} onNavigate={handleSectorNavigate} />
-                        </div>
-                    )}
+            <ViewerHud
+                cellId={cellId}
+                hasError={!!error}
+                initialState={initialState}
+                isLoading={isLoading}
+                isSourceAttributionVisible={isSourceAttributionVisible}
+                kvr={tools.kvr}
+                markers={tools.markers}
+                navigation={navigation}
+                onBack={onBack}
+                onSidebarCollapsedChange={setIsSidebarCollapsed}
+                onUiVisibleChange={setUiVisible}
+                orientNorth={orientNorth}
+                profile={tools.profile}
+                sidebarInitialState={urlState.sidebarInitialState}
+                sidebarResetKey={urlState.sidebarResetKey}
+                toolbar={tools.toolbar}
+                uiVisible={uiVisible}
+                updateUrl={urlState.updateUrl}
+                viewerRef={viewerRef}
+            />
 
-                    {/* Language switcher, UI toggle, and Controls - top right corner */}
-                    <div className="absolute right-2 top-2 flex items-start gap-2 xl:right-4 xl:top-4">
-                        <LanguageSwitcher />
-                        {!isLoading && !error && (
-                            <>
-                                <button
-                                    onClick={() => setUiVisible(!uiVisible)}
-                                    className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95"
-                                    title={
-                                        uiVisible
-                                            ? t('viewer.hideControls')
-                                            : t('viewer.showControls')
-                                    }
-                                >
-                                    <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
-                                </button>
-                                {/* Controls panel - hidden on small screens */}
-                                <GlassPanel className="hidden w-64 md:block">
-                                    <h3 className="mb-2 text-sm font-bold text-neon-amber">
-                                        {t('viewer.controls')}
-                                    </h3>
-                                    <ul className="space-y-1 text-xs text-white/70">
-                                        <li>{t('viewer.controlLeftClick')}</li>
-                                        <li>{t('viewer.controlRightClick')}</li>
-                                        <li>{t('viewer.controlScroll')}</li>
-                                        <li>{t('viewer.controlAddMarker')}</li>
-                                    </ul>
-                                </GlassPanel>
-                            </>
-                        )}
-                    </div>
+            {uiVisible && <MeasurementContextMenus menus={tools.contextMenus} />}
 
-                    {/* Right rail - keeps measurement tools and navigation aids from colliding */}
-                    {!isLoading && !error && (
-                        <div
-                            className={`absolute right-2 top-16 z-20 flex w-10 flex-col items-center gap-3 md:top-[140px] xl:right-4 ${
-                                isProfileMeasuring
-                                    ? isProfilePanelCollapsed
-                                        ? 'bottom-[3.25rem]'
-                                        : 'bottom-[calc(clamp(240px,34dvh,360px)+0.5rem)]'
-                                    : isSourceAttributionVisible
-                                      ? 'bottom-10'
-                                      : 'bottom-2'
-                            }`}
-                        >
-                            <MeasurementToolbar
-                                className="min-h-0 w-max max-w-[280px] flex-1 self-end"
-                                isProfileMeasuring={isProfileMeasuring}
-                                onToggleProfile={handleToggleProfile}
-                                isDistanceMeasuring={isDistanceMeasuring}
-                                onToggleDistance={handleToggleDistance}
-                                totalDistance={totalDistance}
-                                isAreaMeasuring={isAreaMeasuring}
-                                onToggleArea={handleToggleArea}
-                                totalArea={totalArea}
-                                isVolumeMeasuring={isVolumeMeasuring}
-                                onToggleVolume={handleToggleVolume}
-                                totalVolume={totalVolume}
-                                isCircleMeasuring={isCircleMeasuring}
-                                onToggleCircle={handleToggleCircle}
-                                isAngleMeasuring={isAngleMeasuring}
-                                onToggleAngle={handleToggleAngle}
-                                isAzimuthMeasuring={isAzimuthMeasuring}
-                                onToggleAzimuth={handleToggleAzimuth}
-                                isFloodActive={isFloodActive}
-                                floodWaterLevel={floodWaterLevel}
-                                floodMinLevel={floodMinLevel}
-                                floodMaxLevel={floodMaxLevel}
-                                floodPrecision={floodPrecision}
-                                onStartFlood={handleStartFlood}
-                                onFloodWaterLevelChange={setFloodWaterLevel}
-                                onFloodPrecisionChange={setFloodPrecision}
-                                onResetFlood={resetFlood}
-                                annotations={annotations}
-                                isAnnotationPanelOpen={isAnnotationPanelOpen}
-                                onToggleAnnotationPanel={handleToggleAnnotationPanel}
-                                isAnnotationPlacing={isAnnotationPlacing}
-                                onStartAnnotationPlacement={startAnnotationPlacement}
-                                onToggleAnnotationVisibility={toggleAnnotationVisibility}
-                                onToggleAllAnnotationVisibility={toggleAllAnnotationVisibility}
-                                onNavigateToAnnotation={navigateToAnnotation}
-                                onDeleteAnnotation={deleteAnnotation}
-                                onDeleteAllAnnotations={deleteAllAnnotations}
-                                allAnnotationsVisible={allAnnotationsVisible}
-                                someAnnotationsVisible={someAnnotationsVisible}
-                            />
-
-                            <div className="flex shrink-0 flex-col items-center gap-2">
-                                <ToolbarToolButton
-                                    icon={<Icon name="crosshair" size={20} />}
-                                    isActive={false}
-                                    label={t('viewer.recenter')}
-                                    onClick={handleRecenterView}
-                                />
-                                <GoogleMapsButton viewerRef={viewerRef} />
-                                <KvrInspectButton
-                                    inspectState={kvrInspectState}
-                                    isActive={isKvrInspecting}
-                                    isPopoverOpen={isKvrPopoverOpen}
-                                    onClick={handleToggleKvrInspect}
-                                    onClose={closeKvrInspect}
-                                    onCenterMatch={handleCenterKvrMatch}
-                                    onRetry={retryKvrInspection}
-                                />
-                                <Compass viewerRef={viewerRef} onOrientNorth={orientNorth} />
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Distance Context Menu */}
-                    {distanceMenuPosition && (
-                        <MeasurementContext
-                            x={distanceMenuPosition.x}
-                            y={distanceMenuPosition.y}
-                            onClose={() => setDistanceMenuPosition(null)}
-                            onDeleteLast={deleteLastDistancePoint}
-                            onDeleteAll={deleteAllDistances}
-                            onExportCsv={() => exportDistanceCsv(cellId)}
-                        />
-                    )}
-
-                    {/* Area Context Menu */}
-                    {areaMenuPosition && (
-                        <MeasurementContext
-                            x={areaMenuPosition.x}
-                            y={areaMenuPosition.y}
-                            onClose={() => setAreaMenuPosition(null)}
-                            onDeleteLast={deleteLastAreaPoint}
-                            onDeleteAll={deleteAllAreas}
-                            onExportCsv={() => exportAreaCsv(cellId)}
-                        />
-                    )}
-
-                    {/* Circle Context Menu */}
-                    {circleMenuPosition && (
-                        <MeasurementContext
-                            x={circleMenuPosition.x}
-                            y={circleMenuPosition.y}
-                            onClose={() => setCircleMenuPosition(null)}
-                            onDeleteLast={deleteLastCirclePoint}
-                            onDeleteAll={deleteAllCircles}
-                            onExportCsv={() => exportCircleCsv(cellId)}
-                            disableExport={circlePointCount < 3}
-                        />
-                    )}
-
-                    {/* Angle Context Menu */}
-                    {angleMenuPosition && (
-                        <MeasurementContext
-                            x={angleMenuPosition.x}
-                            y={angleMenuPosition.y}
-                            onClose={() => setAngleMenuPosition(null)}
-                            onDeleteLast={deleteLastAnglePoint}
-                            onDeleteAll={deleteAllAngles}
-                            onExportCsv={() => exportAngleCsv(cellId)}
-                            disableExport={anglePointCount < 3}
-                        />
-                    )}
-
-                    {/* Azimuth Context Menu */}
-                    {azimuthMenuPosition && (
-                        <MeasurementContext
-                            x={azimuthMenuPosition.x}
-                            y={azimuthMenuPosition.y}
-                            onClose={() => setAzimuthMenuPosition(null)}
-                            onDeleteLast={deleteLastAzimuthPoint}
-                            onDeleteAll={deleteAllAzimuths}
-                            onExportCsv={() => exportAzimuthCsv(cellId)}
-                            disableExport={azimuthPointCount < 2}
-                        />
-                    )}
-
-                    {/* Volume Context Menu */}
-                    {volumeMenuPosition && (
-                        <MeasurementContext
-                            x={volumeMenuPosition.x}
-                            y={volumeMenuPosition.y}
-                            onClose={() => setVolumeMenuPosition(null)}
-                            onDeleteAll={deleteAllVolumes}
-                            onExportCsv={() => exportVolumeCsv(cellId)}
-                            disableExport={totalVolume === 0}
-                        />
-                    )}
-
-                    {/* Unified Sidebar - handles its own positioning */}
-                    {!isLoading && !error && (
-                        <ViewerSidebar
-                            viewerRef={viewerRef}
-                            initialState={sidebarInitialState}
-                            currentState={sidebarInitialState}
-                            updateUrl={updateUrl}
-                            onBack={onBack}
-                            onResetDefaults={handleResetDefaults}
-                            onLoadPreset={handleLoadPreset}
-                            onCollapsedChange={setIsSidebarCollapsed}
-                            resetKey={sidebarResetKey}
-                        />
-                    )}
-                </>
-            )}
-
-            {isProfileMeasuring && !isLoading && !error && (
-                <HeightProfilePanel
-                    key={activeProfile?.uuid}
-                    viewerRef={viewerRef}
-                    phase={profilePhase}
-                    sample={profileSample}
-                    bins={profileBins}
-                    segments={profileSegments}
-                    status={profileStatus}
-                    summary={profileSummary}
-                    revision={profileRevision}
-                    width={profileWidth}
-                    onWidthChange={handleProfileWidthChange}
-                    onFinish={finishProfile}
-                    onNewProfile={() => {
-                        setProfileWidthState(PROFILE_WIDTH_DEFAULTS.default);
-                        setIsProfilePanelCollapsed(false);
-                        startNewProfile();
-                    }}
-                    onDeleteLast={deleteLastPoint}
-                    onExport={() => exportProfileCsv(cellId)}
-                    onClose={() => {
-                        setIsProfilePanelCollapsed(false);
-                        closeProfile();
-                    }}
-                    onCollapsedChange={setIsProfilePanelCollapsed}
-                    sidebarVisible={uiVisible && !isSidebarCollapsed}
-                />
-            )}
-
-            {/* UI Toggle button - ALWAYS visible, top right next to language switcher */}
-            {!uiVisible && !isLoading && !error && (
-                <button
-                    onClick={() => setUiVisible(!uiVisible)}
-                    className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95 xl:right-4 xl:top-4"
-                    title={t('viewer.showControls')}
-                >
-                    <Icon name="eye" size={20} />
-                </button>
-            )}
+            <ViewerProfilePanel
+                error={error}
+                isLoading={isLoading}
+                isSidebarCollapsed={isSidebarCollapsed}
+                profile={tools.profile}
+                uiVisible={uiVisible}
+                viewerRef={viewerRef}
+            />
         </div>
     );
 }

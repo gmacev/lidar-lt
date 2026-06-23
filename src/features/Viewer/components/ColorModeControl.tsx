@@ -17,7 +17,8 @@ import { useCommittedRange } from '@/features/Viewer/hooks/useCommittedRange';
 type ElevationRangeMode = 'auto' | 'manual';
 
 const ELEVATION_PALETTES: ElevationPalette[] = ['custom', 'terrain', 'grayscale'];
-const COMMIT_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']);
+const ELEVATION_THUMB_VISUAL_SIZE_PX = 20;
+const ELEVATION_THUMB_RADIUS_PX = ELEVATION_THUMB_VISUAL_SIZE_PX / 2;
 
 const ELEVATION_PALETTE_GRADIENTS: Record<ElevationPalette, string> = {
     custom: 'linear-gradient(to right,#440154 0%,#31688e 30%,#35b779 58%,#fde725 78%,#ff9800 90%,#ff2600 100%)',
@@ -257,12 +258,6 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         updateUrl({ elevationMin: range[0], elevationMax: range[1] });
     };
 
-    const handleElevationRangeKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (COMMIT_KEYS.has(event.key)) {
-            commitElevationRangeUrl();
-        }
-    };
-
     const applyManualElevationRange = (range: [number, number], commitUrl = true) => {
         setElevationRange((previous) => ({
             range,
@@ -299,11 +294,10 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         }
     };
 
-    const handleElevationRangeSliderChange = (index: 0 | 1, value: string) => {
-        if (!elevationRange) return;
+    const getNextElevationRange = (index: 0 | 1, numericValue: number): [number, number] | null => {
+        if (!elevationRange) return null;
 
-        const numericValue = Number(value);
-        if (!Number.isFinite(numericValue)) return;
+        if (!Number.isFinite(numericValue)) return null;
 
         const [boundMin, boundMax] = elevationRange.bounds;
         const minGap = Math.max((boundMax - boundMin) * 0.01, 0.1);
@@ -319,10 +313,48 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         nextRange[1] = Math.min(boundMax, nextRange[1]);
 
         if (nextRange[1] <= nextRange[0]) {
+            return null;
+        }
+
+        return nextRange;
+    };
+
+    const handleElevationRangeSliderChange = (index: 0 | 1, value: string) => {
+        const nextRange = getNextElevationRange(index, Number(value));
+        if (!nextRange) return;
+
+        applyManualElevationRange(nextRange, false);
+    };
+
+    const handleElevationThumbKeyDown = (index: 0 | 1, event: React.KeyboardEvent) => {
+        if (!elevationRange) return;
+
+        const [boundMin, boundMax] = elevationRange.bounds;
+        const step = event.shiftKey ? 1 : 0.1;
+        const rangeStep = event.key === 'PageUp' || event.key === 'PageDown' ? 1 : step;
+        let nextValue = elevationRange.range[index];
+
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+            nextValue -= rangeStep;
+        } else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+            nextValue += rangeStep;
+        } else if (event.key === 'Home') {
+            nextValue = boundMin;
+        } else if (event.key === 'End') {
+            nextValue = boundMax;
+        } else if (event.key === 'PageDown') {
+            nextValue -= rangeStep;
+        } else if (event.key === 'PageUp') {
+            nextValue += rangeStep;
+        } else {
             return;
         }
 
-        applyManualElevationRange(nextRange, false);
+        event.preventDefault();
+        const nextRange = getNextElevationRange(index, nextValue);
+        if (!nextRange) return;
+
+        applyManualElevationRange(nextRange);
     };
 
     const handleResetElevationRange = () => {
@@ -347,6 +379,85 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         if (boundMax <= boundMin) return 0;
 
         return ((value - boundMin) / (boundMax - boundMin)) * 100;
+    };
+
+    const elevationThumbLeft = (value: number) => {
+        const percent = elevationRangePercent(value);
+        const offsetPx =
+            ELEVATION_THUMB_RADIUS_PX - (percent / 100) * ELEVATION_THUMB_VISUAL_SIZE_PX;
+        return `calc(${percent}% + ${offsetPx}px)`;
+    };
+
+    const getElevationValueFromPointer = (clientX: number, element: HTMLElement) => {
+        if (!elevationRange) return null;
+
+        const rect = element.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        const [boundMin, boundMax] = elevationRange.bounds;
+        return boundMin + ratio * (boundMax - boundMin);
+    };
+
+    const chooseElevationThumb = (value: number): 0 | 1 => {
+        if (!elevationRange) return 0;
+
+        const [rangeMin, rangeMax] = elevationRange.range;
+        return Math.abs(value - rangeMin) <= Math.abs(value - rangeMax) ? 0 : 1;
+    };
+
+    const updateElevationRangeFromPointer = (
+        index: 0 | 1,
+        clientX: number,
+        element: HTMLElement
+    ) => {
+        const value = getElevationValueFromPointer(clientX, element);
+        if (value === null) return;
+
+        handleElevationRangeSliderChange(index, value.toFixed(1));
+    };
+
+    const handleElevationTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+        const value = getElevationValueFromPointer(event.clientX, event.currentTarget);
+        if (value === null) return;
+
+        const index = chooseElevationThumb(value);
+        event.currentTarget.dataset.activeThumb = index.toString();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        updateElevationRangeFromPointer(index, event.clientX, event.currentTarget);
+    };
+
+    const handleElevationThumbPointerDown = (
+        index: 0 | 1,
+        event: React.PointerEvent<HTMLButtonElement>
+    ) => {
+        const track = event.currentTarget.parentElement;
+        if (!track) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        track.dataset.activeThumb = index.toString();
+        track.setPointerCapture(event.pointerId);
+        updateElevationRangeFromPointer(index, event.clientX, track);
+    };
+
+    const handleElevationTrackPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        const activeThumb = event.currentTarget.dataset.activeThumb;
+        if (activeThumb !== '0' && activeThumb !== '1') return;
+
+        updateElevationRangeFromPointer(
+            Number(activeThumb) as 0 | 1,
+            event.clientX,
+            event.currentTarget
+        );
+    };
+
+    const handleElevationTrackPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+        delete event.currentTarget.dataset.activeThumb;
+
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+
+        commitElevationRangeUrl();
     };
 
     const buttonClass = (mode: ColorMode) =>
@@ -436,43 +547,55 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         <div className="flex flex-col gap-2">
                             <div className="relative h-8">
                                 <div
-                                    className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/15"
-                                    style={{
-                                        background: `linear-gradient(to right, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.15) ${elevationRangePercent(elevationRange.range[0])}%, rgba(0,255,136,0.65) ${elevationRangePercent(elevationRange.range[0])}%, rgba(0,255,136,0.65) ${elevationRangePercent(elevationRange.range[1])}%, rgba(255,255,255,0.15) ${elevationRangePercent(elevationRange.range[1])}%, rgba(255,255,255,0.15) 100%)`,
-                                    }}
-                                />
-                                <input
-                                    aria-label={t('colorMode.min')}
-                                    type="range"
-                                    min={elevationRange.bounds[0]}
-                                    max={elevationRange.bounds[1]}
-                                    step="0.1"
-                                    value={elevationRange.range[0]}
-                                    onChange={(event) =>
-                                        handleElevationRangeSliderChange(0, event.target.value)
-                                    }
-                                    onBlur={commitElevationRangeUrl}
-                                    onKeyUp={handleElevationRangeKeyUp}
-                                    onPointerCancel={commitElevationRangeUrl}
-                                    onPointerUp={commitElevationRangeUrl}
-                                    className="range-thumb absolute inset-x-0 top-1/2 w-full -translate-y-1/2 bg-transparent accent-laser-green"
-                                />
-                                <input
-                                    aria-label={t('colorMode.max')}
-                                    type="range"
-                                    min={elevationRange.bounds[0]}
-                                    max={elevationRange.bounds[1]}
-                                    step="0.1"
-                                    value={elevationRange.range[1]}
-                                    onChange={(event) =>
-                                        handleElevationRangeSliderChange(1, event.target.value)
-                                    }
-                                    onBlur={commitElevationRangeUrl}
-                                    onKeyUp={handleElevationRangeKeyUp}
-                                    onPointerCancel={commitElevationRangeUrl}
-                                    onPointerUp={commitElevationRangeUrl}
-                                    className="range-thumb absolute inset-x-0 top-1/2 w-full -translate-y-1/2 bg-transparent accent-laser-green"
-                                />
+                                    className="relative h-full touch-none"
+                                    onPointerCancel={handleElevationTrackPointerEnd}
+                                    onPointerDown={handleElevationTrackPointerDown}
+                                    onPointerMove={handleElevationTrackPointerMove}
+                                    onPointerUp={handleElevationTrackPointerEnd}
+                                >
+                                    <div
+                                        className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/15"
+                                        style={{
+                                            background: `linear-gradient(to right, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.15) ${elevationRangePercent(elevationRange.range[0])}%, rgba(0,255,136,0.65) ${elevationRangePercent(elevationRange.range[0])}%, rgba(0,255,136,0.65) ${elevationRangePercent(elevationRange.range[1])}%, rgba(255,255,255,0.15) ${elevationRangePercent(elevationRange.range[1])}%, rgba(255,255,255,0.15) 100%)`,
+                                        }}
+                                    />
+                                    <button
+                                        aria-label={t('colorMode.min')}
+                                        type="button"
+                                        role="slider"
+                                        aria-valuemax={elevationRange.bounds[1]}
+                                        aria-valuemin={elevationRange.bounds[0]}
+                                        aria-valuenow={elevationRange.range[0]}
+                                        aria-valuetext={formatElevation(elevationRange.range[0])}
+                                        onBlur={commitElevationRangeUrl}
+                                        onKeyDown={(event) => handleElevationThumbKeyDown(0, event)}
+                                        onPointerDown={(event) =>
+                                            handleElevationThumbPointerDown(0, event)
+                                        }
+                                        className="absolute top-1/2 size-[20px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full border-2 border-white/90 bg-[#676774] transition-colors hover:bg-[#4f4f5f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-laser-green/70"
+                                        style={{
+                                            left: elevationThumbLeft(elevationRange.range[0]),
+                                        }}
+                                    />
+                                    <button
+                                        aria-label={t('colorMode.max')}
+                                        type="button"
+                                        role="slider"
+                                        aria-valuemax={elevationRange.bounds[1]}
+                                        aria-valuemin={elevationRange.bounds[0]}
+                                        aria-valuenow={elevationRange.range[1]}
+                                        aria-valuetext={formatElevation(elevationRange.range[1])}
+                                        onBlur={commitElevationRangeUrl}
+                                        onKeyDown={(event) => handleElevationThumbKeyDown(1, event)}
+                                        onPointerDown={(event) =>
+                                            handleElevationThumbPointerDown(1, event)
+                                        }
+                                        className="absolute top-1/2 size-[20px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full border-2 border-white/90 bg-[#676774] transition-colors hover:bg-[#4f4f5f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-laser-green/70"
+                                        style={{
+                                            left: elevationThumbLeft(elevationRange.range[1]),
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             <div className="flex items-center justify-between gap-2 text-[10px] text-white/55">

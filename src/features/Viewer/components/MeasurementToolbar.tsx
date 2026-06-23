@@ -9,109 +9,14 @@ import { HeightProfileMeasurement } from './HeightProfileMeasurement';
 import { FloodSimulationTool } from './FloodSimulationTool';
 import { AnnotationTool } from './AnnotationTool';
 import { isTouchDevice } from '@/common/utils/screenSize';
-import type { StoredAnnotation } from '../utils/annotationStorage';
+import type { ViewerToolbarTools } from '@/features/Viewer/hooks/useViewerTools';
 
 interface MeasurementToolbarProps {
     className?: string;
-
-    // Profile Tool
-    isProfileMeasuring: boolean;
-    onToggleProfile: () => void;
-
-    // Distance Tool
-    isDistanceMeasuring: boolean;
-    onToggleDistance: () => void;
-    totalDistance: number;
-
-    // Area Tool
-    isAreaMeasuring: boolean;
-    onToggleArea: () => void;
-    totalArea: number;
-
-    // Volume Tool
-    isVolumeMeasuring: boolean;
-    onToggleVolume: () => void;
-    totalVolume: number;
-
-    // Circle Tool
-    isCircleMeasuring: boolean;
-    onToggleCircle: () => void;
-
-    // Angle Tool
-    isAngleMeasuring: boolean;
-    onToggleAngle: () => void;
-
-    // Azimuth Tool
-    isAzimuthMeasuring: boolean;
-    onToggleAzimuth: () => void;
-
-    // Flood Simulation Tool (simplified)
-    isFloodActive: boolean;
-    floodWaterLevel: number;
-    floodMinLevel: number;
-    floodMaxLevel: number;
-    floodPrecision: number;
-    onStartFlood: () => void;
-    onFloodWaterLevelChange: (level: number) => void;
-    onFloodPrecisionChange: (precision: number) => void;
-    onResetFlood: () => void;
-
-    // Annotation Tool
-    annotations: StoredAnnotation[];
-    isAnnotationPanelOpen: boolean;
-    onToggleAnnotationPanel: () => void;
-    isAnnotationPlacing: boolean;
-    onStartAnnotationPlacement: () => void;
-    onToggleAnnotationVisibility: (id: string) => void;
-    onToggleAllAnnotationVisibility: () => void;
-    onNavigateToAnnotation: (id: string) => void;
-    onDeleteAnnotation: (id: string) => void;
-    onDeleteAllAnnotations: () => void;
-    allAnnotationsVisible: boolean;
-    someAnnotationsVisible: boolean;
+    tools: ViewerToolbarTools;
 }
 
-export function MeasurementToolbar({
-    className = '',
-    isProfileMeasuring,
-    onToggleProfile,
-    isDistanceMeasuring,
-    onToggleDistance,
-    totalDistance,
-    isAreaMeasuring,
-    onToggleArea,
-    totalArea,
-    isVolumeMeasuring,
-    onToggleVolume,
-    totalVolume,
-    isCircleMeasuring,
-    onToggleCircle,
-    isAngleMeasuring,
-    onToggleAngle,
-    isAzimuthMeasuring,
-    onToggleAzimuth,
-    isFloodActive,
-    floodWaterLevel,
-    floodMinLevel,
-    floodMaxLevel,
-    floodPrecision,
-    onStartFlood,
-    onFloodWaterLevelChange,
-    onFloodPrecisionChange,
-    onResetFlood,
-    annotations,
-    isAnnotationPanelOpen,
-    onToggleAnnotationPanel,
-    isAnnotationPlacing,
-    onStartAnnotationPlacement,
-    onToggleAnnotationVisibility,
-    onToggleAllAnnotationVisibility,
-    onNavigateToAnnotation,
-    onDeleteAnnotation,
-    onDeleteAllAnnotations,
-    allAnnotationsVisible,
-    someAnnotationsVisible,
-}: MeasurementToolbarProps) {
+export function MeasurementToolbar({ className = '', tools }: MeasurementToolbarProps) {
     const isTouch = isTouchDevice();
     const scrollRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -183,63 +88,66 @@ export function MeasurementToolbar({
                     {!isTouch && (
                         <>
                             <DistanceMeasurement
-                                onClick={onToggleDistance}
-                                isActive={isDistanceMeasuring}
-                                totalDistance={totalDistance}
+                                onClick={tools.distance.onToggle}
+                                isActive={tools.distance.isMeasuring}
+                                totalDistance={tools.distance.totalDistance}
                             />
                             <AreaMeasurement
-                                onClick={onToggleArea}
-                                isActive={isAreaMeasuring}
-                                totalArea={totalArea}
+                                onClick={tools.area.onToggle}
+                                isActive={tools.area.isMeasuring}
+                                totalArea={tools.area.totalArea}
                             />
                             <VolumeMeasurement
-                                onClick={onToggleVolume}
-                                isActive={isVolumeMeasuring}
-                                totalVolume={totalVolume}
+                                onClick={tools.volume.onToggle}
+                                isActive={tools.volume.isMeasuring}
+                                totalVolume={tools.volume.totalVolume}
                             />
                             <CircleMeasurement
-                                onClick={onToggleCircle}
-                                isActive={isCircleMeasuring}
+                                onClick={tools.circle.onToggle}
+                                isActive={tools.circle.isMeasuring}
                             />
-                            <AngleMeasurement onClick={onToggleAngle} isActive={isAngleMeasuring} />
+                            <AngleMeasurement
+                                onClick={tools.angle.onToggle}
+                                isActive={tools.angle.isMeasuring}
+                            />
                             <AzimuthMeasurement
-                                onClick={onToggleAzimuth}
-                                isActive={isAzimuthMeasuring}
+                                onClick={tools.azimuth.onToggle}
+                                isActive={tools.azimuth.isMeasuring}
                             />
                             <HeightProfileMeasurement
-                                onClick={onToggleProfile}
-                                isActive={isProfileMeasuring}
+                                onClick={tools.profile.onToggle}
+                                isActive={tools.profile.isMeasuring}
                             />
                         </>
                     )}
 
                     {/* Flood simulation works on all devices */}
                     <FloodSimulationTool
-                        isActive={isFloodActive}
-                        waterLevel={floodWaterLevel}
-                        minLevel={floodMinLevel}
-                        maxLevel={floodMaxLevel}
-                        precision={floodPrecision}
-                        onStart={onStartFlood}
-                        onWaterLevelChange={onFloodWaterLevelChange}
-                        onPrecisionChange={onFloodPrecisionChange}
-                        onReset={onResetFlood}
+                        isActive={tools.flood.isActive}
+                        waterLevel={tools.flood.waterLevel}
+                        minLevel={tools.flood.minLevel}
+                        maxLevel={tools.flood.maxLevel}
+                        precision={tools.flood.precision}
+                        onStart={tools.flood.onStart}
+                        onWaterLevelChange={tools.flood.onWaterLevelChange}
+                        onPrecisionChange={tools.flood.onPrecisionChange}
+                        onReset={tools.flood.onReset}
                     />
 
                     {/* Annotation tool works on all devices */}
                     <AnnotationTool
-                        annotations={annotations}
-                        isPanelOpen={isAnnotationPanelOpen}
-                        onTogglePanel={onToggleAnnotationPanel}
-                        isPlacing={isAnnotationPlacing}
-                        onStartPlacement={onStartAnnotationPlacement}
-                        onToggleVisibility={onToggleAnnotationVisibility}
-                        onToggleAllVisibility={onToggleAllAnnotationVisibility}
-                        onNavigate={onNavigateToAnnotation}
-                        onDelete={onDeleteAnnotation}
-                        onDeleteAll={onDeleteAllAnnotations}
-                        allVisible={allAnnotationsVisible}
-                        someVisible={someAnnotationsVisible}
+                        annotations={tools.annotations.annotations}
+                        isPanelOpen={tools.annotations.isPanelOpen}
+                        onTogglePanel={tools.annotations.onTogglePanel}
+                        isPlacing={tools.annotations.isPlacing}
+                        onStartPlacement={tools.annotations.onStartPlacement}
+                        onToggleVisibility={tools.annotations.onToggleVisibility}
+                        onToggleAllVisibility={tools.annotations.onToggleAllVisibility}
+                        onNavigate={tools.annotations.onNavigate}
+                        onDelete={tools.annotations.onDelete}
+                        onDeleteAll={tools.annotations.onDeleteAll}
+                        allVisible={tools.annotations.allVisible}
+                        someVisible={tools.annotations.someVisible}
                     />
                 </div>
             </div>

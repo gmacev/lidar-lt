@@ -44,11 +44,13 @@ export function useAnnotations({
         sectorId,
         annotations: getAnnotationStorage(sectorId).get(),
     }));
+    const [sceneViewer, setSceneViewer] = useState<PotreeViewer | null>(null);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isPlacing, setIsPlacing] = useState(false);
     const potreeAnnotationsRef = useRef<Map<string, Annotation>>(new Map());
     const placementCleanupRef = useRef<(() => void) | null>(null);
     const isMountedRef = useRef(true);
+    const syncedViewerRef = useRef<PotreeViewer | null>(null);
     const { openModal } = useModal();
     const { t } = useTranslation();
 
@@ -78,9 +80,31 @@ export function useAnnotations({
         };
     }, []);
 
+    useEffect(() => {
+        let frameId = 0;
+
+        const syncViewer = () => {
+            const nextViewer = viewerRef.current?.scene ? viewerRef.current : null;
+
+            if (syncedViewerRef.current !== nextViewer) {
+                syncedViewerRef.current = nextViewer;
+                setSceneViewer(nextViewer);
+            }
+
+            frameId = requestAnimationFrame(syncViewer);
+        };
+
+        syncViewer();
+
+        return () => {
+            cancelAnimationFrame(frameId);
+            syncedViewerRef.current = null;
+        };
+    }, [viewerRef]);
+
     // Sync stored annotations to Potree scene
     useEffect(() => {
-        const viewer = viewerRef.current;
+        const viewer = sceneViewer;
         if (!viewer?.scene) return;
 
         const potreeAnnotations = potreeAnnotationsRef.current;
@@ -123,7 +147,7 @@ export function useAnnotations({
             });
             potreeAnnotations.clear();
         };
-    }, [annotations, viewerRef]);
+    }, [annotations, sceneViewer]);
 
     const togglePanel = () => {
         setIsPanelOpen((prev) => !prev);
