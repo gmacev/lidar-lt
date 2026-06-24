@@ -12,6 +12,7 @@ export function CircleMeasurement({ onClick, isActive }: CircleMeasurementProps)
 
     return (
         <ToolbarToolButton
+            data-testid="viewer-tool-circle"
             onClick={onClick}
             isActive={isActive}
             label={t('measurement.circle')}

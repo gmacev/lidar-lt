@@ -6,6 +6,7 @@ interface ToolPopoverProps {
     children: ReactNode;
     className?: string;
     isOpen: boolean;
+    testId?: string;
     width: number;
 }
 
@@ -14,11 +15,13 @@ export function ToolPopover({
     children,
     className = '',
     isOpen,
+    testId,
     width,
 }: ToolPopoverProps) {
     return (
         <Popover
             anchorRef={anchorRef}
+            data-testid={testId}
             isOpen={isOpen}
             width={width}
             side="left"

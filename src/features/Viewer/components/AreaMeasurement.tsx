@@ -39,6 +39,7 @@ export function AreaMeasurement({ onClick, isActive, totalArea }: AreaMeasuremen
             )}
 
             <ToolbarToolButton
+                data-testid="viewer-tool-area"
                 onClick={onClick}
                 isActive={isActive}
                 label={t('measurement.area')}

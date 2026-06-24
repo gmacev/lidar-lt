@@ -3,15 +3,26 @@ import { type ReactNode } from 'react';
 interface SwitchProps {
     checked: boolean;
     onChange: (checked: boolean) => void;
+    ariaLabel?: string;
     icon?: ReactNode;
     className?: string;
+    testId?: string;
 }
 
-export function Switch({ checked, onChange, icon, className = '' }: SwitchProps) {
+export function Switch({
+    checked,
+    onChange,
+    ariaLabel,
+    icon,
+    className = '',
+    testId,
+}: SwitchProps) {
     return (
         <button
             role="switch"
+            aria-label={ariaLabel}
             aria-checked={checked}
+            data-testid={testId}
             onClick={() => onChange(!checked)}
             className={`
                 relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent 

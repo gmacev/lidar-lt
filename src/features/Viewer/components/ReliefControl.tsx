@@ -50,7 +50,7 @@ export function ReliefControl({ viewerRef, initialState, updateUrl }: ReliefCont
     };
 
     return (
-        <div className="flex flex-col gap-3">
+        <div data-testid="viewer-control-relief" className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-white/90">{t('relief.label')}</span>
@@ -64,6 +64,8 @@ export function ReliefControl({ viewerRef, initialState, updateUrl }: ReliefCont
                     </HelpHint>
                 </div>
                 <Switch
+                    ariaLabel={t('relief.label')}
+                    testId="viewer-relief-enabled"
                     checked={reliefEnabled}
                     onChange={(checked) => {
                         setReliefEnabled(checked);
@@ -91,6 +93,7 @@ export function ReliefControl({ viewerRef, initialState, updateUrl }: ReliefCont
                     <span className="text-laser-green">{reliefStrength.toFixed(1)}</span>
                 </label>
                 <input
+                    data-testid="viewer-relief-strength"
                     type="range"
                     min="0.1"
                     max="10"
@@ -117,6 +120,7 @@ export function ReliefControl({ viewerRef, initialState, updateUrl }: ReliefCont
                     <span className="text-laser-green">{Math.round(reliefAzimuth)}&deg;</span>
                 </label>
                 <input
+                    data-testid="viewer-relief-azimuth"
                     type="range"
                     min="0"
                     max="359"

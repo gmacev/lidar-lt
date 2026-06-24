@@ -17,6 +17,7 @@ export function AzimuthMeasurement({ onClick, isActive }: AzimuthMeasurementProp
 
     return (
         <ToolbarToolButton
+            data-testid="viewer-tool-azimuth"
             onClick={onClick}
             isActive={isActive}
             label={t('measurement.azimuth')}

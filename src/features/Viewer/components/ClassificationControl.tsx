@@ -101,13 +101,17 @@ export function ClassificationControl({
     if (classifications.length === 0) return null;
 
     return (
-        <div className="grid grid-flow-col grid-rows-5 gap-x-4 gap-y-1 pr-2">
+        <div
+            data-testid="viewer-control-classifications"
+            className="grid grid-flow-col grid-rows-5 gap-x-4 gap-y-1 pr-2"
+        >
             {classifications.map((item) => (
                 <label
                     key={item.id}
                     className="flex items-center gap-1.5 text-xs text-white/80 hover:bg-white/5 rounded cursor-pointer select-none"
                 >
                     <input
+                        data-testid={`viewer-classification-${item.id}`}
                         type="checkbox"
                         checked={item.visible}
                         onChange={() => toggleClassification(item.id)}
@@ -120,6 +124,7 @@ export function ClassificationControl({
             {/* Select All Checkbox - spans remaining rows, distinct color */}
             <label className="row-span-2 flex items-center gap-2 text-sm font-medium text-white/90 hover:bg-white/5 rounded cursor-pointer select-none">
                 <input
+                    data-testid="viewer-classification-all"
                     type="checkbox"
                     checked={allVisible}
                     ref={(input) => {

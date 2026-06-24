@@ -100,26 +100,43 @@ const optionalSearchNumberArray = z.preprocess((value) => {
     return parsedValues.length > 0 ? parsedValues : undefined;
 }, z.array(z.number()).optional());
 
-const ColorModeSchema = z.preprocess(
-    (value) => (value === 'return-number' ? 'elevation' : value),
-    z.enum(['elevation', 'intensity'])
+function optionalSearchEnum<const T extends readonly [string, ...string[]]>(
+    values: T,
+    normalize?: (value: unknown) => unknown
+) {
+    return z.preprocess((value) => {
+        if (value === undefined || value === null || value === '') return undefined;
+
+        const normalized = normalize ? normalize(value) : value;
+        return typeof normalized === 'string' && (values as readonly string[]).includes(normalized)
+            ? normalized
+            : undefined;
+    }, z.enum(values).optional());
+}
+
+const COLOR_MODES = ['elevation', 'intensity'] as const;
+const POINT_SHAPES = ['square', 'circle', 'paraboloid'] as const;
+const POINT_SIZE_MODES = ['fixed', 'adaptive'] as const;
+const POINT_QUALITIES = ['standard', 'high'] as const;
+const ELEVATION_PALETTES = ['custom', 'terrain', 'grayscale'] as const;
+const PROJECTIONS = ['PERSPECTIVE', 'ORTHOGRAPHIC'] as const;
+const BACKGROUNDS = ['skybox', 'gradient', 'black'] as const;
+const SKYBOX_VARIANTS = ['1', '2'] as const;
+
+const ColorModeSchema = optionalSearchEnum(COLOR_MODES, (value) =>
+    value === 'return-number' ? 'elevation' : value
 );
-export type ColorMode = z.infer<typeof ColorModeSchema>;
+export type ColorMode = (typeof COLOR_MODES)[number];
 
-const PointShapeSchema = z.enum(['square', 'circle', 'paraboloid']);
-export type PointShape = z.infer<typeof PointShapeSchema>;
+export type PointShape = (typeof POINT_SHAPES)[number];
 
-const PointSizeModeSchema = z.enum(['fixed', 'adaptive']);
-export type PointSizeMode = z.infer<typeof PointSizeModeSchema>;
+export type PointSizeMode = (typeof POINT_SIZE_MODES)[number];
 
-const PointQualitySchema = z.enum(['standard', 'high']);
-export type PointQuality = z.infer<typeof PointQualitySchema>;
+export type PointQuality = (typeof POINT_QUALITIES)[number];
 
-const ElevationPaletteSchema = z.enum(['custom', 'terrain', 'grayscale']);
-export type ElevationPalette = z.infer<typeof ElevationPaletteSchema>;
+export type ElevationPalette = (typeof ELEVATION_PALETTES)[number];
 
-const ProjectionSchema = z.enum(['PERSPECTIVE', 'ORTHOGRAPHIC']);
-export type Projection = z.infer<typeof ProjectionSchema>;
+export type Projection = (typeof PROJECTIONS)[number];
 
 export const POINT_APPEARANCE_DEFAULTS = {
     shape: 'circle' as PointShape,
@@ -127,9 +144,6 @@ export const POINT_APPEARANCE_DEFAULTS = {
     quality: 'standard' as PointQuality,
     elevationPalette: 'custom' as ElevationPalette,
 } as const;
-
-const BackgroundSchema = z.enum(['skybox', 'gradient', 'black']);
-const SkyboxVariantSchema = z.enum(['1', '2']);
 
 export const POTREE_BACKGROUND_GRADIENT = {
     center: '#1f3440',
@@ -153,7 +167,7 @@ export const ViewerStateSchema = z.object({
     ib: optionalSearchNumber, // intensity brightness
     elevationMin: optionalSearchNumber,
     elevationMax: optionalSearchNumber,
-    ep: ElevationPaletteSchema.optional(), // elevation palette
+    ep: optionalSearchEnum(ELEVATION_PALETTES), // elevation palette
     // EDL settings
     edlEnabled: optionalSearchBoolean,
     edlStrength: optionalSearchNumber,
@@ -165,10 +179,10 @@ export const ViewerStateSchema = z.object({
     reliefAzimuth: optionalSearchNumber,
     // Rendering settings (short names to avoid Potree URL conflicts)
     ps: optionalSearchNumber, // point size
-    psm: PointSizeModeSchema.optional(), // point size mode
-    pq: PointQualitySchema.optional(), // point quality
+    psm: optionalSearchEnum(POINT_SIZE_MODES), // point size mode
+    pq: optionalSearchEnum(POINT_QUALITIES), // point quality
     mns: optionalSearchNumber, // min node size
-    psh: PointShapeSchema.optional(), // point shape
+    psh: optionalSearchEnum(POINT_SHAPES), // point shape
     zScale: optionalSearchNumber, // vertical exaggeration
     pb: optionalPointBudget, // point budget
     fov: optionalSearchNumber, // field of view
@@ -179,10 +193,10 @@ export const ViewerStateSchema = z.object({
     // Shareable point markers encoded as x,y,z;x,y,z
     mk: z.string().optional(),
     // Camera Projection
-    projection: ProjectionSchema.optional(),
+    projection: optionalSearchEnum(PROJECTIONS),
     // Background
-    bg: BackgroundSchema.optional(),
-    sb: SkyboxVariantSchema.optional(),
+    bg: optionalSearchEnum(BACKGROUNDS),
+    sb: optionalSearchEnum(SKYBOX_VARIANTS),
 });
 
 export type ViewerState = z.infer<typeof ViewerStateSchema>;

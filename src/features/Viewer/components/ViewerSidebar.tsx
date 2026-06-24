@@ -64,6 +64,8 @@ export function ViewerSidebar({
 
     return (
         <div
+            data-testid="viewer-sidebar"
+            data-collapsed={isCollapsed ? 'true' : 'false'}
             className={`fixed left-0 top-0 z-50 flex h-full transition-all duration-300 ${
                 isCollapsed ? '-translate-x-full' : 'translate-x-0'
             }`}
@@ -75,6 +77,7 @@ export function ViewerSidebar({
             <div className="flex w-80 flex-col border-r border-white/10 bg-glass-bg">
                 <div className="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-2 py-2">
                     <button
+                        data-testid="viewer-back"
                         onClick={onBack}
                         className="group flex items-center gap-3 text-[11px] font-bold uppercase tracking-widest text-white/40 transition-all hover:text-neon-amber"
                     >
@@ -88,6 +91,7 @@ export function ViewerSidebar({
                         {t('viewer.back')}
                     </button>
                     <button
+                        data-testid="viewer-reset-defaults"
                         onClick={handleResetDefaults}
                         className="rounded border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white/45 transition-all hover:border-laser-green/40 hover:bg-laser-green/10 hover:text-laser-green"
                     >
@@ -100,6 +104,7 @@ export function ViewerSidebar({
                     <div key={resetKey} className="flex flex-col">
                         {/* Visualization Section */}
                         <SidebarSection
+                            testId="viewer-section-visualization"
                             title={t('sidebar.visualization')}
                             icon={<Icon name="palette" size={16} />}
                         >
@@ -127,6 +132,7 @@ export function ViewerSidebar({
 
                         {/* Classifications Section */}
                         <SidebarSection
+                            testId="viewer-section-classifications"
                             title={t('sidebar.classifications')}
                             icon={<Icon name="tag" size={16} />}
                         >
@@ -139,6 +145,7 @@ export function ViewerSidebar({
 
                         {/* Rendering Section */}
                         <SidebarSection
+                            testId="viewer-section-rendering"
                             title={t('sidebar.rendering')}
                             icon={<Icon name="sparkles" size={16} />}
                         >
@@ -166,6 +173,7 @@ export function ViewerSidebar({
                         </SidebarSection>
 
                         <SidebarSection
+                            testId="viewer-section-presets"
                             title={t('presets.title')}
                             icon={<Icon name="bookmark" size={16} />}
                         >
@@ -179,6 +187,7 @@ export function ViewerSidebar({
             </div>
 
             <button
+                data-testid="viewer-sidebar-toggle"
                 onClick={handleToggleCollapsed}
                 className={`absolute -right-4 top-1/2 flex h-24 w-4 -translate-y-1/2 items-center justify-center rounded-r-xl border-y border-r border-white/10 bg-glass-bg transition-all duration-300 hover:w-6 hover:bg-black/95 group ${
                     isCollapsed ? 'opacity-100 shadow-[4px_0_15px_rgba(0,0,0,0.5)]' : 'opacity-80'

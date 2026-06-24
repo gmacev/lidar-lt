@@ -40,6 +40,7 @@ export function DistanceMeasurement({
             )}
 
             <ToolbarToolButton
+                data-testid="viewer-tool-distance"
                 onClick={onClick}
                 isActive={isActive}
                 label={t('measurement.distance')}

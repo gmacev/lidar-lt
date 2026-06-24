@@ -57,9 +57,10 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const sectorLabel = initialState.sectorName ?? cellId;
 
     return (
-        <div className="relative h-dvh w-screen bg-void-black">
+        <div data-testid="viewer-page" className="relative h-dvh w-screen bg-void-black">
             <div
                 ref={containerRef}
+                data-testid="viewer-container"
                 className={`h-full w-full ${
                     tools.cursor.isAnnotationPlacing ? '!cursor-pointer' : ''
                 } ${tools.cursor.isKvrInspecting ? '!cursor-help' : ''}`}

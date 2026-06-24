@@ -31,7 +31,7 @@ export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSize
     };
 
     return (
-        <div className="flex flex-col gap-1">
+        <div data-testid="viewer-control-min-node-size" className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
                 <span className="flex items-center gap-1.5">
                     {t('pointCloud.detailLevel')}
@@ -45,6 +45,7 @@ export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSize
                 <span className="text-laser-green">{minNodeSize}</span>
             </label>
             <input
+                data-testid="viewer-min-node-size"
                 type="range"
                 min="5"
                 max="100" // 100 is very coarse, 5 is very fine

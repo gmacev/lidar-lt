@@ -93,11 +93,20 @@ export function ViewerHud({
                     )}
 
                     {/* Language switcher, UI toggle, and Controls - top right corner */}
-                    <div className="absolute right-2 top-2 flex items-start gap-2 xl:right-4 xl:top-4">
+                    <div
+                        data-testid="viewer-top-controls"
+                        className="absolute right-2 top-2 flex items-start gap-2 xl:right-4 xl:top-4"
+                    >
                         <LanguageSwitcher />
                         {!isLoading && !hasError && (
                             <>
                                 <button
+                                    data-testid="viewer-ui-toggle"
+                                    aria-label={
+                                        uiVisible
+                                            ? t('viewer.hideControls')
+                                            : t('viewer.showControls')
+                                    }
                                     onClick={() => onUiVisibleChange(!uiVisible)}
                                     className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95"
                                     title={
@@ -127,6 +136,7 @@ export function ViewerHud({
                     {/* Right rail - keeps measurement tools and navigation aids from colliding */}
                     {!isLoading && !hasError && (
                         <div
+                            data-testid="viewer-right-rail"
                             className={`absolute right-2 top-16 z-20 flex w-10 flex-col items-center gap-3 md:top-[140px] xl:right-4 ${
                                 profile.isMeasuring
                                     ? profile.isPanelCollapsed
@@ -144,6 +154,7 @@ export function ViewerHud({
 
                             <div className="flex shrink-0 flex-col items-center gap-2">
                                 <ToolbarToolButton
+                                    data-testid="viewer-recenter"
                                     icon={<Icon name="crosshair" size={20} />}
                                     isActive={false}
                                     label={t('viewer.recenter')}
@@ -184,6 +195,8 @@ export function ViewerHud({
             {/* UI Toggle button - ALWAYS visible, top right next to language switcher */}
             {!uiVisible && !isLoading && !hasError && (
                 <button
+                    data-testid="viewer-ui-toggle"
+                    aria-label={t('viewer.showControls')}
                     onClick={() => onUiVisibleChange(!uiVisible)}
                     className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95 xl:right-4 xl:top-4"
                     title={t('viewer.showControls')}

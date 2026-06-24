@@ -72,7 +72,7 @@ export function PointBudgetControl({
     };
 
     return (
-        <div className="flex flex-col gap-1">
+        <div data-testid="viewer-control-point-budget" className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
                 <span className="flex items-center gap-1.5">
                     {t('pointCloud.pointBudget')}
@@ -86,6 +86,7 @@ export function PointBudgetControl({
                 <span className="text-laser-green">{formatBudget(pointBudget)}</span>
             </label>
             <input
+                data-testid="viewer-point-budget"
                 type="range"
                 min={POINT_BUDGET_LIMITS.min}
                 max={POINT_BUDGET_LIMITS.max}

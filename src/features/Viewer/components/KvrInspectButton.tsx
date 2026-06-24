@@ -64,6 +64,7 @@ export function KvrInspectButton({
         <>
             <ToolbarToolButton
                 ref={buttonRef}
+                data-testid="viewer-tool-kvr"
                 icon={<Icon name="question" size={24} />}
                 isActive={isActive || isPopoverOpen}
                 label={isActive ? t('kvrInspect.activeLabel') : t('kvrInspect.label')}
@@ -73,6 +74,7 @@ export function KvrInspectButton({
             <ToolPopover
                 anchorRef={buttonRef}
                 isOpen={isPopoverOpen}
+                testId="viewer-kvr-popover"
                 width={360}
                 className="flex max-h-[500px] flex-col overflow-hidden rounded-lg border border-white/10 bg-black/95 p-4 pr-3 text-white shadow-2xl shadow-black/40"
             >

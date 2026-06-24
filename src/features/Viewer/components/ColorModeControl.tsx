@@ -468,16 +468,18 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
         } border rounded`;
 
     return (
-        <div className="flex flex-col gap-1">
+        <div data-testid="viewer-control-color-mode" className="flex flex-col gap-1">
             <span className="text-xs text-white/70">{t('colorMode.label')}</span>
             <div className="flex gap-1">
                 <button
+                    data-testid="viewer-color-mode-elevation"
                     className={buttonClass('elevation')}
                     onClick={() => handleModeChange('elevation')}
                 >
                     {t('colorMode.elevation')}
                 </button>
                 <button
+                    data-testid="viewer-color-mode-intensity"
                     className={buttonClass('intensity')}
                     onClick={() => handleModeChange('intensity')}
                 >
@@ -493,6 +495,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                             {(['auto', 'manual'] as const).map((mode) => (
                                 <button
                                     key={mode}
+                                    data-testid={`viewer-elevation-range-mode-${mode}`}
                                     type="button"
                                     onClick={() => handleElevationModeChange(mode)}
                                     className={`rounded px-2 py-0.5 text-[10px] font-medium transition-all ${
@@ -529,6 +532,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                             {ELEVATION_PALETTES.map((palette) => (
                                 <button
                                     key={palette}
+                                    data-testid={`viewer-elevation-palette-${palette}`}
                                     type="button"
                                     onClick={() => handleElevationPaletteChange(palette)}
                                     className={`rounded border px-2 py-1 text-[10px] font-medium transition-all ${
@@ -560,6 +564,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                         }}
                                     />
                                     <button
+                                        data-testid="viewer-elevation-min"
                                         aria-label={t('colorMode.min')}
                                         type="button"
                                         role="slider"
@@ -578,6 +583,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                         }}
                                     />
                                     <button
+                                        data-testid="viewer-elevation-max"
                                         aria-label={t('colorMode.max')}
                                         type="button"
                                         role="slider"
@@ -603,6 +609,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                     {t('colorMode.min')}: {formatElevation(elevationRange.range[0])}
                                 </span>
                                 <button
+                                    data-testid="viewer-elevation-range-reset"
                                     type="button"
                                     onClick={handleResetElevationRange}
                                     className="rounded border border-white/10 px-2 py-0.5 text-white/50 transition-colors hover:border-laser-green/40 hover:text-laser-green"
@@ -626,6 +633,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         <span className="text-laser-green">{intensityMax.toLocaleString()}</span>
                     </label>
                     <input
+                        data-testid="viewer-intensity-max"
                         type="range"
                         min="0"
                         max="100000"
@@ -640,6 +648,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         <span className="text-laser-green">{intensityGamma.toFixed(2)}</span>
                     </label>
                     <input
+                        data-testid="viewer-intensity-gamma"
                         type="range"
                         min="0.1"
                         max="4"
@@ -655,6 +664,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                         <span className="text-laser-green">{intensityBrightness.toFixed(2)}</span>
                     </label>
                     <input
+                        data-testid="viewer-intensity-brightness"
                         type="range"
                         min="-1"
                         max="1"

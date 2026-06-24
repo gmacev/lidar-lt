@@ -53,6 +53,7 @@ export function AnnotationTool({
             <ToolPopover
                 anchorRef={buttonRef}
                 isOpen={isPanelOpen}
+                testId="viewer-annotation-popover"
                 width={280}
                 className="flex flex-col gap-2 rounded-lg border border-white/10 bg-glass-bg p-3"
             >
@@ -134,6 +135,7 @@ export function AnnotationTool({
                 {/* Action buttons */}
                 <div className="flex items-center justify-between pt-2 border-t border-white/10">
                     <button
+                        data-testid="viewer-annotation-start-placement"
                         onClick={onStartPlacement}
                         disabled={isPlacing}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-neon-cyan border border-neon-cyan/30 bg-neon-cyan/10 hover:bg-neon-cyan/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -157,6 +159,7 @@ export function AnnotationTool({
             {/* Main button */}
             <ToolbarToolButton
                 ref={buttonRef}
+                data-testid="viewer-tool-annotations"
                 onClick={onTogglePanel}
                 isActive={isPanelOpen || isPlacing}
                 label={t('annotation.annotations')}

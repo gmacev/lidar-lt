@@ -16,6 +16,7 @@ export function AngleMeasurement({ onClick, isActive }: AngleMeasurementProps) {
 
     return (
         <ToolbarToolButton
+            data-testid="viewer-tool-angle"
             onClick={onClick}
             isActive={isActive}
             label={t('measurement.angle')}

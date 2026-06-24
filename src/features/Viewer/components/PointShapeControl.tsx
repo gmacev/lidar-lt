@@ -51,12 +51,13 @@ export function PointShapeControl({ viewerRef, initialState, updateUrl }: PointS
         } border rounded`;
 
     return (
-        <div className="flex flex-col gap-1">
+        <div data-testid="viewer-control-point-shape" className="flex flex-col gap-1">
             <span className="text-xs text-white/70">{t('pointCloud.pointShape')}</span>
             <div className="flex gap-1">
                 {SHAPE_OPTIONS.map((option) => (
                     <button
                         key={option.value}
+                        data-testid={`viewer-point-shape-${option.value}`}
                         className={buttonClass(shape === option.value)}
                         onClick={() => handleShapeChange(option.value)}
                     >

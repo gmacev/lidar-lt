@@ -29,6 +29,7 @@ export function FOVControl({ viewerRef, initialState, updateUrl, disabled }: FOV
 
     return (
         <div
+            data-testid="viewer-control-fov"
             className={`flex flex-col gap-1 transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
         >
             <label className="text-xs text-white/70 flex justify-between">
@@ -36,6 +37,7 @@ export function FOVControl({ viewerRef, initialState, updateUrl, disabled }: FOV
                 <span className="text-laser-green">{fov}°</span>
             </label>
             <input
+                data-testid="viewer-fov"
                 type="range"
                 min="20"
                 max="120"

@@ -49,6 +49,7 @@ export function GoogleMapsButton({ viewerRef }: GoogleMapsButtonProps) {
 
     return (
         <ToolbarToolButton
+            data-testid="viewer-tool-google-maps"
             onClick={() => void handleClick()}
             isActive={copied}
             activeClassName="bg-neon-green/30 border-neon-green text-neon-green shadow-[0_0_12px_rgba(0,255,0,0.3)]"

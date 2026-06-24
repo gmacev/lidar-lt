@@ -42,6 +42,8 @@ Thumbs.db
 
 # testing
 coverage/
+playwright-report/
+test-results/
 
 # vite
 .vite

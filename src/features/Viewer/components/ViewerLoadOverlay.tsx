@@ -33,7 +33,10 @@ export function ViewerLoadOverlay({
 
     if (isLoading) {
         return (
-            <div className="absolute inset-0 flex items-center justify-center bg-void-black/90">
+            <div
+                data-testid="viewer-loading-overlay"
+                className="absolute inset-0 flex items-center justify-center bg-void-black/90"
+            >
                 <DataLoader message={t('viewer.loading')} />
             </div>
         );
@@ -42,7 +45,10 @@ export function ViewerLoadOverlay({
     if (!error) return null;
 
     return (
-        <div className="absolute inset-0 flex items-center justify-center bg-void-black/90">
+        <div
+            data-testid="viewer-error-overlay"
+            className="absolute inset-0 flex items-center justify-center bg-void-black/90"
+        >
             <GlassPanel
                 className="mx-4 flex max-w-lg flex-col items-center gap-4 p-5 text-center"
                 role="status"
@@ -66,7 +72,12 @@ export function ViewerLoadOverlay({
                             : error.message}
                     </dd>
                 </dl>
-                <NeonButton variant="amber" onClick={onBack} className="px-4 py-2">
+                <NeonButton
+                    data-testid="viewer-error-back"
+                    variant="amber"
+                    onClick={onBack}
+                    className="px-4 py-2"
+                >
                     {t('viewer.loadError.backToMap')}
                 </NeonButton>
             </GlassPanel>

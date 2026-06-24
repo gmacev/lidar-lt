@@ -46,7 +46,7 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
     };
 
     return (
-        <div className="flex flex-col gap-3">
+        <div data-testid="viewer-control-edl" className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-white/90">{t('edl.label')}</span>
@@ -60,6 +60,8 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
                     </HelpHint>
                 </div>
                 <Switch
+                    ariaLabel={t('edl.label')}
+                    testId="viewer-edl-enabled"
                     checked={edlEnabled}
                     onChange={(checked) => {
                         setEdlEnabled(checked);
@@ -84,6 +86,7 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
                     <span className="text-laser-green">{edlStrength.toFixed(1)}</span>
                 </label>
                 <input
+                    data-testid="viewer-edl-strength"
                     type="range"
                     min="0.1"
                     max="10"
@@ -106,6 +109,7 @@ export function EDLControl({ viewerRef, initialState, updateUrl }: EDLControlPro
                     <span className="text-laser-green">{edlRadius.toFixed(1)}</span>
                 </label>
                 <input
+                    data-testid="viewer-edl-radius"
                     type="range"
                     min="0.5"
                     max="10"

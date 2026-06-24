@@ -37,7 +37,7 @@ export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleCont
     };
 
     return (
-        <div className="flex flex-col gap-1">
+        <div data-testid="viewer-control-z-scale" className="flex flex-col gap-1">
             <label className="text-xs text-white/70 flex justify-between">
                 <span className="flex items-center gap-1.5">
                     {t('pointCloud.zScale')}
@@ -51,6 +51,7 @@ export function ZScaleControl({ viewerRef, initialState, updateUrl }: ZScaleCont
                 <span className="text-laser-green">{zScale.toFixed(1)}</span>
             </label>
             <input
+                data-testid="viewer-z-scale"
                 type="range"
                 min="1.0"
                 max="10.0"

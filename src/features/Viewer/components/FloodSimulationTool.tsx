@@ -80,6 +80,7 @@ export function FloodSimulationTool({
             <ToolPopover
                 anchorRef={buttonRef}
                 isOpen={isActive}
+                testId="viewer-flood-popover"
                 width={220}
                 className="flex flex-col gap-3 rounded-lg border border-white/10 bg-glass-bg p-3"
             >
@@ -108,6 +109,7 @@ export function FloodSimulationTool({
                 {/* Slider with labels */}
                 <div className="flex flex-col gap-1">
                     <input
+                        data-testid="viewer-flood-water-level"
                         type="range"
                         min={minLevel}
                         max={maxLevel}
@@ -167,6 +169,7 @@ export function FloodSimulationTool({
             {/* Main flood button */}
             <ToolbarToolButton
                 ref={buttonRef}
+                data-testid="viewer-tool-flood"
                 onClick={isActive ? onReset : onStart}
                 isActive={isActive}
                 label={isActive ? t('flood.simulationActive') : t('flood.simulation')}

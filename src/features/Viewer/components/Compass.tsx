@@ -62,6 +62,7 @@ export function Compass({ viewerRef, onOrientNorth }: CompassProps) {
     return (
         <button
             type="button"
+            data-testid="viewer-compass"
             onClick={onOrientNorth}
             className="flex h-12 w-12 items-center justify-center border-0 bg-transparent p-0 text-white/70 transition-colors hover:text-neon-cyan"
             title={t('viewer.orientNorth')}

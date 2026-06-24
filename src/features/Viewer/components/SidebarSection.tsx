@@ -10,17 +10,24 @@ interface SidebarSectionProps {
     defaultOpen?: boolean;
     /** Section content */
     children: ReactNode;
+    testId?: string;
 }
 
 /**
  * Collapsible section component for ViewerSidebar.
  * Features smooth height transition and consistent styling.
  */
-export function SidebarSection({ title, icon, defaultOpen = true, children }: SidebarSectionProps) {
+export function SidebarSection({
+    title,
+    icon,
+    defaultOpen = true,
+    children,
+    testId,
+}: SidebarSectionProps) {
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
-        <div className="border-b border-white/10 last:border-b-0">
+        <div data-testid={testId} className="border-b border-white/10 last:border-b-0">
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}

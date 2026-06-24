@@ -36,6 +36,8 @@ export const ToolbarToolButton = forwardRef<HTMLButtonElement, ToolbarToolButton
                     ref={setButtonRef}
                     type="button"
                     aria-label={label}
+                    aria-pressed={isActive}
+                    data-active={isActive ? 'true' : 'false'}
                     className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-amber/70 ${
                         isActive
                             ? resolvedActiveClassName

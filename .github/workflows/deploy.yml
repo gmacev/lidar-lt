@@ -22,6 +22,14 @@ jobs:
             - name: Install dependencies
               run: npm ci
 
+            - name: Install Playwright browsers
+              run: npx playwright install --with-deps chromium
+
+            - name: Verify
+              run: npm run check:all
+              env:
+                  VITE_EPT_BASE_URL: ${{ secrets.VITE_EPT_BASE_URL }}
+
             - name: Build
               run: npm run build
               env:

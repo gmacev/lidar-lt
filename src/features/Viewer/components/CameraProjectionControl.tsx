@@ -47,12 +47,13 @@ export function CameraProjectionControl({
         } border rounded`;
 
     return (
-        <div className="flex flex-col gap-1">
+        <div data-testid="viewer-control-projection" className="flex flex-col gap-1">
             <span className="text-xs text-white/70">{t('pointCloud.projection')}</span>
             <div className="flex gap-1">
                 {PROJECTION_OPTIONS.map((option) => (
                     <button
                         key={option.value}
+                        data-testid={`viewer-projection-${option.value.toLowerCase()}`}
                         className={buttonClass(projection === option.value)}
                         onClick={() => handleProjectionChange(option.value)}
                     >

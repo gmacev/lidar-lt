@@ -47,12 +47,13 @@ export function PointQualityControl({
         } border rounded`;
 
     return (
-        <div className="flex flex-col gap-1">
+        <div data-testid="viewer-control-point-quality" className="flex flex-col gap-1">
             <span className="text-xs text-white/70">{t('pointCloud.pointQuality')}</span>
             <div className="flex gap-1">
                 {QUALITY_OPTIONS.map((option) => (
                     <button
                         key={option.value}
+                        data-testid={`viewer-point-quality-${option.value}`}
                         className={buttonClass(quality === option.value)}
                         onClick={() => handleQualityChange(option.value)}
                     >

@@ -16,6 +16,7 @@ export function HeightProfileMeasurement({ onClick, isActive }: HeightProfileMea
 
     return (
         <ToolbarToolButton
+            data-testid="viewer-tool-profile"
             onClick={onClick}
             isActive={isActive}
             label={t('measurement.heightProfile')}

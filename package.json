@@ -39,10 +39,14 @@
         "lint:fix": "eslint . --fix",
         "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
         "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+        "test:e2e": "playwright test --project=chromium --project=mobile-chromium",
+        "test:e2e:headed": "playwright test --project=chromium --headed",
+        "test:e2e:ui": "playwright test --ui --project=chromium --project=mobile-chromium",
+        "test:e2e:live": "playwright test --project=live-chromium",
         "type-check": "tsc -b --noEmit",
         "check:circular": "dpdm --circular --no-warning --no-tree src/main.tsx",
         "check:unused": "knip",
-        "check:all": "npm run type-check && npm run lint && npm run check:circular && npm run check:unused",
+        "check:all": "npm run type-check && npm run lint && npm run check:circular && npm run check:unused && npm run test:e2e",
         "preview": "vite preview",
         "serve": "npm run build && vite preview"
     },
@@ -65,6 +69,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.39.4",
+        "@playwright/test": "^1.61.1",
         "@rolldown/plugin-babel": "^0.2.0",
         "@tanstack/router-plugin": "^1.168.12",
         "@types/geojson": "^7946.0.16",

@@ -74,7 +74,7 @@ export function MeasurementToolbar({ className = '', tools }: MeasurementToolbar
             : undefined;
 
     return (
-        <div className={`relative ${className}`}>
+        <div data-testid="viewer-measurement-toolbar" className={`relative ${className}`}>
             <div
                 ref={scrollRef}
                 className="viewer-control-scroll h-full w-full overflow-x-visible overflow-y-auto scroll-smooth"

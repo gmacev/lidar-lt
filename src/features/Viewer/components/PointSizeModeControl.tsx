@@ -60,7 +60,7 @@ export function PointSizeModeControl({
     };
 
     return (
-        <div className="flex flex-col gap-1">
+        <div data-testid="viewer-control-point-size-mode" className="flex flex-col gap-1">
             <span className="flex items-center gap-1.5 text-xs text-white/70">
                 {translateWithFallback('pointCloud.pointSizeMode', 'Point Size Mode')}
                 <HelpHint
@@ -77,6 +77,7 @@ export function PointSizeModeControl({
                 {SIZE_MODE_OPTIONS.map((option) => (
                     <button
                         key={option.value}
+                        data-testid={`viewer-point-size-mode-${option.value}`}
                         className={buttonClass(mode === option.value)}
                         onClick={() => handleModeChange(option.value)}
                     >

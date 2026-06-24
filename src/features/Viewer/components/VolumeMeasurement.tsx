@@ -42,6 +42,7 @@ export function VolumeMeasurement({ onClick, isActive, totalVolume }: VolumeMeas
             )}
 
             <ToolbarToolButton
+                data-testid="viewer-tool-volume"
                 onClick={onClick}
                 isActive={isActive}
                 label={t('measurement.volume')}
