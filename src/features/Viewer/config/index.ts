@@ -20,4 +20,3 @@ export {
     setElevationPalette,
     setManualElevationRange,
 } from './potreeMaterialConfig';
-export { VIRIDIS_LUT, createViridisGradient } from './viridisPalette';

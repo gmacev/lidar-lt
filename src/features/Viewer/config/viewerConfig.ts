@@ -100,25 +100,25 @@ const optionalSearchNumberArray = z.preprocess((value) => {
     return parsedValues.length > 0 ? parsedValues : undefined;
 }, z.array(z.number()).optional());
 
-export const ColorModeSchema = z.preprocess(
+const ColorModeSchema = z.preprocess(
     (value) => (value === 'return-number' ? 'elevation' : value),
     z.enum(['elevation', 'intensity'])
 );
 export type ColorMode = z.infer<typeof ColorModeSchema>;
 
-export const PointShapeSchema = z.enum(['square', 'circle', 'paraboloid']);
+const PointShapeSchema = z.enum(['square', 'circle', 'paraboloid']);
 export type PointShape = z.infer<typeof PointShapeSchema>;
 
-export const PointSizeModeSchema = z.enum(['fixed', 'adaptive']);
+const PointSizeModeSchema = z.enum(['fixed', 'adaptive']);
 export type PointSizeMode = z.infer<typeof PointSizeModeSchema>;
 
-export const PointQualitySchema = z.enum(['standard', 'high']);
+const PointQualitySchema = z.enum(['standard', 'high']);
 export type PointQuality = z.infer<typeof PointQualitySchema>;
 
-export const ElevationPaletteSchema = z.enum(['custom', 'terrain', 'grayscale']);
+const ElevationPaletteSchema = z.enum(['custom', 'terrain', 'grayscale']);
 export type ElevationPalette = z.infer<typeof ElevationPaletteSchema>;
 
-export const ProjectionSchema = z.enum(['PERSPECTIVE', 'ORTHOGRAPHIC']);
+const ProjectionSchema = z.enum(['PERSPECTIVE', 'ORTHOGRAPHIC']);
 export type Projection = z.infer<typeof ProjectionSchema>;
 
 export const POINT_APPEARANCE_DEFAULTS = {
@@ -128,10 +128,8 @@ export const POINT_APPEARANCE_DEFAULTS = {
     elevationPalette: 'custom' as ElevationPalette,
 } as const;
 
-export const BackgroundSchema = z.enum(['skybox', 'gradient', 'black']);
-export type Background = z.infer<typeof BackgroundSchema>;
-export const SkyboxVariantSchema = z.enum(['1', '2']);
-export type SkyboxVariant = z.infer<typeof SkyboxVariantSchema>;
+const BackgroundSchema = z.enum(['skybox', 'gradient', 'black']);
+const SkyboxVariantSchema = z.enum(['1', '2']);
 
 export const POTREE_BACKGROUND_GRADIENT = {
     center: '#1f3440',

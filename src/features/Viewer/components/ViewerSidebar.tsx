@@ -5,7 +5,6 @@ import type { ViewerState, Projection } from '@/features/Viewer/config/viewerCon
 import { Icon } from '@/common/components';
 import { SidebarSection } from './SidebarSection';
 import { ColorModeControl } from './ColorModeControl';
-// import { BackgroundControl } from './BackgroundControl'; // Disabled - not useful
 import { ClassificationControl } from './ClassificationControl';
 import { EDLControl } from './EDLControl';
 import { ReliefControl } from './ReliefControl';
@@ -110,16 +109,6 @@ export function ViewerSidebar({
                                     initialState={initialState}
                                     updateUrl={updateUrl}
                                 />
-
-                                {/* BackgroundControl disabled - not useful, takes sidebar space
-                                <BackgroundControl
-                                    viewerRef={viewerRef}
-                                    initialState={initialState}
-                                    updateUrl={updateUrl}
-                                />
-
-                                <div className="h-px bg-white/10 my-1" />
-                                */}
 
                                 <CameraProjectionControl
                                     viewerRef={viewerRef}

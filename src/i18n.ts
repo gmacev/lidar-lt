@@ -29,5 +29,3 @@ i18n.use(LanguageDetector)
     .catch((err) => {
         console.error('i18n init error:', err);
     });
-
-export default i18n;

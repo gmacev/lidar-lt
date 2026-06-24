@@ -9,19 +9,19 @@ import { Box3, Vector3, Color, WebGLRenderer, Camera, Matrix4 } from 'three';
 // Potree Enums
 // ============================================================================
 
-export enum PointSizeType {
+enum PointSizeType {
     FIXED = 0,
     ATTENUATED = 1,
     ADAPTIVE = 2,
 }
 
-export enum PointShape {
+enum PointShape {
     SQUARE = 0,
     CIRCLE = 1,
     PARABOLOID = 2,
 }
 
-export enum CameraMode {
+enum CameraMode {
     ORTHOGRAPHIC = 0,
     PERSPECTIVE = 1,
     VR = 2,
@@ -31,7 +31,7 @@ export enum CameraMode {
 // Point Attributes
 // ============================================================================
 
-export interface PointAttribute {
+interface PointAttribute {
     name: string;
     numElements: number;
     byteSize: number;
@@ -41,7 +41,7 @@ export interface PointAttribute {
     initialRange: [number[], number[]];
 }
 
-export interface PointAttributes {
+interface PointAttributes {
     attributes: PointAttribute[];
     byteSize: number;
     size: number;
@@ -52,7 +52,7 @@ export interface PointAttributes {
 // Point Cloud Geometry (Internal Structures)
 // ============================================================================
 
-export interface PointCloudOctreeGeometry {
+interface PointCloudOctreeGeometry {
     pointAttributes: PointAttributes;
     boundingBox: Box3;
     offset: Vector3;
@@ -61,14 +61,14 @@ export interface PointCloudOctreeGeometry {
 }
 
 /** Internal Potree geometry attribute structure */
-export interface PotreeGeometryAttribute {
+interface PotreeGeometryAttribute {
     array: Float32Array | Uint8Array | Uint16Array;
     count: number;
     itemSize?: number;
 }
 
 /** Internal Potree geometry attributes container */
-export interface PotreeGeometryAttributes {
+interface PotreeGeometryAttributes {
     position?: PotreeGeometryAttribute;
     [key: string]: PotreeGeometryAttribute | undefined;
 }
@@ -79,7 +79,7 @@ export interface PotreeGeometry {
 }
 
 /** Internal Potree geometry node structure */
-export interface PotreeGeometryNode {
+interface PotreeGeometryNode {
     geometry?: PotreeGeometry;
     boundingBox?: Box3;
 }
@@ -90,7 +90,7 @@ export interface PotreeGeometryNode {
 
 export type GradientStop = [number, Color];
 
-export interface PointCloudMaterial {
+interface PointCloudMaterial {
     activeAttributeName: string;
     elevationRange: [number, number];
     intensityRange: [number, number];
@@ -184,7 +184,7 @@ export interface PotreeScene {
 // Annotations
 // ============================================================================
 
-export interface AnnotationArgs {
+interface AnnotationArgs {
     title?: string;
     description?: string;
     cameraPosition?: [number, number, number] | Vector3;
@@ -212,7 +212,7 @@ export interface Annotation {
     removeEventListener(type: string, listener: (event: { annotation: Annotation }) => void): void;
 }
 
-export interface AnnotationTool {
+interface AnnotationTool {
     startInsertion(args?: AnnotationArgs): Annotation;
     addEventListener(type: string, listener: (event: { annotation: Annotation }) => void): void;
     removeEventListener(type: string, listener: (event: { annotation: Annotation }) => void): void;
@@ -222,16 +222,16 @@ export interface AnnotationTool {
 // Controls
 // ============================================================================
 
-export interface PotreeControls {
+interface PotreeControls {
     enabled: boolean;
     addEventListener(event: string, callback: () => void): void;
 }
 
-export interface OrbitControls extends PotreeControls {
+interface OrbitControls extends PotreeControls {
     invertDrag: boolean;
 }
 
-export type EarthControls = PotreeControls;
+type EarthControls = PotreeControls;
 
 // ============================================================================
 // Viewer
@@ -296,7 +296,7 @@ export interface PotreeViewer {
 // Measurement Types
 // ============================================================================
 
-export interface MeasureInsertionOptions {
+interface MeasureInsertionOptions {
     showDistances?: boolean;
     showArea?: boolean;
     showAngles?: boolean;
@@ -310,7 +310,7 @@ export interface MeasureInsertionOptions {
     name?: string;
 }
 
-export interface MeasureEdgeLabel {
+interface MeasureEdgeLabel {
     setText(text: string): void;
 }
 
@@ -331,7 +331,7 @@ export interface Measure {
     edgeLabels?: MeasureEdgeLabel[];
 }
 
-export interface MeasuringTool {
+interface MeasuringTool {
     measurements: Measure[];
     showLabels: boolean;
     startInsertion(options?: MeasureInsertionOptions): Measure;
@@ -351,14 +351,14 @@ export interface Profile {
     removeEventListener(type: ProfileEventType, listener: (event: ProfileEvent) => void): void;
 }
 
-export type ProfileEventType =
+type ProfileEventType =
     | 'marker_added'
     | 'marker_removed'
     | 'marker_moved'
     | 'marker_dropped'
     | 'width_changed';
 
-export interface ProfileEvent {
+interface ProfileEvent {
     type: ProfileEventType;
     profile: Profile;
     index?: number;
@@ -366,7 +366,7 @@ export interface ProfileEvent {
     width?: number;
 }
 
-export interface ProfileTool {
+interface ProfileTool {
     profiles: Profile[];
     startInsertion(options?: { width?: number; name?: string }): Profile;
     addEventListener(
@@ -395,13 +395,13 @@ export interface BoxVolume {
     update(): void;
 }
 
-export interface VolumeInsertionOptions {
+interface VolumeInsertionOptions {
     type?: unknown;
     clip?: boolean;
     name?: string;
 }
 
-export interface VolumeTool {
+interface VolumeTool {
     startInsertion(options?: VolumeInsertionOptions): BoxVolume;
 }
 
@@ -413,13 +413,13 @@ export interface LoadPointCloudResult {
     pointcloud: PointCloud;
 }
 
-export type LoadPointCloudCallback = (result: LoadPointCloudResult) => void;
+type LoadPointCloudCallback = (result: LoadPointCloudResult) => void;
 
 // ============================================================================
 // Potree Global
 // ============================================================================
 
-export interface PickResult {
+interface PickResult {
     location: Vector3;
     distance: number;
     pointcloud?: PointCloud;
@@ -484,7 +484,7 @@ declare global {
 // ============================================================================
 
 /** Attribute definition from Potree metadata.json */
-export interface PotreeMetadataAttribute {
+interface PotreeMetadataAttribute {
     name: string;
     description: string;
     size: number;
@@ -499,13 +499,13 @@ export interface PotreeMetadataAttribute {
 }
 
 /** Bounding box structure from metadata.json */
-export interface PotreeMetadataBoundingBox {
+interface PotreeMetadataBoundingBox {
     min: [number, number, number];
     max: [number, number, number];
 }
 
 /** Hierarchy info from metadata.json */
-export interface PotreeMetadataHierarchy {
+interface PotreeMetadataHierarchy {
     firstChunkSize: number;
     stepSize: number;
     depth: number;
@@ -531,7 +531,7 @@ export interface PotreeMetadata {
 // Profile Request Types
 // ============================================================================
 
-export interface ProfileDataSegment {
+interface ProfileDataSegment {
     start: { x: number; y: number; z: number };
     end: { x: number; y: number; z: number };
     length: number;

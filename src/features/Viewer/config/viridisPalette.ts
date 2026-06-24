@@ -3,7 +3,7 @@
 import type { GradientStop } from '@/common/types/potree';
 import type { ElevationPalette } from '@/features/Viewer/config/viewerConfig';
 
-export const VIRIDIS_LUT: [number, number, number][] = [
+const VIRIDIS_LUT: [number, number, number][] = [
     [0.267, 0.004, 0.329],
     [0.269, 0.009, 0.335],
     [0.271, 0.014, 0.341],
@@ -277,10 +277,7 @@ function sampleViridisLut(position: number): [number, number, number] {
  * into 0..topTailStart. The remaining headroom becomes a monotonic
  * high-elevation orange-to-red tail for points above P99.
  */
-export function createViridisGradient(
-    THREE: typeof import('three'),
-    topTailStart = 1
-): GradientStop[] {
+function createViridisGradient(THREE: typeof import('three'), topTailStart = 1): GradientStop[] {
     if (topTailStart >= 0.999) {
         return VIRIDIS_LUT.map((rgb, index) => {
             const position = index / (VIRIDIS_LUT.length - 1);

@@ -59,10 +59,7 @@ interface UsePotreeResult extends PotreeState {
     recenterView: () => void;
 }
 
-export type PotreeLoadErrorCode =
-    | 'metadata-not-found'
-    | 'metadata-unavailable'
-    | 'potree-unavailable';
+type PotreeLoadErrorCode = 'metadata-not-found' | 'metadata-unavailable' | 'potree-unavailable';
 
 export interface PotreeLoadError {
     code: PotreeLoadErrorCode;

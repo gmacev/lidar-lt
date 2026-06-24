@@ -3,7 +3,7 @@
  * Uses Tailwind's breakpoint values (sm: 640px, md: 768px, lg: 1024px, xl: 1280px)
  */
 
-export const BREAKPOINTS = {
+const BREAKPOINTS = {
     sm: 640,
     md: 768,
     lg: 1024,
@@ -13,7 +13,7 @@ export const BREAKPOINTS = {
 /**
  * Check if the current window width is below a given breakpoint.
  */
-export function isBelowBreakpoint(breakpoint: keyof typeof BREAKPOINTS): boolean {
+function isBelowBreakpoint(breakpoint: keyof typeof BREAKPOINTS): boolean {
     if (typeof window === 'undefined') return false;
     return window.innerWidth < BREAKPOINTS[breakpoint];
 }
@@ -23,13 +23,6 @@ export function isBelowBreakpoint(breakpoint: keyof typeof BREAKPOINTS): boolean
  */
 export function isMobile(): boolean {
     return isBelowBreakpoint('sm');
-}
-
-/**
- * Check if we're on a small screen (< md breakpoint, 768px)
- */
-export function isSmallScreen(): boolean {
-    return isBelowBreakpoint('md');
 }
 
 /**

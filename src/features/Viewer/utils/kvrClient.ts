@@ -68,34 +68,11 @@ const NEARBY_ENVELOPE_HALF_SIZE_METERS = 100;
 const OBJECT_OUT_FIELDS = 'ObjectId,Code,Name,NameOfficial,ObjectName,Status,Address';
 const ZONE_OUT_FIELDS = `${OBJECT_OUT_FIELDS},ShapeType,Area`;
 
-export function buildKvrDetailUrl(objectId: string) {
+function buildKvrDetailUrl(objectId: string) {
     return `${KVR_DETAIL_URL}${encodeURIComponent(objectId)}`;
 }
 
-export function buildKvrPointQueryUrl(layerUrl: string, coordinate: KvrCoordinate) {
-    return buildArcGisQueryUrl({
-        layerUrl,
-        geometry: `${coordinate.x},${coordinate.y}`,
-        geometryType: 'esriGeometryPoint',
-        outFields: OBJECT_OUT_FIELDS,
-    });
-}
-
-export function buildKvrNearbyQueryUrl(layerUrl: string, coordinate: KvrCoordinate) {
-    const minX = coordinate.x - NEARBY_ENVELOPE_HALF_SIZE_METERS;
-    const minY = coordinate.y - NEARBY_ENVELOPE_HALF_SIZE_METERS;
-    const maxX = coordinate.x + NEARBY_ENVELOPE_HALF_SIZE_METERS;
-    const maxY = coordinate.y + NEARBY_ENVELOPE_HALF_SIZE_METERS;
-
-    return buildArcGisQueryUrl({
-        layerUrl,
-        geometry: `${minX},${minY},${maxX},${maxY}`,
-        geometryType: 'esriGeometryEnvelope',
-        outFields: OBJECT_OUT_FIELDS,
-    });
-}
-
-export function buildArcGisQueryUrl({
+function buildArcGisQueryUrl({
     layerUrl,
     geometry,
     geometryType,

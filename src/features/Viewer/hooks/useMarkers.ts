@@ -37,7 +37,7 @@ function createMarkerId(position: [number, number, number], index: number): stri
     return `${position.join(':')}:${index}`;
 }
 
-export function parseMarkers(value?: string): Marker[] {
+function parseMarkers(value?: string): Marker[] {
     if (!value) return [];
 
     return value

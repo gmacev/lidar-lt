@@ -4,7 +4,7 @@ import { createArrayStorage } from '@/common/utils/storage';
 /**
  * Schema for a stored annotation
  */
-export const storedAnnotationSchema = z.object({
+const storedAnnotationSchema = z.object({
     id: z.string(),
     position: z.tuple([z.number(), z.number(), z.number()]),
     title: z.string(),
