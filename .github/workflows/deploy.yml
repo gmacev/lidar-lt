@@ -47,4 +47,5 @@ jobs:
                   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
             - name: Show production URL
-              run: echo "Production URL: https://lidar-lt.pages.dev"
+              run: |
+                  echo "Production URL: https://lidar-lt.pages.dev"
