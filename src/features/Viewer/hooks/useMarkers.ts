@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
+import { flushSync } from 'react-dom';
 import { Vector3 } from 'three';
 import type { Camera } from 'three';
 import type { PotreeViewer } from '@/common/types/potree';
@@ -27,6 +28,7 @@ const MIN_MARKER_SIZE = 18;
 const MAX_MARKER_SIZE = 42;
 const CENTER_PICK_DELAY_FRAMES = 2;
 const CENTER_PICK_MAX_FRAMES = 300;
+const MARKER_SCREEN_EPSILON = 0.25;
 const centerPickRequestIds = new WeakMap<PotreeViewer, number>();
 
 function roundCoordinate(value: number): number {
@@ -98,6 +100,8 @@ function getMarkerSize(camera: Camera, position: [number, number, number]) {
 function projectMarker(marker: Marker, viewer: PotreeViewer): ScreenMarker {
     const camera = viewer.scene.getActiveCamera();
     const rect = viewer.renderer.domElement.getBoundingClientRect();
+    camera.updateMatrixWorld();
+    camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
     const projected = new Vector3(...marker.position).project(camera);
     const visible =
         projected.z >= -1 &&
@@ -116,6 +120,23 @@ function projectMarker(marker: Marker, viewer: PotreeViewer): ScreenMarker {
     };
 }
 
+function areScreenMarkersEqual(current: ScreenMarker[], next: ScreenMarker[]) {
+    if (current.length !== next.length) return false;
+
+    return current.every((currentMarker, index) => {
+        const nextMarker = next[index];
+        if (!nextMarker) return false;
+
+        return (
+            currentMarker.id === nextMarker.id &&
+            currentMarker.visible === nextMarker.visible &&
+            currentMarker.size === nextMarker.size &&
+            Math.abs(currentMarker.screenX - nextMarker.screenX) < MARKER_SCREEN_EPSILON &&
+            Math.abs(currentMarker.screenY - nextMarker.screenY) < MARKER_SCREEN_EPSILON
+        );
+    });
+}
+
 export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarkersOptions) {
     const [markers, setMarkers] = useState<Marker[]>(() => parseMarkers(markerParam));
     const [screenMarkers, setScreenMarkers] = useState<ScreenMarker[]>([]);
@@ -123,6 +144,7 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
     const screenMarkersRef = useRef(screenMarkers);
     const lastMarkerParamRef = useRef(markerParam);
     const onSearchChangeRef = useRef(onSearchChange);
+    const requestScreenMarkerUpdateRef = useRef(() => {});
 
     useEffect(() => {
         markersRef.current = markers;
@@ -139,15 +161,20 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
     useEffect(() => {
         if (markerParam === lastMarkerParamRef.current) return;
 
+        const nextMarkers = parseMarkers(markerParam);
         lastMarkerParamRef.current = markerParam;
-        setMarkers(parseMarkers(markerParam));
+        markersRef.current = nextMarkers;
+        setMarkers(nextMarkers);
+        requestScreenMarkerUpdateRef.current();
     }, [markerParam]);
 
     const commitMarkers = (nextMarkers: Marker[]) => {
         const serialized = serializeMarkers(nextMarkers);
         lastMarkerParamRef.current = serialized;
+        markersRef.current = nextMarkers;
         setMarkers(nextMarkers);
         onSearchChangeRef.current({ mk: serialized });
+        requestScreenMarkerUpdateRef.current();
     };
 
     const deleteMarker = (id: string) => {
@@ -256,24 +283,78 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
 
     useEffect(() => {
         let frameId = 0;
+        let viewer: PotreeViewer | null = null;
+        let resizeObserver: ResizeObserver | null = null;
 
-        const updateScreenMarkers = () => {
-            const viewer = viewerRef.current;
-            if (!viewer || markersRef.current.length === 0) {
-                if (screenMarkersRef.current.length > 0) {
-                    setScreenMarkers([]);
-                }
+        const applyScreenMarkers = (nextMarkers: ScreenMarker[], syncWithRender: boolean) => {
+            if (areScreenMarkersEqual(screenMarkersRef.current, nextMarkers)) return;
+
+            screenMarkersRef.current = nextMarkers;
+            if (syncWithRender) {
+                flushSync(() => setScreenMarkers(nextMarkers));
             } else {
-                setScreenMarkers(markersRef.current.map((marker) => projectMarker(marker, viewer)));
+                setScreenMarkers(nextMarkers);
             }
-
-            frameId = requestAnimationFrame(updateScreenMarkers);
         };
 
-        frameId = requestAnimationFrame(updateScreenMarkers);
+        const updateScreenMarkers = (syncWithRender = false) => {
+            const activeViewer = viewerRef.current;
+            if (!activeViewer || markersRef.current.length === 0) {
+                applyScreenMarkers([], syncWithRender);
+                return;
+            }
+
+            applyScreenMarkers(
+                markersRef.current.map((marker) => projectMarker(marker, activeViewer)),
+                syncWithRender
+            );
+        };
+
+        requestScreenMarkerUpdateRef.current = () => updateScreenMarkers();
+
+        const handleRenderPassEnd = () => updateScreenMarkers(true);
+        const handleCameraChanged = () => updateScreenMarkers(true);
+
+        const detachViewer = () => {
+            if (!viewer) return;
+
+            viewer.removeEventListener('render.pass.end', handleRenderPassEnd);
+            viewer.removeEventListener('camera_changed', handleCameraChanged);
+            resizeObserver?.disconnect();
+            resizeObserver = null;
+            viewer = null;
+        };
+
+        const attachViewer = (nextViewer: PotreeViewer | null) => {
+            if (viewer === nextViewer) return;
+
+            detachViewer();
+            viewer = nextViewer;
+
+            if (!viewer) {
+                updateScreenMarkers();
+                return;
+            }
+
+            viewer.addEventListener('render.pass.end', handleRenderPassEnd);
+            viewer.addEventListener('camera_changed', handleCameraChanged);
+
+            resizeObserver = new ResizeObserver(() => updateScreenMarkers());
+            resizeObserver.observe(viewer.renderer.domElement);
+            updateScreenMarkers();
+        };
+
+        const syncViewer = () => {
+            attachViewer(viewerRef.current);
+            frameId = requestAnimationFrame(syncViewer);
+        };
+
+        syncViewer();
 
         return () => {
             cancelAnimationFrame(frameId);
+            requestScreenMarkerUpdateRef.current = () => {};
+            detachViewer();
         };
     }, [viewerRef]);
 
