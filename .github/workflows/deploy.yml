@@ -11,10 +11,10 @@ jobs:
             contents: read
             deployments: write
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
             - name: Setup Node.js
-              uses: actions/setup-node@v4
+              uses: actions/setup-node@v6
               with:
                   node-version: '24'
                   cache: 'npm'
@@ -37,8 +37,7 @@ jobs:
                   SITE_URL: ${{ secrets.SITE_URL }}
 
             - name: Deploy to Cloudflare Pages
-              uses: cloudflare/wrangler-action@v3
-              with:
-                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                  command: pages deploy dist --project-name=lidar-lt
+              run: npx --yes wrangler@4 pages deploy dist --project-name=lidar-lt
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
