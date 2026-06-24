@@ -40,9 +40,11 @@ jobs:
               run: |
                   npx --yes wrangler@4 pages deploy dist \
                     --project-name=lidar-lt \
-                    --branch="${GITHUB_REF_NAME}" \
+                    --branch=main \
                     --commit-hash="${GITHUB_SHA}"
-                  echo "Production URL: https://lidar-lt.pages.dev"
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+            - name: Show production URL
+              run: echo "Production URL: https://lidar-lt.pages.dev"
