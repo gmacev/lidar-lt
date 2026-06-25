@@ -58609,7 +58609,7 @@ void main() {
 		#endif
 		
 		#if defined(use_edl)
-			gl_FragColor.a = log2(linearDepth);
+			gl_FragColor.a = vLogDepth;
 		#endif
 		
 	#else
