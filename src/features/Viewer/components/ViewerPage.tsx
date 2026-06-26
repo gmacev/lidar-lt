@@ -74,7 +74,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 onBack={onBack}
             />
 
-            {!isLoading && !error && (
+            {uiVisible && !isLoading && !error && (
                 <ViewerCornerInfo
                     manifestUrl={sourceManifestUrl}
                     viewerRef={viewerRef}
