@@ -12,7 +12,7 @@ import {
 import { isMobile } from '@/common/utils/screenSize';
 import { MarkerOverlay } from './MarkerOverlay';
 import { MeasurementContextMenus } from './MeasurementContextMenus';
-import { SourceAttribution } from './SourceAttribution';
+import { ViewerCornerInfo } from './ViewerCornerInfo';
 import { ViewerHud } from './ViewerHud';
 import { ViewerLoadOverlay } from './ViewerLoadOverlay';
 import { ViewerProfilePanel } from './ViewerProfilePanel';
@@ -75,8 +75,9 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             />
 
             {!isLoading && !error && (
-                <SourceAttribution
+                <ViewerCornerInfo
                     manifestUrl={sourceManifestUrl}
+                    viewerRef={viewerRef}
                     className="absolute bottom-0 right-0 z-10"
                     onVisibleChange={setIsSourceAttributionVisible}
                 />

@@ -284,6 +284,10 @@
         "label": "LiDAR šaltinis: {{dateRange}}",
         "provider": "GeoPortal.lt"
     },
+    "viewerMapStatus": {
+        "copyCoordinates": "Kopijuoti LKS94 ir WGS84 koordinates",
+        "coordinatesCopied": "Koordinatės nukopijuotos"
+    },
     "language": {
         "lt": "LT",
         "en": "EN"

@@ -284,6 +284,10 @@
         "label": "LiDAR source: {{dateRange}}",
         "provider": "GeoPortal.lt"
     },
+    "viewerMapStatus": {
+        "copyCoordinates": "Copy LKS94 and WGS84 coordinates",
+        "coordinatesCopied": "Coordinates copied"
+    },
     "language": {
         "lt": "LT",
         "en": "EN"

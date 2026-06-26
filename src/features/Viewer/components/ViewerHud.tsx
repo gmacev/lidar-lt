@@ -76,7 +76,9 @@ export function ViewerHud({
                                     ? profile.isPanelCollapsed
                                         ? 'bottom-[3.25rem]'
                                         : 'bottom-[calc(clamp(240px,34dvh,360px)+0.5rem)]'
-                                    : 'bottom-2 xl:bottom-4'
+                                    : isSourceAttributionVisible
+                                      ? 'bottom-7 xl:bottom-4'
+                                      : 'bottom-2 xl:bottom-4'
                             }`}
                         >
                             <CoordinateSearchControl
