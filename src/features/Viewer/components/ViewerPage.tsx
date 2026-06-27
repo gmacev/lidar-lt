@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePotree } from '@/features/Viewer/hooks';
+import { useKeyboardCameraNavigation, usePotree } from '@/features/Viewer/hooks';
 import { useViewerDataOriginPreconnect } from '@/features/Viewer/hooks/useViewerDataOriginPreconnect';
 import { useViewerUrlState } from '@/features/Viewer/hooks/useViewerUrlState';
 import { useViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNavigationActions';
@@ -32,10 +32,23 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const urlState = useViewerUrlState({ cellId, initialState });
     useViewerDataOriginPreconnect();
 
-    const { containerRef, viewerRef, orientNorth, recenterView, isLoading, error } = usePotree({
+    const {
+        containerRef,
+        viewerRef,
+        markCameraInteraction,
+        orientNorth,
+        recenterView,
+        isLoading,
+        error,
+    } = usePotree({
         dataUrl,
         initialState,
         updateUrl: urlState.updateUrlDebounced,
+    });
+    useKeyboardCameraNavigation({
+        viewerRef,
+        enabled: !isLoading && !error,
+        onInteraction: markCameraInteraction,
     });
     const navigation = useViewerNavigationActions({
         cellId,

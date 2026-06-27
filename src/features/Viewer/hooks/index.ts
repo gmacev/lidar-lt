@@ -1,4 +1,5 @@
 export { usePotree } from './usePotree';
+export { useKeyboardCameraNavigation } from './useKeyboardCameraNavigation';
 export { useDistanceMeasurementTool } from './useDistanceMeasurementTool';
 export { useAreaMeasurementTool } from './useAreaMeasurementTool';
 export { useAngleMeasurementTool } from './useAngleMeasurementTool';

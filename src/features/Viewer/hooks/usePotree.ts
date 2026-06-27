@@ -55,6 +55,7 @@ interface PotreeState {
 interface UsePotreeResult extends PotreeState {
     containerRef: RefObject<HTMLDivElement | null>;
     viewerRef: RefObject<PotreeViewer | null>;
+    markCameraInteraction: () => void;
     orientNorth: () => void;
     recenterView: () => void;
 }
@@ -273,6 +274,10 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
     // during initial fitToScreen animation which causes the 45-degree rotation bug
     const userHasInteractedRef = useRef(false);
 
+    const markCameraInteraction = () => {
+        userHasInteractedRef.current = true;
+    };
+
     // Update refs when props change
     useEffect(() => {
         updateUrlRef.current = updateUrl;
@@ -408,10 +413,6 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
 
         // Track user interaction - any mouse/wheel/touch event enables camera syncing
         // This prevents syncing during initial fitToScreen animation
-        const markUserInteracted = () => {
-            userHasInteractedRef.current = true;
-        };
-
         void (async () => {
             const metadataError = await validateMetadataUrl(dataUrl, abortController.signal);
             if (disposed) return;
@@ -459,9 +460,9 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             // Load point cloud
             loadPointCloud(PotreeLib, viewer, dataUrl, () => disposed);
 
-            container.addEventListener('mousedown', markUserInteracted);
-            container.addEventListener('wheel', markUserInteracted);
-            container.addEventListener('touchstart', markUserInteracted);
+            container.addEventListener('mousedown', markCameraInteraction);
+            container.addEventListener('wheel', markCameraInteraction);
+            container.addEventListener('touchstart', markCameraInteraction);
             listenersAttached = true;
             intervalId = setInterval(syncCamera, 200);
         })();
@@ -473,9 +474,9 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
                 clearInterval(intervalId);
             }
             if (listenersAttached) {
-                container.removeEventListener('mousedown', markUserInteracted);
-                container.removeEventListener('wheel', markUserInteracted);
-                container.removeEventListener('touchstart', markUserInteracted);
+                container.removeEventListener('mousedown', markCameraInteraction);
+                container.removeEventListener('wheel', markCameraInteraction);
+                container.removeEventListener('touchstart', markCameraInteraction);
             }
             if (viewer) {
                 disposeViewer(viewer, PotreeLib, container);
@@ -510,5 +511,12 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
     }, [initialState.bg, initialState.sb]);
 
     // Expose viewer for external controls
-    return { containerRef, viewerRef, orientNorth, recenterView, ...state };
+    return {
+        containerRef,
+        viewerRef,
+        markCameraInteraction,
+        orientNorth,
+        recenterView,
+        ...state,
+    };
 }
