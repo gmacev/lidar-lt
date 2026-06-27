@@ -65900,14 +65900,14 @@ void main() {
 		uniforms.reliefPerspective.value = camera.isPerspectiveCamera ? 1.0 : 0.0;
 	}
 
-	function getEDLSlopeCompensation(camera) {
+	function getEDLSlopeCompensation(camera, strength = 1.0) {
 		// Preserve classic EDL near top-down, then remove linear screen-depth ramps as
 		// the view becomes oblique. This avoids requiring point-cloud normals.
 		const verticalAlignment = Math.min(1, Math.max(0, Math.abs(camera.matrixWorld.elements[10])));
 		const angleFromVertical = Math.acos(verticalAlignment) * 180 / Math.PI;
 		const t = Math.min(1, Math.max(0, angleFromVertical / 75));
-		const smooth = t * t * (3 - 2 * t);
-		return 0.35 * t + 0.65 * smooth;
+		const strengthExponent = 2 + Math.min(2, Math.max(0, (strength - 1) * 0.35));
+		return 1 - Math.pow(1 - t, strengthExponent);
 	}
 
 	class EyeDomeLightingMaterial extends RawShaderMaterial {
@@ -71541,7 +71541,10 @@ void main() {
 
 				uniforms.edlStrength.value = viewer.useEDL ? viewer.edlStrength : 0.0;
 				uniforms.radius.value = viewer.edlRadius;
-				uniforms.edlSlopeCompensation.value = getEDLSlopeCompensation(camera);
+				uniforms.edlSlopeCompensation.value = getEDLSlopeCompensation(
+					camera,
+					viewer.useEDL ? viewer.edlStrength : 1.0
+				);
 				uniforms.reliefEnabled.value = viewer.useRelief ? 1.0 : 0.0;
 				uniforms.reliefStrength.value = viewer.reliefStrength;
 				uniforms.reliefRadius.value = viewer.reliefRadius;
@@ -71855,7 +71858,10 @@ void main() {
 				if (this.useEDL) {
 					normalizationMaterial.uniforms.edlStrength.value = viewer.useEDL ? viewer.edlStrength : 0.0;
 					normalizationMaterial.uniforms.radius.value = viewer.edlRadius;
-					normalizationMaterial.uniforms.edlSlopeCompensation.value = getEDLSlopeCompensation(camera);
+					normalizationMaterial.uniforms.edlSlopeCompensation.value = getEDLSlopeCompensation(
+						camera,
+						viewer.useEDL ? viewer.edlStrength : 1.0
+					);
 					normalizationMaterial.uniforms.reliefEnabled.value = viewer.useRelief ? 1.0 : 0.0;
 					normalizationMaterial.uniforms.reliefStrength.value = viewer.reliefStrength;
 					normalizationMaterial.uniforms.reliefRadius.value = viewer.reliefRadius;
