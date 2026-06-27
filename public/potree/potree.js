@@ -58864,41 +58864,90 @@ uniform float screenHeight;
 uniform vec2 neighbours[NEIGHBOUR_COUNT];
 uniform float edlStrength;
 uniform float radius;
+uniform float edlSlopeCompensation;
 uniform float reliefStrength;
 uniform float reliefRadius;
 uniform float reliefEnabled;
 uniform vec2 reliefLightDirection;
+uniform vec3 reliefViewUp;
+uniform vec2 reliefProjectionScale;
+uniform float reliefPerspective;
 
 varying vec2 vUv;
 
-float response(float depth){
-	vec2 uvRadius = radius / vec2(screenWidth, screenHeight);
+float response(float depth, float radiusScale, float slopeCompensation, float boundaryWeight){
+	vec2 uvRadius = (radius * radiusScale) / vec2(screenWidth, screenHeight);
 	
 	float sum = 0.0;
 	
-	for(int i = 0; i < NEIGHBOUR_COUNT; i++){
-		vec2 uvNeighbor = vUv + uvRadius * neighbours[i];
-		
-		float neighbourDepth = texture2D(uEDLMap, uvNeighbor).a;
+	for(int i = 0; i < NEIGHBOUR_COUNT / 2; i++){
+		float depthA = texture2D(uEDLMap, vUv + uvRadius * neighbours[i]).a;
+		float depthB = texture2D(
+			uEDLMap,
+			vUv + uvRadius * neighbours[i + NEIGHBOUR_COUNT / 2]
+		).a;
+		bool validA = depthA != 0.0;
+		bool validB = depthB != 0.0;
+		float originalResponse = 0.0;
+		float compensatedResponse = 0.0;
 
-		if(neighbourDepth != 0.0){
-			if(depth == 0.0){
-				sum += 100.0;
-			}else{
-				sum += max(0.0, depth - neighbourDepth);
-			}
+		if(depth == 0.0){
+			originalResponse = (validA ? 100.0 : 0.0) + (validB ? 100.0 : 0.0);
+			compensatedResponse = originalResponse;
+		}else if(validA && validB){
+			originalResponse = max(0.0, depth - depthA) + max(0.0, depth - depthB);
+			float nearDifference = max(depth - depthA, depth - depthB);
+			float linearSlope = 0.5 * abs(depthA - depthB);
+			compensatedResponse = 2.0 * max(0.0, nearDifference - linearSlope);
+		}else if(validA){
+			originalResponse = max(0.0, depth - depthA);
+			compensatedResponse = originalResponse;
+		}else if(validB){
+			originalResponse = max(0.0, depth - depthB);
+			compensatedResponse = originalResponse;
 		}
+		if(depth == 0.0 || validA != validB){
+			originalResponse *= boundaryWeight;
+			compensatedResponse *= boundaryWeight;
+		}
+
+		sum += mix(originalResponse, compensatedResponse, slopeCompensation);
 	}
 	
 	return sum / float(NEIGHBOUR_COUNT);
 }
 
-float reliefShade(float depth){
-	if(depth == 0.0){
-		return 1.0;
+float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale){
+	vec2 uvOffset = reliefRadius * radiusScale * direction / vec2(screenWidth, screenHeight);
+	vec2 centerNdc = vUv * 2.0 - 1.0;
+	vec2 neighborNdc = (vUv + uvOffset) * 2.0 - 1.0;
+	float linearDepth = exp2(centerDepth);
+
+	if(reliefPerspective > 0.5){
+		vec3 centerRay = vec3(centerNdc / reliefProjectionScale, -1.0);
+		vec3 neighborRay = vec3(neighborNdc / reliefProjectionScale, -1.0);
+		float centerDenominator = dot(reliefViewUp, centerRay);
+		float neighborDenominator = dot(reliefViewUp, neighborRay);
+
+		if(abs(centerDenominator) < 0.0001 || abs(neighborDenominator) < 0.0001){
+			return centerDepth;
+		}
+
+		float depthRatio = centerDenominator / neighborDenominator;
+		return depthRatio > 0.0 ? centerDepth + log2(depthRatio) : centerDepth;
 	}
 
-	vec2 uvRadius = reliefRadius / vec2(screenWidth, screenHeight);
+	if(abs(reliefViewUp.z) < 0.0001){
+		return centerDepth;
+	}
+
+	vec2 viewOffset = (neighborNdc - centerNdc) / reliefProjectionScale;
+	float neighborDepth = linearDepth + dot(reliefViewUp.xy, viewOffset) / reliefViewUp.z;
+	return neighborDepth > 0.0 ? log2(neighborDepth) : centerDepth;
+}
+
+vec2 reliefGradient(float depth, float radiusScale){
+	vec2 uvRadius = reliefRadius * radiusScale / vec2(screenWidth, screenHeight);
 	float tl = texture2D(uEDLMap, vUv + uvRadius * vec2(-1.0, 1.0)).a;
 	float t = texture2D(uEDLMap, vUv + uvRadius * vec2(0.0, 1.0)).a;
 	float tr = texture2D(uEDLMap, vUv + uvRadius * vec2(1.0, 1.0)).a;
@@ -58907,20 +58956,56 @@ float reliefShade(float depth){
 	float bl = texture2D(uEDLMap, vUv + uvRadius * vec2(-1.0, -1.0)).a;
 	float b = texture2D(uEDLMap, vUv + uvRadius * vec2(0.0, -1.0)).a;
 	float br = texture2D(uEDLMap, vUv + uvRadius * vec2(1.0, -1.0)).a;
+	bool validTl = tl != 0.0;
+	bool validT = t != 0.0;
+	bool validTr = tr != 0.0;
+	bool validL = l != 0.0;
+	bool validR = r != 0.0;
+	bool validBl = bl != 0.0;
+	bool validB = b != 0.0;
+	bool validBr = br != 0.0;
 
-	tl = (tl == 0.0) ? depth : tl;
-	t = (t == 0.0) ? depth : t;
-	tr = (tr == 0.0) ? depth : tr;
-	l = (l == 0.0) ? depth : l;
-	r = (r == 0.0) ? depth : r;
-	bl = (bl == 0.0) ? depth : bl;
-	b = (b == 0.0) ? depth : b;
-	br = (br == 0.0) ? depth : br;
+	tl = validTl ? tl : depth;
+	t = validT ? t : depth;
+	tr = validTr ? tr : depth;
+	l = validL ? l : depth;
+	r = validR ? r : depth;
+	bl = validBl ? bl : depth;
+	b = validB ? b : depth;
+	br = validBr ? br : depth;
 
 	vec2 gradient = vec2(
 		(tr + 2.0 * r + br) - (tl + 2.0 * l + bl),
 		(tl + 2.0 * t + tr) - (bl + 2.0 * b + br)
 	);
+	float referenceTl = validTl ? horizontalPlaneDepth(depth, vec2(-1.0, 1.0), radiusScale) : depth;
+	float referenceT = validT ? horizontalPlaneDepth(depth, vec2(0.0, 1.0), radiusScale) : depth;
+	float referenceTr = validTr ? horizontalPlaneDepth(depth, vec2(1.0, 1.0), radiusScale) : depth;
+	float referenceL = validL ? horizontalPlaneDepth(depth, vec2(-1.0, 0.0), radiusScale) : depth;
+	float referenceR = validR ? horizontalPlaneDepth(depth, vec2(1.0, 0.0), radiusScale) : depth;
+	float referenceBl = validBl ? horizontalPlaneDepth(depth, vec2(-1.0, -1.0), radiusScale) : depth;
+	float referenceB = validB ? horizontalPlaneDepth(depth, vec2(0.0, -1.0), radiusScale) : depth;
+	float referenceBr = validBr ? horizontalPlaneDepth(depth, vec2(1.0, -1.0), radiusScale) : depth;
+	vec2 referenceGradient = vec2(
+		(referenceTr + 2.0 * referenceR + referenceBr) - (referenceTl + 2.0 * referenceL + referenceBl),
+		(referenceTl + 2.0 * referenceT + referenceTr) - (referenceBl + 2.0 * referenceB + referenceBr)
+	);
+	return (gradient - referenceGradient) / radiusScale;
+}
+
+float reliefShade(float depth){
+	if(depth == 0.0){
+		return 1.0;
+	}
+
+	vec2 fineGradient = reliefGradient(depth, 1.0);
+	vec2 gradient = fineGradient;
+	if(edlSlopeCompensation > 0.0){
+		vec2 midGradient = reliefGradient(depth, 1.5);
+		vec2 coarseGradient = reliefGradient(depth, 2.0);
+		vec2 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
+		gradient = mix(fineGradient, smoothGradient, 0.65 * edlSlopeCompensation);
+	}
 	float amount = dot(gradient, normalize(reliefLightDirection)) * 220.0 * reliefStrength;
 	float highlight = smoothstep(0.0, 1.0, max(amount, 0.0));
 	float shadow = smoothstep(0.0, 1.0, max(-amount, 0.0));
@@ -58931,8 +59016,24 @@ float reliefShade(float depth){
 void main() {
 
 	float edlDepth = texture2D(uEDLMap, vUv).a;
-	float res = response(edlDepth);
-	float shade = exp(-res * 300.0 * edlStrength);
+	float fineResponse = response(edlDepth, 1.0, edlSlopeCompensation, 1.0);
+	float res = fineResponse;
+	if(edlSlopeCompensation > 0.0){
+		// Curvature grows with radius squared, while isolated depth jumps do not.
+		// Normalize two wider rings by radius squared so coherent broad relief is
+		// retained without turning sparse distant samples into dark patches.
+		float midResponse = response(edlDepth, 1.75, 1.0, 0.0) / 3.0625;
+		float coarseResponse = response(edlDepth, 2.75, 1.0, 0.0) / 7.5625;
+		// A distant ring crossing an object boundary creates a response at only
+		// one scale. Coherent relief remains present across all three scales.
+		float broadResponse = min(midResponse, coarseResponse);
+		broadResponse = min(broadResponse, 2.0 * fineResponse);
+		float tiltedResponse = 0.3 * fineResponse + 1.15 * broadResponse;
+		res = mix(fineResponse, tiltedResponse, edlSlopeCompensation);
+	}
+	float minimumShade = 0.15 * edlSlopeCompensation;
+	float effectiveStrength = edlStrength;
+	float shade = minimumShade + (1.0 - minimumShade) * exp(-res * 300.0 * effectiveStrength);
 	float relief = 1.0;
 	if(reliefEnabled > 0.5){
 		relief = reliefShade(edlDepth);
@@ -58947,7 +59048,7 @@ void main() {
 	color = color / color.w;
 	color = color * shade * relief;
 
-	gl_FragColor = vec4(color.xyz, 1.0); 
+	gl_FragColor = vec4(color.xyz, 1.0);
 
 	gl_FragDepthEXT = depth;
 }`;
@@ -58988,10 +59089,14 @@ uniform float screenHeight;
 uniform vec2 neighbours[NEIGHBOUR_COUNT];
 uniform float edlStrength;
 uniform float radius;
+uniform float edlSlopeCompensation;
 uniform float reliefStrength;
 uniform float reliefRadius;
 uniform float reliefEnabled;
 uniform vec2 reliefLightDirection;
+uniform vec3 reliefViewUp;
+uniform vec2 reliefProjectionScale;
+uniform float reliefPerspective;
 uniform float opacity;
 
 uniform float uNear;
@@ -59004,35 +59109,81 @@ uniform sampler2D uEDLDepth;
 
 varying vec2 vUv;
 
-float response(float depth){
-	vec2 uvRadius = radius / vec2(screenWidth, screenHeight);
+float response(float depth, float radiusScale, float slopeCompensation, float boundaryWeight){
+	vec2 uvRadius = (radius * radiusScale) / vec2(screenWidth, screenHeight);
 	
 	float sum = 0.0;
 	
-	for(int i = 0; i < NEIGHBOUR_COUNT; i++){
-		vec2 uvNeighbor = vUv + uvRadius * neighbours[i];
-		
-		float neighbourDepth = texture2D(uEDLColor, uvNeighbor).a;
-		neighbourDepth = (neighbourDepth == 1.0) ? 0.0 : neighbourDepth;
+	for(int i = 0; i < NEIGHBOUR_COUNT / 2; i++){
+		float depthA = texture2D(uEDLColor, vUv + uvRadius * neighbours[i]).a;
+		float depthB = texture2D(
+			uEDLColor,
+			vUv + uvRadius * neighbours[i + NEIGHBOUR_COUNT / 2]
+		).a;
+		depthA = (depthA == 1.0) ? 0.0 : depthA;
+		depthB = (depthB == 1.0) ? 0.0 : depthB;
+		bool validA = depthA != 0.0;
+		bool validB = depthB != 0.0;
+		float originalResponse = 0.0;
+		float compensatedResponse = 0.0;
 
-		if(neighbourDepth != 0.0){
-			if(depth == 0.0){
-				sum += 100.0;
-			}else{
-				sum += max(0.0, depth - neighbourDepth);
-			}
+		if(depth == 0.0){
+			originalResponse = (validA ? 100.0 : 0.0) + (validB ? 100.0 : 0.0);
+			compensatedResponse = originalResponse;
+		}else if(validA && validB){
+			originalResponse = max(0.0, depth - depthA) + max(0.0, depth - depthB);
+			float nearDifference = max(depth - depthA, depth - depthB);
+			float linearSlope = 0.5 * abs(depthA - depthB);
+			compensatedResponse = 2.0 * max(0.0, nearDifference - linearSlope);
+		}else if(validA){
+			originalResponse = max(0.0, depth - depthA);
+			compensatedResponse = originalResponse;
+		}else if(validB){
+			originalResponse = max(0.0, depth - depthB);
+			compensatedResponse = originalResponse;
 		}
+		if(depth == 0.0 || validA != validB){
+			originalResponse *= boundaryWeight;
+			compensatedResponse *= boundaryWeight;
+		}
+
+		sum += mix(originalResponse, compensatedResponse, slopeCompensation);
 	}
 	
 	return sum / float(NEIGHBOUR_COUNT);
 }
 
-float reliefShade(float depth){
-	if(depth == 0.0){
-		return 1.0;
+float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale){
+	vec2 uvOffset = reliefRadius * radiusScale * direction / vec2(screenWidth, screenHeight);
+	vec2 centerNdc = vUv * 2.0 - 1.0;
+	vec2 neighborNdc = (vUv + uvOffset) * 2.0 - 1.0;
+	float linearDepth = exp2(centerDepth);
+
+	if(reliefPerspective > 0.5){
+		vec3 centerRay = vec3(centerNdc / reliefProjectionScale, -1.0);
+		vec3 neighborRay = vec3(neighborNdc / reliefProjectionScale, -1.0);
+		float centerDenominator = dot(reliefViewUp, centerRay);
+		float neighborDenominator = dot(reliefViewUp, neighborRay);
+
+		if(abs(centerDenominator) < 0.0001 || abs(neighborDenominator) < 0.0001){
+			return centerDepth;
+		}
+
+		float depthRatio = centerDenominator / neighborDenominator;
+		return depthRatio > 0.0 ? centerDepth + log2(depthRatio) : centerDepth;
 	}
 
-	vec2 uvRadius = reliefRadius / vec2(screenWidth, screenHeight);
+	if(abs(reliefViewUp.z) < 0.0001){
+		return centerDepth;
+	}
+
+	vec2 viewOffset = (neighborNdc - centerNdc) / reliefProjectionScale;
+	float neighborDepth = linearDepth + dot(reliefViewUp.xy, viewOffset) / reliefViewUp.z;
+	return neighborDepth > 0.0 ? log2(neighborDepth) : centerDepth;
+}
+
+vec2 reliefGradient(float depth, float radiusScale){
+	vec2 uvRadius = reliefRadius * radiusScale / vec2(screenWidth, screenHeight);
 	float tl = texture2D(uEDLColor, vUv + uvRadius * vec2(-1.0, 1.0)).a;
 	float t = texture2D(uEDLColor, vUv + uvRadius * vec2(0.0, 1.0)).a;
 	float tr = texture2D(uEDLColor, vUv + uvRadius * vec2(1.0, 1.0)).a;
@@ -59050,20 +59201,56 @@ float reliefShade(float depth){
 	bl = (bl == 1.0) ? 0.0 : bl;
 	b = (b == 1.0) ? 0.0 : b;
 	br = (br == 1.0) ? 0.0 : br;
+	bool validTl = tl != 0.0;
+	bool validT = t != 0.0;
+	bool validTr = tr != 0.0;
+	bool validL = l != 0.0;
+	bool validR = r != 0.0;
+	bool validBl = bl != 0.0;
+	bool validB = b != 0.0;
+	bool validBr = br != 0.0;
 
-	tl = (tl == 0.0) ? depth : tl;
-	t = (t == 0.0) ? depth : t;
-	tr = (tr == 0.0) ? depth : tr;
-	l = (l == 0.0) ? depth : l;
-	r = (r == 0.0) ? depth : r;
-	bl = (bl == 0.0) ? depth : bl;
-	b = (b == 0.0) ? depth : b;
-	br = (br == 0.0) ? depth : br;
+	tl = validTl ? tl : depth;
+	t = validT ? t : depth;
+	tr = validTr ? tr : depth;
+	l = validL ? l : depth;
+	r = validR ? r : depth;
+	bl = validBl ? bl : depth;
+	b = validB ? b : depth;
+	br = validBr ? br : depth;
 
 	vec2 gradient = vec2(
 		(tr + 2.0 * r + br) - (tl + 2.0 * l + bl),
 		(tl + 2.0 * t + tr) - (bl + 2.0 * b + br)
 	);
+	float referenceTl = validTl ? horizontalPlaneDepth(depth, vec2(-1.0, 1.0), radiusScale) : depth;
+	float referenceT = validT ? horizontalPlaneDepth(depth, vec2(0.0, 1.0), radiusScale) : depth;
+	float referenceTr = validTr ? horizontalPlaneDepth(depth, vec2(1.0, 1.0), radiusScale) : depth;
+	float referenceL = validL ? horizontalPlaneDepth(depth, vec2(-1.0, 0.0), radiusScale) : depth;
+	float referenceR = validR ? horizontalPlaneDepth(depth, vec2(1.0, 0.0), radiusScale) : depth;
+	float referenceBl = validBl ? horizontalPlaneDepth(depth, vec2(-1.0, -1.0), radiusScale) : depth;
+	float referenceB = validB ? horizontalPlaneDepth(depth, vec2(0.0, -1.0), radiusScale) : depth;
+	float referenceBr = validBr ? horizontalPlaneDepth(depth, vec2(1.0, -1.0), radiusScale) : depth;
+	vec2 referenceGradient = vec2(
+		(referenceTr + 2.0 * referenceR + referenceBr) - (referenceTl + 2.0 * referenceL + referenceBl),
+		(referenceTl + 2.0 * referenceT + referenceTr) - (referenceBl + 2.0 * referenceB + referenceBr)
+	);
+	return (gradient - referenceGradient) / radiusScale;
+}
+
+float reliefShade(float depth){
+	if(depth == 0.0){
+		return 1.0;
+	}
+
+	vec2 fineGradient = reliefGradient(depth, 1.0);
+	vec2 gradient = fineGradient;
+	if(edlSlopeCompensation > 0.0){
+		vec2 midGradient = reliefGradient(depth, 1.5);
+		vec2 coarseGradient = reliefGradient(depth, 2.0);
+		vec2 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
+		gradient = mix(fineGradient, smoothGradient, 0.65 * edlSlopeCompensation);
+	}
 	float amount = dot(gradient, normalize(reliefLightDirection)) * 220.0 * reliefStrength;
 	float highlight = smoothstep(0.0, 1.0, max(amount, 0.0));
 	float shadow = smoothstep(0.0, 1.0, max(-amount, 0.0));
@@ -59076,8 +59263,24 @@ void main(){
 	
 	float depth = cEDL.a;
 	depth = (depth == 1.0) ? 0.0 : depth;
-	float res = response(depth);
-	float shade = exp(-res * 300.0 * edlStrength);
+	float fineResponse = response(depth, 1.0, edlSlopeCompensation, 1.0);
+	float res = fineResponse;
+	if(edlSlopeCompensation > 0.0){
+		// Curvature grows with radius squared, while isolated depth jumps do not.
+		// Normalize two wider rings by radius squared so coherent broad relief is
+		// retained without turning sparse distant samples into dark patches.
+		float midResponse = response(depth, 1.75, 1.0, 0.0) / 3.0625;
+		float coarseResponse = response(depth, 2.75, 1.0, 0.0) / 7.5625;
+		// A distant ring crossing an object boundary creates a response at only
+		// one scale. Coherent relief remains present across all three scales.
+		float broadResponse = min(midResponse, coarseResponse);
+		broadResponse = min(broadResponse, 2.0 * fineResponse);
+		float tiltedResponse = 0.3 * fineResponse + 1.15 * broadResponse;
+		res = mix(fineResponse, tiltedResponse, edlSlopeCompensation);
+	}
+	float minimumShade = 0.15 * edlSlopeCompensation;
+	float effectiveStrength = edlStrength;
+	float shade = minimumShade + (1.0 - minimumShade) * exp(-res * 300.0 * effectiveStrength);
 	float relief = 1.0;
 	if(reliefEnabled > 0.5){
 		relief = reliefShade(depth);
@@ -65686,6 +65889,27 @@ void main() {
 		uniform.value.set(screenX, screenY);
 	}
 
+	function setReliefCameraParameters(uniforms, camera) {
+		const world = camera.matrixWorld.elements;
+		const projection = camera.projectionMatrix.elements;
+
+		// World Z expressed in camera/view coordinates. The shader uses this to
+		// predict the screen-depth gradient of a horizontal reference plane.
+		uniforms.reliefViewUp.value.set(world[2], world[6], world[10]);
+		uniforms.reliefProjectionScale.value.set(projection[0], projection[5]);
+		uniforms.reliefPerspective.value = camera.isPerspectiveCamera ? 1.0 : 0.0;
+	}
+
+	function getEDLSlopeCompensation(camera) {
+		// Preserve classic EDL near top-down, then remove linear screen-depth ramps as
+		// the view becomes oblique. This avoids requiring point-cloud normals.
+		const verticalAlignment = Math.min(1, Math.max(0, Math.abs(camera.matrixWorld.elements[10])));
+		const angleFromVertical = Math.acos(verticalAlignment) * 180 / Math.PI;
+		const t = Math.min(1, Math.max(0, angleFromVertical / 75));
+		const smooth = t * t * (3 - 2 * t);
+		return 0.35 * t + 0.65 * smooth;
+	}
+
 	class EyeDomeLightingMaterial extends RawShaderMaterial {
 
 		constructor(parameters = {}) {
@@ -65695,6 +65919,7 @@ void main() {
 				screenWidth: { type: 'f', value: 0 },
 				screenHeight: { type: 'f', value: 0 },
 				edlStrength: { type: 'f', value: 1.0 },
+				edlSlopeCompensation: { type: 'f', value: 0.0 },
 				uNear: { type: 'f', value: 1.0 },
 				uFar: { type: 'f', value: 1.0 },
 				radius: { type: 'f', value: 1.0 },
@@ -65702,6 +65927,9 @@ void main() {
 				reliefRadius: { type: 'f', value: 1.0 },
 				reliefEnabled: { type: 'f', value: 0.0 },
 				reliefLightDirection: { type: 'v2', value: new Vector2(-0.55, 0.85) },
+				reliefViewUp: { type: 'v3', value: new Vector3(0, 0, 1) },
+				reliefProjectionScale: { type: 'v2', value: new Vector2(1, 1) },
+				reliefPerspective: { type: 'f', value: 1.0 },
 				neighbours: { type: '2fv', value: [] },
 				depthMap: { type: 't', value: null },
 				uEDLColor: { type: 't', value: null },
@@ -65772,11 +66000,15 @@ void main() {
 				screenWidth: { type: 'f', value: 0 },
 				screenHeight: { type: 'f', value: 0 },
 				edlStrength: { type: 'f', value: 1.0 },
+				edlSlopeCompensation: { type: 'f', value: 0.0 },
 				radius: { type: 'f', value: 1.0 },
 				reliefStrength: { type: 'f', value: 1.0 },
 				reliefRadius: { type: 'f', value: 1.0 },
 				reliefEnabled: { type: 'f', value: 0.0 },
 				reliefLightDirection: { type: 'v2', value: new Vector2(-0.55, 0.85) },
+				reliefViewUp: { type: 'v3', value: new Vector3(0, 0, 1) },
+				reliefProjectionScale: { type: 'v2', value: new Vector2(1, 1) },
+				reliefPerspective: { type: 'f', value: 1.0 },
 				neighbours: { type: '2fv', value: [] },
 				uEDLMap: { type: 't', value: null },
 				uDepthMap: { type: 't', value: null },
@@ -71309,10 +71541,12 @@ void main() {
 
 				uniforms.edlStrength.value = viewer.useEDL ? viewer.edlStrength : 0.0;
 				uniforms.radius.value = viewer.edlRadius;
+				uniforms.edlSlopeCompensation.value = getEDLSlopeCompensation(camera);
 				uniforms.reliefEnabled.value = viewer.useRelief ? 1.0 : 0.0;
 				uniforms.reliefStrength.value = viewer.reliefStrength;
 				uniforms.reliefRadius.value = viewer.reliefRadius;
 				setWorldLockedReliefLightDirection(uniforms.reliefLightDirection, camera, viewer.reliefAzimuth);
+				setReliefCameraParameters(uniforms, camera);
 				uniforms.opacity.value = viewer.edlOpacity; // HACK
 
 				Utils.screenPass.render(viewer.renderer, this.edlMaterial);
@@ -71621,10 +71855,12 @@ void main() {
 				if (this.useEDL) {
 					normalizationMaterial.uniforms.edlStrength.value = viewer.useEDL ? viewer.edlStrength : 0.0;
 					normalizationMaterial.uniforms.radius.value = viewer.edlRadius;
+					normalizationMaterial.uniforms.edlSlopeCompensation.value = getEDLSlopeCompensation(camera);
 					normalizationMaterial.uniforms.reliefEnabled.value = viewer.useRelief ? 1.0 : 0.0;
 					normalizationMaterial.uniforms.reliefStrength.value = viewer.reliefStrength;
 					normalizationMaterial.uniforms.reliefRadius.value = viewer.reliefRadius;
 					setWorldLockedReliefLightDirection(normalizationMaterial.uniforms.reliefLightDirection, camera, viewer.reliefAzimuth);
+					setReliefCameraParameters(normalizationMaterial.uniforms, camera);
 					normalizationMaterial.uniforms.screenWidth.value = width;
 					normalizationMaterial.uniforms.screenHeight.value = height;
 					normalizationMaterial.uniforms.uEDLMap.value = this.rtDepth.texture;
