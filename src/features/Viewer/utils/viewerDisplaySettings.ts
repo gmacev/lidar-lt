@@ -59,6 +59,7 @@ const VIEWER_DISPLAY_SETTING_KEYS = [
     'pb',
     'fov',
     'hiddenClasses',
+    'mapLabels',
 ] as const satisfies readonly (keyof ViewerState)[];
 
 const viewerDisplaySettingsPick = {
@@ -85,6 +86,7 @@ const viewerDisplaySettingsPick = {
     pb: true,
     fov: true,
     hiddenClasses: true,
+    mapLabels: true,
 } as const;
 
 export const ViewerDisplaySettingsSchema = ViewerStateSchema.pick(viewerDisplaySettingsPick);

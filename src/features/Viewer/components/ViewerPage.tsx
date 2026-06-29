@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from '@/common/components';
 import { useKeyboardCameraNavigation, usePotree } from '@/features/Viewer/hooks';
 import { useViewerDataOriginPreconnect } from '@/features/Viewer/hooks/useViewerDataOriginPreconnect';
 import { useViewerUrlState } from '@/features/Viewer/hooks/useViewerUrlState';
 import { useViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNavigationActions';
 import { useViewerTools } from '@/features/Viewer/hooks/useViewerTools';
+import { useMapLabels } from '@/features/Viewer/hooks/useMapLabels';
+import { useKvrViewerLabels } from '@/features/Viewer/hooks/useKvrViewerLabels';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import {
     getViewerDataUrl,
@@ -11,6 +15,7 @@ import {
 } from '@/features/Viewer/utils/viewerDataUrls';
 import { isMobile } from '@/common/utils/screenSize';
 import { MarkerOverlay } from './MarkerOverlay';
+import { ViewerLabelsOverlay } from './ViewerLabelsOverlay';
 import { MeasurementContextMenus } from './MeasurementContextMenus';
 import { ViewerCornerInfo } from './ViewerCornerInfo';
 import { ViewerHud } from './ViewerHud';
@@ -24,6 +29,7 @@ interface ViewerPageProps {
 }
 
 export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
+    const { t, i18n } = useTranslation();
     const dataUrl = getViewerDataUrl(cellId);
     const sourceManifestUrl = getViewerSourceManifestUrl(cellId);
     const [uiVisible, setUiVisible] = useState(true);
@@ -68,6 +74,30 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         onMarkerSearchChange: urlState.updateUrl,
     });
     const sectorLabel = initialState.sectorName ?? cellId;
+    const mapLabelsEnabled = initialState.mapLabels === true;
+    const mapLabelState = useMapLabels({
+        enabled: mapLabelsEnabled,
+        language: i18n.resolvedLanguage ?? i18n.language,
+        sectorId: cellId,
+        viewerRef,
+    });
+    const kvrLabels = useKvrViewerLabels({
+        enabled:
+            uiVisible && tools.kvr.isPopoverOpen && tools.kvr.inspectState.status === 'success',
+        matches: tools.kvr.inspectState.matches,
+        unnamedLabel: t('kvrInspect.unnamed'),
+        onCenterMatch: navigation.handleCenterKvrMatch,
+        onFocusMatch: tools.kvr.onFocusMatch,
+    });
+    const viewerLabels = [...mapLabelState.labels, ...kvrLabels];
+
+    useEffect(() => {
+        if (!mapLabelState.error) return;
+        toast.error(t('mapLabels.errorTitle'), {
+            description: t('mapLabels.errorDescription'),
+            dedupeKey: `map-labels-${cellId}`,
+        });
+    }, [cellId, mapLabelState.error, t]);
 
     return (
         <div data-testid="viewer-page" className="relative h-dvh w-screen bg-void-black">
@@ -78,6 +108,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                     tools.cursor.isAnnotationPlacing ? '!cursor-pointer' : ''
                 } ${tools.cursor.isKvrInspecting ? '!cursor-help' : ''}`}
             />
+            <ViewerLabelsOverlay labels={viewerLabels} viewerRef={viewerRef} />
             <MarkerOverlay markers={tools.markers.markers} onDelete={tools.markers.deleteMarker} />
 
             <ViewerLoadOverlay
@@ -87,10 +118,12 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 onBack={onBack}
             />
 
-            {uiVisible && !isLoading && !error && (
+            {!isLoading && !error && (
                 <ViewerCornerInfo
                     manifestUrl={sourceManifestUrl}
                     viewerRef={viewerRef}
+                    uiVisible={uiVisible}
+                    mapLabelsEnabled={mapLabelsEnabled}
                     className="absolute bottom-0 right-0 z-10"
                     onVisibleChange={setIsSourceAttributionVisible}
                 />
@@ -104,6 +137,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 isSourceAttributionVisible={isSourceAttributionVisible}
                 kvr={tools.kvr}
                 markers={tools.markers}
+                mapLabelsEnabled={mapLabelsEnabled}
                 navigation={navigation}
                 onBack={onBack}
                 onSidebarCollapsedChange={setIsSidebarCollapsed}

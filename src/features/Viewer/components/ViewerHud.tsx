@@ -16,6 +16,7 @@ import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
 import { GoogleMapsButton } from './GoogleMapsButton';
 import { KvrInspectButton } from './KvrInspectButton';
+import { MapLabelsButton } from './MapLabelsButton';
 import { SectorNavigation } from './SectorNavigation';
 import { ToolbarToolButton } from './ToolbarToolButton';
 
@@ -27,6 +28,7 @@ interface ViewerHudProps {
     isSourceAttributionVisible: boolean;
     kvr: ViewerKvrToolModel;
     markers: ViewerMarkersModel;
+    mapLabelsEnabled: boolean;
     navigation: ViewerNavigationActions;
     onBack: () => void;
     onSidebarCollapsedChange: (collapsed: boolean) => void;
@@ -49,6 +51,7 @@ export function ViewerHud({
     isSourceAttributionVisible,
     kvr,
     markers,
+    mapLabelsEnabled,
     navigation,
     onBack,
     onSidebarCollapsedChange,
@@ -162,8 +165,15 @@ export function ViewerHud({
                                     label={t('viewer.recenter')}
                                     onClick={navigation.handleRecenterView}
                                 />
+                                <MapLabelsButton
+                                    enabled={mapLabelsEnabled}
+                                    onChange={(enabled) =>
+                                        updateUrl({ mapLabels: enabled ? true : undefined })
+                                    }
+                                />
                                 <GoogleMapsButton viewerRef={viewerRef} />
                                 <KvrInspectButton
+                                    focusRequest={kvr.focusRequest}
                                     inspectState={kvr.inspectState}
                                     isActive={kvr.isInspecting}
                                     isPopoverOpen={kvr.isPopoverOpen}

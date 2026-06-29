@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { PotreeViewer } from '@/common/types/potree';
 import {
+    getKvrMatchKey,
     queryKvrAtCoordinate,
     type KvrCoordinate,
     type KvrMatch,
 } from '@/features/Viewer/utils/kvrClient';
 
 type KvrInspectStatus = 'idle' | 'loading' | 'success' | 'empty' | 'error';
+
+export interface KvrMatchFocusRequest {
+    key: string;
+    revision: number;
+}
 
 export interface KvrInspectState {
     coordinate: KvrCoordinate | null;
@@ -21,10 +27,12 @@ interface UseKvrInspectToolOptions {
 
 interface UseKvrInspectToolReturn {
     closePopover: () => void;
+    focusRequest: KvrMatchFocusRequest | null;
     inspectState: KvrInspectState;
     isInspecting: boolean;
     isPopoverOpen: boolean;
     retryLastInspection: () => void;
+    requestMatchFocus: (match: KvrMatch) => void;
     toggleInspectMode: () => void;
 }
 
@@ -72,6 +80,7 @@ export function useKvrInspectTool({
     const [isInspecting, setIsInspecting] = useState(false);
     const [isPopoverOpen, setIsPopoverOpen] = useState(false);
     const [inspectState, setInspectState] = useState<KvrInspectState>(initialInspectState);
+    const [focusRequest, setFocusRequest] = useState<KvrMatchFocusRequest | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     const lastCoordinateRef = useRef<KvrCoordinate | null>(null);
 
@@ -85,6 +94,7 @@ export function useKvrInspectTool({
         const abortController = new AbortController();
         abortControllerRef.current = abortController;
         lastCoordinateRef.current = coordinate;
+        setFocusRequest(null);
 
         setIsPopoverOpen(true);
         setInspectState({
@@ -129,6 +139,15 @@ export function useKvrInspectTool({
         abortCurrentRequest();
         setIsInspecting(false);
         setIsPopoverOpen(false);
+        setFocusRequest(null);
+    };
+
+    const requestMatchFocus = (match: KvrMatch) => {
+        const key = getKvrMatchKey(match);
+        setFocusRequest((current) => ({
+            key,
+            revision: (current?.revision ?? 0) + 1,
+        }));
     };
 
     const toggleInspectMode = () => {
@@ -236,10 +255,12 @@ export function useKvrInspectTool({
 
     return {
         closePopover,
+        focusRequest,
         inspectState,
         isInspecting,
         isPopoverOpen,
         retryLastInspection,
+        requestMatchFocus,
         toggleInspectMode,
     };
 }

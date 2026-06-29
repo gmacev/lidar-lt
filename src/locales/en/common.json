@@ -195,6 +195,11 @@
         },
         "variant": "Variant"
     },
+    "mapLabels": {
+        "toggle": "Place and water labels",
+        "errorTitle": "Map labels unavailable",
+        "errorDescription": "OpenStreetMap labels could not be loaded. Turn the layer off and on to retry."
+    },
     "measurement": {
         "distance": "Measure Distance",
         "area": "Measure Area",
