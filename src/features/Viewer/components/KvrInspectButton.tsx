@@ -1,12 +1,21 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, NeonButton } from '@/common/components';
-import { type KvrMatch, type KvrMatchType } from '@/features/Viewer/utils/kvrClient';
-import type { KvrInspectState } from '@/features/Viewer/hooks/useKvrInspectTool';
+import {
+    getKvrMatchKey,
+    KVR_MATCH_ORDER,
+    type KvrMatch,
+    type KvrMatchType,
+} from '@/features/Viewer/utils/kvrClient';
+import type {
+    KvrInspectState,
+    KvrMatchFocusRequest,
+} from '@/features/Viewer/hooks/useKvrInspectTool';
 import { ToolPopover } from './ToolPopover';
 import { ToolbarToolButton } from './ToolbarToolButton';
 
 interface KvrInspectButtonProps {
+    focusRequest: KvrMatchFocusRequest | null;
     inspectState: KvrInspectState;
     isActive: boolean;
     isPopoverOpen: boolean;
@@ -16,20 +25,11 @@ interface KvrInspectButtonProps {
     onRetry: () => void;
 }
 
-const matchOrder: KvrMatchType[] = [
-    'object-territory',
-    'physical-protection-zone',
-    'visual-protection-zone',
-    'nearby-object',
-];
-
 function groupMatches(matches: KvrMatch[]) {
-    return matchOrder
-        .map((matchType) => ({
-            matchType,
-            matches: matches.filter((match) => match.matchType === matchType),
-        }))
-        .filter((group) => group.matches.length > 0);
+    return KVR_MATCH_ORDER.map((matchType) => ({
+        matchType,
+        matches: matches.filter((match) => match.matchType === matchType),
+    })).filter((group) => group.matches.length > 0);
 }
 
 function formatCoordinate(value: number) {
@@ -46,6 +46,7 @@ function capitalizeDisplayText(value: string) {
 }
 
 export function KvrInspectButton({
+    focusRequest,
     inspectState,
     isActive,
     isPopoverOpen,
@@ -56,9 +57,23 @@ export function KvrInspectButton({
 }: KvrInspectButtonProps) {
     const { t } = useTranslation();
     const buttonRef = useRef<HTMLButtonElement>(null);
+    const matchRefs = useRef(new Map<string, HTMLAnchorElement>());
     const groupedMatches = groupMatches(inspectState.matches);
     const coordinate = inspectState.coordinate;
     const isLoading = inspectState.status === 'loading';
+
+    useEffect(() => {
+        if (!focusRequest || !isPopoverOpen) return;
+
+        const frameId = requestAnimationFrame(() => {
+            const matchElement = matchRefs.current.get(focusRequest.key);
+            if (!matchElement) return;
+            matchElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            matchElement.focus({ preventScroll: true });
+        });
+
+        return () => cancelAnimationFrame(frameId);
+    }, [focusRequest, isPopoverOpen]);
 
     return (
         <>
@@ -99,7 +114,10 @@ export function KvrInspectButton({
                     </button>
                 </div>
 
-                <div className="min-h-0 overflow-y-auto pr-1 pt-3">
+                <div
+                    data-testid="viewer-kvr-results-scroll"
+                    className="min-h-0 overflow-y-auto pr-1 pt-3"
+                >
                     {isLoading && (
                         <div className="flex items-center gap-3 rounded-md border border-white/10 bg-white/[0.04] p-3">
                             <div className="size-5 animate-spin rounded-full border-2 border-white/15 border-t-neon-amber" />
@@ -128,6 +146,13 @@ export function KvrInspectButton({
                                                 className="relative"
                                             >
                                                 <a
+                                                    ref={(element) => {
+                                                        const key = getKvrMatchKey(match);
+                                                        if (element)
+                                                            matchRefs.current.set(key, element);
+                                                        else matchRefs.current.delete(key);
+                                                    }}
+                                                    data-kvr-match-key={getKvrMatchKey(match)}
                                                     href={match.detailUrl}
                                                     target="_blank"
                                                     rel="noreferrer"

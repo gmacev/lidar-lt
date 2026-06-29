@@ -4,6 +4,13 @@ export type KvrMatchType =
     | 'visual-protection-zone'
     | 'nearby-object';
 
+export const KVR_MATCH_ORDER: KvrMatchType[] = [
+    'object-territory',
+    'physical-protection-zone',
+    'visual-protection-zone',
+    'nearby-object',
+];
+
 export interface KvrCoordinate {
     x: number;
     y: number;
@@ -21,6 +28,10 @@ export interface KvrMatch {
     matchType: KvrMatchType;
     detailUrl: string;
     center?: KvrCoordinate;
+}
+
+export function getKvrMatchKey(match: Pick<KvrMatch, 'matchType' | 'objectId'>) {
+    return `${match.objectId}:${match.matchType}`;
 }
 
 interface ArcGisFeature {
@@ -227,7 +238,7 @@ function createQueries(coordinate: KvrCoordinate): KvrLayerQuery[] {
 function dedupeMatches(matches: KvrMatch[]) {
     const seen = new Set<string>();
     return matches.filter((match) => {
-        const key = `${match.objectId}:${match.matchType}`;
+        const key = getKvrMatchKey(match);
         if (seen.has(key)) return false;
         seen.add(key);
         return true;

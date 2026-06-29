@@ -188,6 +188,8 @@ export const ViewerStateSchema = z.object({
     fov: optionalSearchNumber, // field of view
     // Classifications (array of hidden class IDs)
     hiddenClasses: optionalSearchNumberArray,
+    // Optional OpenStreetMap-derived geographic labels overlay
+    mapLabels: optionalSearchBoolean,
     // Sector metadata
     sectorName: z.string().optional(),
     // Shareable point markers encoded as x,y,z;x,y,z

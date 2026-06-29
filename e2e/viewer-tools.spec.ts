@@ -12,6 +12,7 @@ const DESKTOP_TOOL_IDS = [
     'viewer-tool-flood',
     'viewer-tool-annotations',
     'viewer-recenter',
+    'viewer-map-labels-toggle',
     'viewer-tool-google-maps',
     'viewer-tool-kvr',
     'viewer-compass',

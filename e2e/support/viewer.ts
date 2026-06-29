@@ -35,6 +35,115 @@ const MOCK_SOURCE_MANIFEST = {
     },
 };
 
+const MOCK_KVR_ATTRIBUTES = {
+    ObjectId: '100',
+    Code: 'KVR-100',
+    Name: 'Gedimino pilies bokštas',
+    NameOfficial: 'Gedimino pilies bokštas',
+    ObjectName: 'bokštas',
+    Status: 'Registrinis',
+    Address: 'Arsenalo g. 5, Vilnius',
+};
+
+function getMockKvrResponse(url: string) {
+    if (url.includes('/pub_kvr_objektai/MapServer/1/query')) {
+        return {
+            features: [
+                {
+                    attributes: MOCK_KVR_ATTRIBUTES,
+                    geometry: {
+                        rings: [
+                            [
+                                [581420, 6060420],
+                                [581480, 6060420],
+                                [581480, 6060480],
+                                [581420, 6060480],
+                                [581420, 6060420],
+                            ],
+                        ],
+                    },
+                },
+            ],
+        };
+    }
+
+    if (url.includes('/pub_kvr_apsaugos_zonos/MapServer/0/query')) {
+        return {
+            features: [
+                {
+                    attributes: {
+                        ...MOCK_KVR_ATTRIBUTES,
+                        ShapeType: 'Apsaugos zona',
+                        Area: 4200,
+                    },
+                    geometry: {
+                        rings: [
+                            [
+                                [581350, 6060350],
+                                [581550, 6060350],
+                                [581550, 6060550],
+                                [581350, 6060550],
+                                [581350, 6060350],
+                            ],
+                        ],
+                    },
+                },
+            ],
+        };
+    }
+
+    if (url.includes('/pub_kvr_apsaugos_zonos/MapServer/1/query')) {
+        return { features: [] };
+    }
+
+    return {
+        features: [
+            {
+                attributes: MOCK_KVR_ATTRIBUTES,
+                geometry: { x: 581456, y: 6060682 },
+            },
+            {
+                attributes: {
+                    ObjectId: '200',
+                    Code: 'KVR-200',
+                    Name: 'Aušros vartai',
+                    NameOfficial: 'Aušros vartai',
+                    ObjectName: 'vartai',
+                    Status: 'Registrinis',
+                    Address: 'Aušros Vartų g. 14, Vilnius',
+                },
+                geometry: { x: 581850, y: 6060800 },
+            },
+            {
+                attributes: {
+                    ObjectId: '300',
+                    Code: 'KVR-300',
+                    Name: '',
+                    NameOfficial: '',
+                    ObjectName: '',
+                    Status: 'Registrinis',
+                    Address: '',
+                },
+                geometry: { x: 581150, y: 6060200 },
+            },
+            {
+                attributes: {
+                    ObjectId: '400',
+                    Code: 'KVR-400',
+                    Name: 'Objektas be geometrijos',
+                    NameOfficial: 'Objektas be geometrijos',
+                    ObjectName: '',
+                    Status: 'Registrinis',
+                    Address: '',
+                },
+            },
+        ],
+    };
+}
+
+const MOCK_MAP_TILE_BASE64 =
+    'Go4CeAIKBXBsYWNlKIAgEhUSCgAAAQACAAMBBAIYASIFCeovijUSFRIKAAMBBAIDAwUEBhgBIgUJ3jLIMhIVEgoABwEIAgcDBQQGGAEiBQnwDIo1Eg8SBAAJAwoYASIFCZg0ijUaBG5hbWUaB25hbWU6bHQaB25hbWVfZW4aBWNsYXNzGgRyYW5rIgkKB1ZpbG5pdXMiBgoEY2l0eSICKAEiDgoMVGVzdCBWaWxsYWdlIhMKEUJhbmRvbWFzaXMga2FpbWFzIgkKB3ZpbGxhZ2UiAigFIhEKD091dHNpZGUgVmlsbGFnZSIPCg1VPyBzZWt0b3JpYXVzIg4KDElnbm9yZWQgUGVhayIGCgRwZWFrGm94AgoKd2F0ZXJfbmFtZSiAIBITEggAAAEBAgADAhgBIgUJ9CzMNxoEbmFtZRoHbmFtZTpsdBoHbmFtZV9lbhoFY2xhc3MiCwoJVGVzdCBMYWtlIhMKEUJhbmRvbWFzaXMgZXplcmFzIgYKBGxha2UajAF4AgoId2F0ZXJ3YXkogCASGBIIAAABAAIAAwEYAiIKCYAqjjoK0guJChIUEgQAAgMDGAIiCgmAKsw3CtILiQoaBG5hbWUaB25hbWU6bHQaB25hbWVfZW4aBWNsYXNzIgcKBU5lcmlzIgcKBXJpdmVyIhAKDklnbm9yZWQgU3RyZWFtIggKBnN0cmVhbQ==';
+
 const MOCK_POTREE_SCRIPT = String.raw`
 (() => {
   const eventTarget = () => {
@@ -235,6 +344,13 @@ const MOCK_POTREE_SCRIPT = String.raw`
       context.fillRect(0, 0, 800, 600);
       container.appendChild(this.renderer.domElement);
 
+      const camera = new window.THREE.PerspectiveCamera(60, 4 / 3, 0.1, 10000000);
+      camera.position.set(581500, 6060500, 1300);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(581500, 6060500, 156);
+      camera.updateProjectionMatrix();
+      camera.updateMatrixWorld();
+
       this.scene = {
         annotations: { children: [] },
         measurements: [],
@@ -248,7 +364,7 @@ const MOCK_POTREE_SCRIPT = String.raw`
         addPointCloud: (pointcloud) => {
           this.scene.pointclouds.push(pointcloud);
         },
-        getActiveCamera: () => ({}),
+        getActiveCamera: () => camera,
         removeAllMeasurements: () => {
           this.scene.measurements.length = 0;
         },
@@ -346,15 +462,52 @@ const MOCK_POTREE_SCRIPT = String.raw`
 
 type MetadataMode = 'ok' | 'not-found' | 'unavailable';
 type PotreeMode = 'mock' | 'missing';
+type MapLabelsMode = 'ok' | 'unavailable';
 
 interface MockViewerOptions {
     metadata?: MetadataMode;
     potree?: PotreeMode;
+    mapLabels?: MapLabelsMode;
 }
 
 export async function installMockViewer(page: Page, options: MockViewerOptions = {}) {
     const metadataMode = options.metadata ?? 'ok';
     const potreeMode = options.potree ?? 'mock';
+    const mapLabelsMode = options.mapLabels ?? 'ok';
+
+    await page.route('https://kvr.kpd.lt/arcgis/rest/services/KVR/**/query?**', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(getMockKvrResponse(route.request().url())),
+        });
+    });
+
+    await page.route('https://tiles.openfreemap.org/planet', async (route) => {
+        if (mapLabelsMode === 'unavailable') {
+            await route.fulfill({ status: 503, body: '' });
+            return;
+        }
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                tilejson: '3.0.0',
+                minzoom: 14,
+                maxzoom: 14,
+                tiles: ['https://tiles.openfreemap.org/test/{z}/{x}/{y}.pbf'],
+            }),
+        });
+    });
+
+    await page.route('https://tiles.openfreemap.org/test/**', async (route) => {
+        const isFixtureTile = route.request().url().endsWith('/14/9341/5207.pbf');
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/x-protobuf',
+            body: isFixtureTile ? Buffer.from(MOCK_MAP_TILE_BASE64, 'base64') : Buffer.alloc(0),
+        });
+    });
 
     await page.route('**/potree/potree.js', async (route) => {
         await route.fulfill({

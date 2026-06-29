@@ -30,7 +30,11 @@ import type {
 } from '@/features/Viewer/hooks/useProfileData';
 import type { ProfilePhase } from '@/features/Viewer/hooks/useProfileTool';
 import type { StoredAnnotation } from '@/features/Viewer/utils/annotationStorage';
-import type { KvrInspectState } from '@/features/Viewer/hooks/useKvrInspectTool';
+import type {
+    KvrInspectState,
+    KvrMatchFocusRequest,
+} from '@/features/Viewer/hooks/useKvrInspectTool';
+import type { KvrMatch } from '@/features/Viewer/utils/kvrClient';
 import { useExclusiveViewerTool, type ExclusiveViewerTool } from './useExclusiveViewerTool';
 
 interface UseViewerToolsOptions {
@@ -103,11 +107,13 @@ export interface ViewerToolbarTools {
 }
 
 export interface ViewerKvrToolModel {
+    focusRequest: KvrMatchFocusRequest | null;
     inspectState: KvrInspectState;
     isInspecting: boolean;
     isPopoverOpen: boolean;
     onClose: () => void;
     onRetry: () => void;
+    onFocusMatch: (match: KvrMatch) => void;
     onToggle: () => void;
 }
 
@@ -388,11 +394,13 @@ export function useViewerTools({
     };
 
     const kvrTool: ViewerKvrToolModel = {
+        focusRequest: kvr.focusRequest,
         inspectState: kvr.inspectState,
         isInspecting: kvr.isInspecting,
         isPopoverOpen: kvr.isPopoverOpen,
         onClose: kvr.closePopover,
         onRetry: kvr.retryLastInspection,
+        onFocusMatch: kvr.requestMatchFocus,
         onToggle: createHandler('kvr', kvr.toggleInspectMode),
     };
 
