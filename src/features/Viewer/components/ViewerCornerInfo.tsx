@@ -1,4 +1,5 @@
 import { useEffect, useState, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { SourceAttribution } from './SourceAttribution';
 import { ViewerMapStatus } from './ViewerMapStatus';
@@ -38,6 +39,7 @@ export function ViewerCornerInfo({
     className = '',
     onVisibleChange,
 }: ViewerCornerInfoProps) {
+    const { t } = useTranslation();
     const [dateRange, setDateRange] = useState<string | null>(null);
 
     useEffect(() => {
@@ -82,7 +84,10 @@ export function ViewerCornerInfo({
                 </span>
             )}
             {mapLabelsEnabled && (
-                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                <span
+                    data-testid="viewer-map-attribution"
+                    className="inline-flex items-center gap-1 whitespace-nowrap"
+                >
                     <a
                         href="https://openfreemap.org/"
                         target="_blank"
@@ -91,22 +96,23 @@ export function ViewerCornerInfo({
                     >
                         OpenFreeMap
                     </a>
+                    <span>{'\u00a9'}</span>
                     <a
                         href="https://openmaptiles.org/"
                         target="_blank"
                         rel="noreferrer"
                         className="text-white/75 underline-offset-2 hover:text-white hover:underline"
                     >
-                        © OpenMapTiles
+                        OpenMapTiles
                     </a>
-                    <span>{'·'}</span>
+                    <span>{t('home.mapDataFrom')}</span>
                     <a
                         href="https://www.openstreetmap.org/copyright"
                         target="_blank"
                         rel="noreferrer"
                         className="text-white/75 underline-offset-2 hover:text-white hover:underline"
                     >
-                        © OpenStreetMap contributors
+                        OpenStreetMap
                     </a>
                 </span>
             )}

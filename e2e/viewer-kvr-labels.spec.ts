@@ -10,36 +10,55 @@ test.describe('viewer KVR labels', () => {
 
         const labels = page.locator('[data-viewer-label-source="kvr"]');
         await expect(labels).toHaveCount(3);
-        await expect(page.locator('[data-viewer-label-id="100"]')).toHaveText(
-            'Gedimino pilies bokštas'
+        const longLabel = page.locator('[data-viewer-label-id="100"]');
+        await expect(longLabel).toHaveText(
+            'Gedimino kalno, pilies bokšto ir Aukštutinės pilies pastatų komplekso liekanos'
         );
         await expect(page.locator('[data-viewer-label-id="200"]')).toHaveText('Aušros vartai');
         await expect(page.locator('[data-viewer-label-id="300"]')).toHaveText('KVR-300');
         await expect(page.locator('[data-viewer-label-id="400"]')).toHaveCount(0);
         await expect(page.getByTestId('viewer-map-labels')).toHaveCount(0);
 
-        await page.locator('[data-viewer-label-id="100"]').click();
+        const collapsedBounds = await longLabel.boundingBox();
+        const collapsedBackground = await longLabel.evaluate(
+            (element) => getComputedStyle(element).backgroundColor
+        );
+        expect(collapsedBounds).not.toBeNull();
+        await longLabel.hover();
+        await expect
+            .poll(async () => (await longLabel.boundingBox())?.height ?? 0)
+            .toBeGreaterThan((collapsedBounds?.height ?? 0) + 5);
+        const expandedBounds = await longLabel.boundingBox();
+        expect(Math.abs((expandedBounds?.y ?? 0) - (collapsedBounds?.y ?? 0))).toBeLessThan(1);
+        await expect(longLabel).toHaveCSS('background-color', collapsedBackground);
+        await expect
+            .poll(() =>
+                longLabel.evaluate(
+                    (element) =>
+                        element.scrollHeight <= element.clientHeight + 1 &&
+                        element.scrollWidth <= element.clientWidth + 1
+                )
+            )
+            .toBe(true);
+
+        await longLabel.click();
         await expect(page).toHaveURL(/x=581456/);
-        await expect(page.locator('[data-kvr-match-key="100:object-territory"]')).toBeFocused();
+        const focusedResult = page.locator('[data-kvr-match-key="100:object-territory"]');
+        await expect(focusedResult).toBeFocused();
+        await expect(focusedResult).toHaveAttribute('data-highlighted', 'true');
 
         const lowerResult = page.locator('[data-kvr-match-key="300:nearby-object"]');
         await page.locator('[data-viewer-label-id="300"]').click();
         await expect(lowerResult).toBeFocused();
+        await expect(lowerResult).toHaveAttribute('data-highlighted', 'true');
+        await expect(focusedResult).toHaveAttribute('data-highlighted', 'false');
         await expect
-            .poll(async () =>
-                lowerResult.evaluate((element) => {
-                    const resultBounds = element.getBoundingClientRect();
-                    const scrollBounds = element
-                        .closest('[data-testid="viewer-kvr-results-scroll"]')
-                        ?.getBoundingClientRect();
-                    return Boolean(
-                        scrollBounds &&
-                        resultBounds.top >= scrollBounds.top &&
-                        resultBounds.bottom <= scrollBounds.bottom
-                    );
-                })
+            .poll(() =>
+                page
+                    .getByTestId('viewer-kvr-results-scroll')
+                    .evaluate((element) => element.scrollTop)
             )
-            .toBe(true);
+            .toBeGreaterThan(0);
 
         await page.getByTestId('viewer-map-labels-toggle').click();
         await expect(page.getByTestId('viewer-map-labels')).toBeVisible();

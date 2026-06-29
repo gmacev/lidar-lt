@@ -38,8 +38,8 @@ const MOCK_SOURCE_MANIFEST = {
 const MOCK_KVR_ATTRIBUTES = {
     ObjectId: '100',
     Code: 'KVR-100',
-    Name: 'Gedimino pilies bokštas',
-    NameOfficial: 'Gedimino pilies bokštas',
+    Name: 'Gedimino kalno, pilies bokšto ir Aukštutinės pilies pastatų komplekso liekanos',
+    NameOfficial: 'Gedimino kalno, pilies bokšto ir Aukštutinės pilies pastatų komplekso liekanos',
     ObjectName: 'bokštas',
     Status: 'Registrinis',
     Address: 'Arsenalo g. 5, Vilnius',

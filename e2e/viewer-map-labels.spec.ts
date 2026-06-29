@@ -18,7 +18,9 @@ test.describe('viewer map labels', () => {
         await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Ignored Peak');
         await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Ignored Stream');
         await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Outside Village');
-        await expect(page.getByText('© OpenStreetMap contributors')).toBeVisible();
+        await expect(page.getByTestId('viewer-map-attribution')).toContainText(
+            '©OpenMapTilesData fromOpenStreetMap'
+        );
 
         await page.reload();
         await expectViewerLabelsReady(page);
@@ -28,7 +30,7 @@ test.describe('viewer map labels', () => {
         );
 
         await page.getByTestId('viewer-ui-toggle').click();
-        await expect(page.getByText('© OpenStreetMap contributors')).toBeVisible();
+        await expect(page.getByTestId('viewer-map-attribution')).toBeVisible();
         await expect(page.getByTestId('viewer-map-labels')).toContainText('Vilnius');
 
         await page.getByTestId('viewer-ui-toggle').click();

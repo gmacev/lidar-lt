@@ -140,79 +140,94 @@ export function KvrInspectButton({
                                         )}
                                     </h4>
                                     <div className="flex flex-col gap-2.5">
-                                        {group.matches.map((match) => (
-                                            <div
-                                                key={`${match.objectId}:${match.matchType}`}
-                                                className="relative"
-                                            >
-                                                <a
-                                                    ref={(element) => {
-                                                        const key = getKvrMatchKey(match);
-                                                        if (element)
-                                                            matchRefs.current.set(key, element);
-                                                        else matchRefs.current.delete(key);
-                                                    }}
-                                                    data-kvr-match-key={getKvrMatchKey(match)}
-                                                    href={match.detailUrl}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    aria-label={`${t('kvrInspect.openKvr')}: ${
-                                                        match.name || t('kvrInspect.unnamed')
-                                                    }`}
-                                                    className="block cursor-pointer rounded-md border border-white/10 bg-white/[0.04] p-3.5 text-left transition hover:border-neon-amber/45 hover:bg-neon-amber/[0.06] focus-visible:border-neon-amber focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-amber/40"
-                                                >
-                                                    <h5 className="pr-10 text-sm font-semibold leading-[1.35] text-white">
-                                                        {match.name || t('kvrInspect.unnamed')}
-                                                    </h5>
+                                        {group.matches.map((match) => {
+                                            const matchKey = getKvrMatchKey(match);
+                                            const isHighlighted = focusRequest?.key === matchKey;
 
-                                                    <p className="mt-1.5 text-xs leading-4 text-white/55">
-                                                        {[
-                                                            match.code &&
-                                                                t('kvrInspect.code', {
-                                                                    code: match.code,
-                                                                }),
-                                                            capitalizeDisplayText(match.objectName),
-                                                            match.status,
-                                                        ]
-                                                            .filter(Boolean)
-                                                            .join(' · ')}
-                                                    </p>
+                                            return (
+                                                <div key={matchKey} className="relative">
+                                                    <a
+                                                        ref={(element) => {
+                                                            if (element)
+                                                                matchRefs.current.set(
+                                                                    matchKey,
+                                                                    element
+                                                                );
+                                                            else matchRefs.current.delete(matchKey);
+                                                        }}
+                                                        data-kvr-match-key={matchKey}
+                                                        data-highlighted={
+                                                            isHighlighted ? 'true' : 'false'
+                                                        }
+                                                        href={match.detailUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        aria-label={`${t('kvrInspect.openKvr')}: ${
+                                                            match.name || t('kvrInspect.unnamed')
+                                                        }`}
+                                                        className={`block cursor-pointer rounded-md border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-amber/40 ${
+                                                            isHighlighted
+                                                                ? 'border-neon-amber bg-neon-amber/[0.12] shadow-[0_0_0_1px_rgba(255,191,0,0.28),0_0_14px_rgba(255,191,0,0.12)]'
+                                                                : 'border-white/10 bg-white/[0.04] hover:border-neon-amber/45 hover:bg-neon-amber/[0.06] focus-visible:border-neon-amber'
+                                                        }`}
+                                                    >
+                                                        <h5 className="pr-10 text-sm font-semibold leading-[1.35] text-white">
+                                                            {match.name || t('kvrInspect.unnamed')}
+                                                        </h5>
 
-                                                    {match.address && (
-                                                        <p className="mt-1 text-xs leading-4 text-white/65">
-                                                            {match.address}
-                                                        </p>
-                                                    )}
-
-                                                    {(match.shapeType ||
-                                                        match.area !== undefined) && (
-                                                        <p className="mt-1 text-xs leading-4 text-white/45">
+                                                        <p className="mt-1.5 text-xs leading-4 text-white/55">
                                                             {[
-                                                                match.shapeType,
-                                                                formatArea(match.area),
+                                                                match.code &&
+                                                                    t('kvrInspect.code', {
+                                                                        code: match.code,
+                                                                    }),
+                                                                capitalizeDisplayText(
+                                                                    match.objectName
+                                                                ),
+                                                                match.status,
                                                             ]
                                                                 .filter(Boolean)
                                                                 .join(' · ')}
                                                         </p>
-                                                    )}
-                                                </a>
 
-                                                {match.center && (
-                                                    <button
-                                                        type="button"
-                                                        aria-label={t('kvrInspect.centerObject')}
-                                                        className="absolute right-0 top-0 flex size-8 items-center justify-center rounded-bl-md rounded-tr-md border-b border-l border-white/10 bg-black/55 text-white/60 transition hover:border-neon-amber/50 hover:bg-neon-amber/10 hover:text-neon-amber focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-amber/50"
-                                                        onClick={(event) => {
-                                                            event.preventDefault();
-                                                            event.stopPropagation();
-                                                            onCenterMatch(match);
-                                                        }}
-                                                    >
-                                                        <Icon name="crosshair" size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
+                                                        {match.address && (
+                                                            <p className="mt-1 text-xs leading-4 text-white/65">
+                                                                {match.address}
+                                                            </p>
+                                                        )}
+
+                                                        {(match.shapeType ||
+                                                            match.area !== undefined) && (
+                                                            <p className="mt-1 text-xs leading-4 text-white/45">
+                                                                {[
+                                                                    match.shapeType,
+                                                                    formatArea(match.area),
+                                                                ]
+                                                                    .filter(Boolean)
+                                                                    .join(' · ')}
+                                                            </p>
+                                                        )}
+                                                    </a>
+
+                                                    {match.center && (
+                                                        <button
+                                                            type="button"
+                                                            aria-label={t(
+                                                                'kvrInspect.centerObject'
+                                                            )}
+                                                            className="absolute right-0 top-0 flex size-8 items-center justify-center rounded-bl-md rounded-tr-md border-b border-l border-white/10 bg-black/55 text-white/60 transition hover:border-neon-amber/50 hover:bg-neon-amber/10 hover:text-neon-amber focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-amber/50"
+                                                            onClick={(event) => {
+                                                                event.preventDefault();
+                                                                event.stopPropagation();
+                                                                onCenterMatch(match);
+                                                            }}
+                                                        >
+                                                            <Icon name="crosshair" size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </section>
                             ))}
