@@ -105,6 +105,10 @@
         "azimuth": "Azimuth",
         "azimuthHelpAria": "Explain hillshade azimuth",
         "azimuthHelp": "Rotates the simulated light direction. 315° is northwest, the common default for hillshade.",
+        "azimuthCycleOff": "Off",
+        "azimuthCycleSeconds": "{{seconds}}s",
+        "azimuthCycleAria": "Azimuth rotation: {{mode}}",
+        "azimuthCycleTitle": "Cycle automatic rotation: 10s, 7s, 3s, off",
         "strength": "Strength",
         "strengthHelpAria": "Explain hillshade strength",
         "strengthHelp": "Controls how strongly the directional light and shadow affect the point cloud."

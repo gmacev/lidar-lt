@@ -105,6 +105,10 @@
         "azimuth": "Azimutas",
         "azimuthHelpAria": "Paaiškinti šešėlinio reljefo azimutą",
         "azimuthHelp": "Pasuka imituojamos šviesos kryptį. 315° yra šiaurės vakarai, įprasta šešėlinio reljefo reikšmė.",
+        "azimuthCycleOff": "Išj.",
+        "azimuthCycleSeconds": "{{seconds}} sek.",
+        "azimuthCycleAria": "Automatinis azimuto sukimas: {{mode}}",
+        "azimuthCycleTitle": "Keisti automatinio sukimo režimą: 10 sek., 7 sek., 3 sek., išjungta",
         "strength": "Stiprumas",
         "strengthHelpAria": "Paaiškinti šešėlinio reljefo stiprumą",
         "strengthHelp": "Nustato, kaip stipriai kryptinė šviesa ir šešėlis veikia taškų debesį."

@@ -80,4 +80,38 @@ test.describe('viewer sidebar settings', () => {
         await setRangeValue(page, 'viewer-min-node-size', 30);
         await expectSearchParam(page, 'mns', '30');
     });
+
+    test('cycles automatic hillshade azimuth rotation on one button', async ({ page }) => {
+        await gotoMockedViewer(page);
+
+        const enabled = page.getByTestId('viewer-relief-enabled');
+        const cycle = page.getByTestId('viewer-relief-azimuth-cycle');
+        const azimuth = page.getByTestId('viewer-relief-azimuth');
+
+        await expect(cycle).toBeDisabled();
+        await expect(cycle).toHaveText(/Off/i);
+        await enabled.click();
+
+        const initialAzimuth = Number(await azimuth.inputValue());
+        await cycle.click();
+        await expect(cycle).toHaveText(/10s/i);
+        await expect.poll(async () => Number(await azimuth.inputValue())).not.toBe(initialAzimuth);
+
+        await setRangeValue(page, 'viewer-relief-azimuth', 180);
+        await expect(cycle).toHaveText(/Off/i);
+        await expect(azimuth).toHaveValue('180');
+
+        await cycle.click();
+        await expect(cycle).toHaveText(/10s/i);
+        await cycle.click();
+        await expect(cycle).toHaveText(/7s/i);
+        await cycle.click();
+        await expect(cycle).toHaveText(/3s/i);
+        await cycle.click();
+        await expect(cycle).toHaveText(/Off/i);
+
+        const stoppedAzimuth = Number(await azimuth.inputValue());
+        await page.waitForTimeout(100);
+        await expect(azimuth).toHaveValue(String(stoppedAzimuth));
+    });
 });
