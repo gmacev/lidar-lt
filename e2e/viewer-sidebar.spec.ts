@@ -97,6 +97,13 @@ test.describe('viewer sidebar settings', () => {
         await expect(cycle).toHaveText(/10s/i);
         await expect.poll(async () => Number(await azimuth.inputValue())).not.toBe(initialAzimuth);
 
+        const beforeHide = Number(await azimuth.inputValue());
+        await page.getByTestId('viewer-ui-toggle').click();
+        await page.waitForTimeout(150);
+        await page.getByTestId('viewer-ui-toggle').click();
+        await expect(cycle).toHaveText(/10s/i);
+        await expect.poll(async () => Number(await azimuth.inputValue())).not.toBe(beforeHide);
+
         await setRangeValue(page, 'viewer-relief-azimuth', 180);
         await expect(cycle).toHaveText(/Off/i);
         await expect(azimuth).toHaveValue('180');
@@ -113,5 +120,11 @@ test.describe('viewer sidebar settings', () => {
         const stoppedAzimuth = Number(await azimuth.inputValue());
         await page.waitForTimeout(100);
         await expect(azimuth).toHaveValue(String(stoppedAzimuth));
+
+        await cycle.click();
+        await expect(cycle).toHaveText(/10s/i);
+        await page.getByTestId('viewer-reset-defaults').click();
+        await expect(cycle).toHaveText(/Off/i);
+        await expect(azimuth).toHaveValue('315');
     });
 });

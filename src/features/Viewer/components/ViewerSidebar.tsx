@@ -14,6 +14,7 @@ import { FOVControl } from './FOVControl';
 import { FpsCounter } from './FpsCounter';
 import { ViewerPresetManager } from './ViewerPresetManager';
 import type { ViewerPreset } from '@/features/Viewer/utils/viewerPresetStorage';
+import type { ReliefAzimuthCycleController } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
 
 interface ViewerSidebarProps {
     viewerRef: RefObject<PotreeViewer | null>;
@@ -23,6 +24,7 @@ interface ViewerSidebarProps {
     onBack: () => void;
     onResetDefaults: () => void;
     onLoadPreset: (preset: ViewerPreset) => void;
+    reliefAzimuthCycle: ReliefAzimuthCycleController;
     onCollapsedChange: (collapsed: boolean) => void;
     resetKey: number;
 }
@@ -41,6 +43,7 @@ export function ViewerSidebar({
     onBack,
     onResetDefaults,
     onLoadPreset,
+    reliefAzimuthCycle,
     onCollapsedChange,
     resetKey,
 }: ViewerSidebarProps) {
@@ -159,6 +162,7 @@ export function ViewerSidebar({
                                     <ReliefControl
                                         viewerRef={viewerRef}
                                         initialState={initialState}
+                                        azimuthCycle={reliefAzimuthCycle}
                                         updateUrl={updateUrl}
                                     />
                                 </div>

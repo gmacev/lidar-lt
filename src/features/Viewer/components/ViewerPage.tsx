@@ -8,6 +8,7 @@ import { useViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNav
 import { useViewerTools } from '@/features/Viewer/hooks/useViewerTools';
 import { useMapLabels } from '@/features/Viewer/hooks/useMapLabels';
 import { useKvrViewerLabels } from '@/features/Viewer/hooks/useKvrViewerLabels';
+import { useReliefAzimuthCycle } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import {
     getViewerDataUrl,
@@ -55,6 +56,12 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         viewerRef,
         enabled: !isLoading && !error,
         onInteraction: markCameraInteraction,
+    });
+    const reliefAzimuthCycle = useReliefAzimuthCycle({
+        initialState: urlState.sidebarInitialState,
+        resetKey: `${cellId}:${urlState.sidebarResetKey}`,
+        updateUrl: urlState.updateUrl,
+        viewerRef,
     });
     const navigation = useViewerNavigationActions({
         cellId,
@@ -144,6 +151,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 onUiVisibleChange={setUiVisible}
                 orientNorth={orientNorth}
                 profile={tools.profile}
+                reliefAzimuthCycle={reliefAzimuthCycle}
                 sidebarInitialState={urlState.sidebarInitialState}
                 sidebarResetKey={urlState.sidebarResetKey}
                 toolbar={tools.toolbar}

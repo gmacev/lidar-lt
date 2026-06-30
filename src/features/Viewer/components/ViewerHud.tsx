@@ -4,6 +4,7 @@ import type { PotreeViewer } from '@/common/types/potree';
 import { GlassPanel, Icon, LanguageSwitcher } from '@/common/components';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNavigationActions';
+import type { ReliefAzimuthCycleController } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
 import type {
     ViewerKvrToolModel,
     ViewerMarkersModel,
@@ -35,6 +36,7 @@ interface ViewerHudProps {
     onUiVisibleChange: (visible: boolean) => void;
     orientNorth: () => void;
     profile: ViewerProfilePanelModel;
+    reliefAzimuthCycle: ReliefAzimuthCycleController;
     sidebarInitialState: ViewerState;
     sidebarResetKey: number;
     toolbar: ViewerToolbarTools;
@@ -58,6 +60,7 @@ export function ViewerHud({
     onUiVisibleChange,
     orientNorth,
     profile,
+    reliefAzimuthCycle,
     sidebarInitialState,
     sidebarResetKey,
     toolbar,
@@ -197,6 +200,7 @@ export function ViewerHud({
                             onBack={onBack}
                             onResetDefaults={navigation.handleResetDefaults}
                             onLoadPreset={navigation.handleLoadPreset}
+                            reliefAzimuthCycle={reliefAzimuthCycle}
                             onCollapsedChange={onSidebarCollapsedChange}
                             resetKey={sidebarResetKey}
                         />
