@@ -16,20 +16,23 @@ type MapLabelCategory =
     | 'canal'
     | 'protected'
     | 'human-made'
+    | 'archaeological'
     | 'heritage';
 
 export interface MapLabelCandidate {
     id: string;
     category: MapLabelCategory;
-    names: {
-        default: string;
-        lt?: string;
-        en?: string;
-        latin?: string;
-    };
+    names: MapLabelNames;
     position: [number, number];
     priority: number;
     geometryWeight: number;
+}
+
+interface MapLabelNames {
+    default: string;
+    lt?: string;
+    en?: string;
+    latin?: string;
 }
 
 export interface Lks94Bounds {
@@ -54,7 +57,9 @@ interface TileCoordinate {
 const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
 const LKS94_PROJ =
     '+proj=tmerc +lat_0=0 +lon_0=24 +k=0.9998 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs';
-const MAX_TILE_REQUESTS = 16;
+// A 5 x 5 km sector can straddle a 5 x 5 tile grid at zoom 14. Dropping to
+// zoom 13 loses lower-rank POIs such as named archaeological sites.
+const MAX_TILE_REQUESTS = 25;
 const MAX_SOURCE_ZOOM = 14;
 const MIN_SOURCE_ZOOM = 3;
 const WEB_MERCATOR_MAX_LATITUDE = 85.05112878;
@@ -69,13 +74,8 @@ const HUMAN_MADE_POI_CLASSES = new Set([
     'embankment',
     'cemetery',
 ]);
-const HERITAGE_POI_CLASSES = new Set([
-    'archaeological_site',
-    'castle',
-    'fort',
-    'fortress',
-    'ruins',
-]);
+const HERITAGE_POI_CLASSES = new Set(['castle', 'fort', 'fortress', 'ruins']);
+const HILL_FORT_NAME_PATTERN = /(?:piliakaln|hill[\s-]?fort)/i;
 
 let tileJsonCache: TileJson | null = null;
 const tileCache = new Map<string, MapLabelCandidate[]>();
@@ -103,9 +103,20 @@ function getNames(properties: Record<string, string | number | boolean>) {
     };
 }
 
+function isHillFortAttraction(featureClasses: string[], names: MapLabelNames): boolean {
+    if (!featureClasses.includes('attraction')) return false;
+
+    // OpenMapTiles can prioritize tourism=attraction and omit the original
+    // historic/fortification tags, as it does for Apuolės piliakalnis.
+    return [names.default, names.lt, names.en, names.latin].some(
+        (name) => name !== undefined && HILL_FORT_NAME_PATTERN.test(name)
+    );
+}
+
 function getCategory(
     layerName: string,
-    properties: Record<string, string | number | boolean>
+    properties: Record<string, string | number | boolean>,
+    names: MapLabelNames
 ): MapLabelCategory | null {
     if (layerName === 'place') {
         const placeClass = properties.class;
@@ -134,9 +145,11 @@ function getCategory(
         if (featureClasses.some((featureClass) => HUMAN_MADE_POI_CLASSES.has(featureClass))) {
             return 'human-made';
         }
+        if (featureClasses.includes('archaeological_site')) return 'archaeological';
         if (featureClasses.some((featureClass) => HERITAGE_POI_CLASSES.has(featureClass))) {
             return 'heritage';
         }
+        if (isHillFortAttraction(featureClasses, names)) return 'archaeological';
     }
     return null;
 }
@@ -245,6 +258,7 @@ function getPriority(
         stream: 140,
         canal: 130,
         'human-made': 120,
+        archaeological: 270,
         heritage: 110,
     };
     return basePriority[category] + rankAdjustment;
@@ -260,9 +274,10 @@ function decodeTile(buffer: ArrayBuffer, tile: TileCoordinate): MapLabelCandidat
 
         for (let index = 0; index < layer.length; index += 1) {
             const feature = layer.feature(index);
-            const category = getCategory(layerName, feature.properties);
             const names = getNames(feature.properties);
-            if (!category || !names) continue;
+            if (!names) continue;
+            const category = getCategory(layerName, feature.properties, names);
+            if (!category) continue;
 
             const geoJson = feature.toGeoJSON(tile.x, tile.y, tile.z);
             if (!geoJson.geometry) continue;
