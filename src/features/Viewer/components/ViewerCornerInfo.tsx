@@ -40,7 +40,10 @@ export function ViewerCornerInfo({
     onVisibleChange,
 }: ViewerCornerInfoProps) {
     const { t } = useTranslation();
-    const [dateRange, setDateRange] = useState<string | null>(null);
+    const [manifestState, setManifestState] = useState<{
+        manifestUrl: string;
+        dateRange: string | null;
+    } | null>(null);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -48,22 +51,28 @@ export function ViewerCornerInfo({
         void fetch(manifestUrl, { signal: controller.signal })
             .then((response) => (response.ok ? response.json() : null))
             .then((data: SourceManifest | null) => {
-                const nextDateRange = formatDateRange(data?.sourceFileDateRange);
-
-                setDateRange(nextDateRange);
-                onVisibleChange?.(Boolean(nextDateRange) || mapLabelsEnabled);
+                setManifestState({
+                    manifestUrl,
+                    dateRange: formatDateRange(data?.sourceFileDateRange),
+                });
             })
             .catch((error: unknown) => {
                 if (error instanceof DOMException && error.name === 'AbortError') return;
-                setDateRange(null);
-                onVisibleChange?.(mapLabelsEnabled);
+                setManifestState({ manifestUrl, dateRange: null });
             });
 
         return () => controller.abort();
-    }, [manifestUrl, mapLabelsEnabled, onVisibleChange]);
+    }, [manifestUrl]);
 
+    const dateRange = manifestState?.manifestUrl === manifestUrl ? manifestState.dateRange : null;
     const showSourceDetails = uiVisible && Boolean(dateRange);
-    if (!showSourceDetails && !mapLabelsEnabled) return null;
+    const isVisible = showSourceDetails || mapLabelsEnabled;
+
+    useEffect(() => {
+        onVisibleChange?.(isVisible);
+    }, [isVisible, onVisibleChange]);
+
+    if (!isVisible) return null;
 
     return (
         <div

@@ -2,7 +2,21 @@ import { VectorTile } from '@mapbox/vector-tile';
 import type { Geometry, Position } from 'geojson';
 import Pbf from 'pbf';
 
-type MapLabelCategory = 'city' | 'town' | 'village' | 'water' | 'river';
+type MapLabelCategory =
+    | 'city'
+    | 'town'
+    | 'village'
+    | 'hamlet'
+    | 'dwelling'
+    | 'island'
+    | 'relief'
+    | 'water'
+    | 'river'
+    | 'stream'
+    | 'canal'
+    | 'protected'
+    | 'human-made'
+    | 'heritage';
 
 export interface MapLabelCandidate {
     id: string;
@@ -44,6 +58,24 @@ const MAX_TILE_REQUESTS = 16;
 const MAX_SOURCE_ZOOM = 14;
 const MIN_SOURCE_ZOOM = 3;
 const WEB_MERCATOR_MAX_LATITUDE = 85.05112878;
+const RELIEF_CLASSES = new Set(['peak', 'saddle', 'ridge', 'cliff', 'arete']);
+const HUMAN_MADE_POI_CLASSES = new Set([
+    'quarry',
+    'mine',
+    'mineshaft',
+    'dam',
+    'weir',
+    'dyke',
+    'embankment',
+    'cemetery',
+]);
+const HERITAGE_POI_CLASSES = new Set([
+    'archaeological_site',
+    'castle',
+    'fort',
+    'fortress',
+    'ruins',
+]);
 
 let tileJsonCache: TileJson | null = null;
 const tileCache = new Map<string, MapLabelCandidate[]>();
@@ -77,13 +109,35 @@ function getCategory(
 ): MapLabelCategory | null {
     if (layerName === 'place') {
         const placeClass = properties.class;
-        return placeClass === 'city' || placeClass === 'town' || placeClass === 'village'
-            ? placeClass
-            : null;
+        if (placeClass === 'city' || placeClass === 'town' || placeClass === 'village') {
+            return placeClass;
+        }
+        if (placeClass === 'hamlet') return 'hamlet';
+        if (placeClass === 'isolated_dwelling') return 'dwelling';
+        if (placeClass === 'island') return 'island';
+        return null;
     }
 
     if (layerName === 'water_name') return 'water';
-    if (layerName === 'waterway' && properties.class === 'river') return 'river';
+    if (layerName === 'waterway') {
+        if (properties.class === 'river') return 'river';
+        if (properties.class === 'stream') return 'stream';
+        if (properties.class === 'canal') return 'canal';
+        return null;
+    }
+    if (layerName === 'mountain_peak' && RELIEF_CLASSES.has(String(properties.class))) {
+        return 'relief';
+    }
+    if (layerName === 'park') return 'protected';
+    if (layerName === 'poi') {
+        const featureClasses = [properties.class, properties.subclass].map(String);
+        if (featureClasses.some((featureClass) => HUMAN_MADE_POI_CLASSES.has(featureClass))) {
+            return 'human-made';
+        }
+        if (featureClasses.some((featureClass) => HERITAGE_POI_CLASSES.has(featureClass))) {
+            return 'heritage';
+        }
+    }
     return null;
 }
 
@@ -181,8 +235,17 @@ function getPriority(
         city: 500,
         town: 400,
         village: 300,
+        relief: 280,
+        hamlet: 260,
+        island: 250,
+        dwelling: 220,
         water: 200,
-        river: 100,
+        river: 180,
+        protected: 160,
+        stream: 140,
+        canal: 130,
+        'human-made': 120,
+        heritage: 110,
     };
     return basePriority[category] + rankAdjustment;
 }
@@ -191,7 +254,7 @@ function decodeTile(buffer: ArrayBuffer, tile: TileCoordinate): MapLabelCandidat
     const vectorTile = new VectorTile(new Pbf(buffer));
     const candidates: MapLabelCandidate[] = [];
 
-    for (const layerName of ['place', 'water_name', 'waterway']) {
+    for (const layerName of ['place', 'mountain_peak', 'water_name', 'waterway', 'park', 'poi']) {
         const layer = vectorTile.layers[layerName];
         if (!layer) continue;
 

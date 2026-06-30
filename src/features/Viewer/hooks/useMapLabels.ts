@@ -18,6 +18,23 @@ function getLocalizedName(candidate: MapLabelCandidate, language: string) {
         : (candidate.names.en ?? candidate.names.latin ?? candidate.names.default);
 }
 
+function getLabelEmphasis(category: MapLabelCandidate['category']): ViewerLabel['emphasis'] {
+    if (category === 'city' || category === 'town') return 'primary';
+    if (
+        category === 'village' ||
+        category === 'hamlet' ||
+        category === 'dwelling' ||
+        category === 'island' ||
+        category === 'water' ||
+        category === 'river' ||
+        category === 'stream' ||
+        category === 'canal'
+    ) {
+        return 'secondary';
+    }
+    return 'tertiary';
+}
+
 export function useMapLabels({ enabled, language, sectorId, viewerRef }: UseMapLabelsOptions) {
     const [candidateData, setCandidateData] = useState<{
         sectorId: string;
@@ -75,8 +92,10 @@ export function useMapLabels({ enabled, language, sectorId, viewerRef }: UseMapL
         text: getLocalizedName(candidate, language),
         position: candidate.position,
         priority: candidate.priority,
-        tone:
-            candidate.category === 'water' || candidate.category === 'river' ? 'water' : 'neutral',
+        emphasis: getLabelEmphasis(candidate.category),
+        tone: ['water', 'river', 'stream', 'canal'].includes(candidate.category)
+            ? 'water'
+            : 'neutral',
     }));
 
     return {

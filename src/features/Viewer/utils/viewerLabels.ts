@@ -2,6 +2,7 @@ import { Box3 } from 'three';
 import type { PotreeViewer } from '@/common/types/potree';
 
 export type ViewerLabelTone = 'neutral' | 'water' | 'accent';
+export type ViewerLabelEmphasis = 'primary' | 'secondary' | 'tertiary';
 type ViewerLabelPosition =
     | readonly [x: number, y: number]
     | readonly [x: number, y: number, z: number];
@@ -13,8 +14,50 @@ export interface ViewerLabel {
     position: ViewerLabelPosition;
     priority: number;
     tone?: ViewerLabelTone;
+    emphasis?: ViewerLabelEmphasis;
     ariaLabel?: string;
     onActivate?: () => void;
+}
+
+export const VIEWER_LABEL_METRICS: Record<
+    ViewerLabelEmphasis,
+    {
+        anchorOffset: number;
+        characterWidth: number;
+        height: number;
+        maxWidth: number;
+        minWidth: number;
+        paddingWidth: number;
+    }
+> = {
+    primary: {
+        anchorOffset: 11,
+        characterWidth: 7.8,
+        height: 22,
+        maxWidth: 224,
+        minWidth: 44,
+        paddingWidth: 16,
+    },
+    secondary: {
+        anchorOffset: 9,
+        characterWidth: 7.2,
+        height: 20,
+        maxWidth: 192,
+        minWidth: 38,
+        paddingWidth: 14,
+    },
+    tertiary: {
+        anchorOffset: 8,
+        characterWidth: 6.4,
+        height: 17,
+        maxWidth: 176,
+        minWidth: 34,
+        paddingWidth: 12,
+    },
+};
+
+export function getViewerLabelEmphasis(label: Pick<ViewerLabel, 'emphasis'>) {
+    return label.emphasis ?? 'secondary';
 }
 
 export function getViewerWorldBounds(viewer: PotreeViewer) {

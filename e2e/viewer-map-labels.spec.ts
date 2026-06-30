@@ -5,7 +5,13 @@ test.describe('viewer map labels', () => {
     test('toggles labels, shares state, filters features, and keeps attribution visible', async ({
         page,
     }) => {
+        let sourceManifestRequests = 0;
+        page.on('request', (request) => {
+            if (request.url().endsWith('/source_manifest.json')) sourceManifestRequests += 1;
+        });
         await gotoMockedViewer(page);
+        await expect(page.getByText('LiDAR source: 2025')).toBeVisible();
+        const initialSourceManifestRequests = sourceManifestRequests;
         const toggle = page.getByTestId('viewer-map-labels-toggle');
 
         await expect(toggle).toHaveAttribute('data-active', 'false');
@@ -16,11 +22,13 @@ test.describe('viewer map labels', () => {
         await expect(toggle).toHaveAttribute('data-active', 'true');
         await expect(page.getByTestId('viewer-map-labels')).toContainText('Vilnius');
         await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Ignored Peak');
-        await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Ignored Stream');
+        await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Ignored Cafe');
         await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Outside Village');
         await expect(page.getByTestId('viewer-map-attribution')).toContainText(
             '©OpenMapTilesData fromOpenStreetMap'
         );
+
+        expect(sourceManifestRequests).toBe(initialSourceManifestRequests);
 
         await page.reload();
         await expectViewerLabelsReady(page);

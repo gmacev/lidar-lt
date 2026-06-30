@@ -72,6 +72,7 @@ export function useKvrViewerLabels({
                 position: [centerMatch.center.x, centerMatch.center.y],
                 priority: KVR_LABEL_PRIORITY,
                 tone: 'accent',
+                emphasis: 'secondary',
                 ariaLabel: text,
                 onActivate: () => {
                     onCenterMatchRef.current(centerMatch);

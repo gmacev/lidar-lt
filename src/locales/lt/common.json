@@ -196,7 +196,7 @@
         "variant": "Variantas"
     },
     "mapLabels": {
-        "toggle": "Vietovardžiai ir vandens telkiniai",
+        "toggle": "Geografiniai pavadinimai",
         "errorTitle": "Žemėlapio pavadinimai nepasiekiami",
         "errorDescription": "Nepavyko įkelti OpenStreetMap pavadinimų. Išjunkite ir vėl įjunkite sluoksnį."
     },

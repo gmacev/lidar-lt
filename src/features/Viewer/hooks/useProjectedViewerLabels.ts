@@ -4,7 +4,9 @@ import { Vector3 } from 'three';
 import type { PotreeViewer } from '@/common/types/potree';
 import {
     getViewerGroundElevation,
+    getViewerLabelEmphasis,
     getViewerLabelKey,
+    VIEWER_LABEL_METRICS,
     type ViewerLabel,
 } from '@/features/Viewer/utils/viewerLabels';
 
@@ -59,8 +61,16 @@ function projectLabels(labels: ViewerLabel[], viewer: PotreeViewer, groundElevat
 
             const screenX = ((point.x + 1) / 2) * rect.width;
             const screenY = ((-point.y + 1) / 2) * rect.height;
-            const width = Math.min(190, Math.max(38, label.text.length * 7.2 + 14));
-            const height = 22;
+            const metrics = VIEWER_LABEL_METRICS[getViewerLabelEmphasis(label)];
+            const displayLength = label.text.length;
+            const width = Math.min(
+                metrics.maxWidth,
+                Math.max(
+                    metrics.minWidth,
+                    displayLength * metrics.characterWidth + metrics.paddingWidth
+                )
+            );
+            const height = metrics.height;
 
             return {
                 label,

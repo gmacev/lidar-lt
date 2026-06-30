@@ -196,7 +196,7 @@
         "variant": "Variant"
     },
     "mapLabels": {
-        "toggle": "Place and water labels",
+        "toggle": "Geographic labels",
         "errorTitle": "Map labels unavailable",
         "errorDescription": "OpenStreetMap labels could not be loaded. Turn the layer off and on to retry."
     },
