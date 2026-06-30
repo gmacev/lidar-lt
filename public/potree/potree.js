@@ -59010,7 +59010,7 @@ float reliefShade(float depth){
 	float highlight = smoothstep(0.0, 1.0, max(amount, 0.0));
 	float shadow = smoothstep(0.0, 1.0, max(-amount, 0.0));
 
-	return clamp(1.0 + highlight * 0.55 - shadow * 0.85, 0.35, 1.45);
+	return clamp(1.0 + highlight * 0.55 - shadow * 0.85, 0.28, 1.45);
 }
 
 void main() {
@@ -59255,7 +59255,7 @@ float reliefShade(float depth){
 	float highlight = smoothstep(0.0, 1.0, max(amount, 0.0));
 	float shadow = smoothstep(0.0, 1.0, max(-amount, 0.0));
 
-	return clamp(1.0 + highlight * 0.55 - shadow * 0.85, 0.35, 1.45);
+	return clamp(1.0 + highlight * 0.55 - shadow * 0.85, 0.28, 1.45);
 }
 
 void main(){
