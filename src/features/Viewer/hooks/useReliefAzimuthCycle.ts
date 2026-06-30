@@ -6,7 +6,7 @@ import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 const CYCLE_DURATIONS = [10, 7, 3] as const;
 type CycleDuration = (typeof CYCLE_DURATIONS)[number] | null;
 
-export interface ReliefAzimuthCycleSnapshot {
+interface ReliefAzimuthCycleSnapshot {
     azimuth: number;
     duration: CycleDuration;
 }
