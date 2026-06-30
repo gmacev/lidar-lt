@@ -61280,8 +61280,16 @@ void main() {
 
 			{ // update pick material
 				pickMaterial.pointSizeType = pointSizeType;
-				//pickMaterial.shape = this.material.shape;
-				pickMaterial.shape = Potree.PointShape.PARABOLOID;
+				// Paraboloid picking writes gl_FragDepthEXT. Some mobile WebGL 1
+				// implementations do not expose EXT_frag_depth, so compiling that
+				// shader makes point picking take down the viewer during touch/zoom.
+				// Keep the more accurate paraboloid picker where it is supported and
+				// fall back to circles everywhere else.
+				let supportsFragDepth = renderer.capabilities.isWebGL2
+					|| renderer.extensions.has("EXT_frag_depth");
+				pickMaterial.shape = supportsFragDepth
+					? Potree.PointShape.PARABOLOID
+					: Potree.PointShape.CIRCLE;
 
 				pickMaterial.uniforms.uFilterReturnNumberRange.value = this.material.uniforms.uFilterReturnNumberRange.value;
 				pickMaterial.uniforms.uFilterNumberOfReturnsRange.value = this.material.uniforms.uFilterNumberOfReturnsRange.value;
@@ -63808,6 +63816,14 @@ void main() {
 			let gl = this.gl;
 
 			let material = params.material ? params.material : octree.material;
+			// Paraboloid point shaders require EXT_frag_depth in WebGL 1. Potree
+			// materials can request that shape before application settings are
+			// applied (and auxiliary render passes may create their own material),
+			// so enforce the capability fallback at the final render boundary.
+			if (material.shape === PointShape.PARABOLOID
+				&& !gl.getExtension("EXT_frag_depth")) {
+				material.shape = PointShape.CIRCLE;
+			}
 			if (nodes.length > maxVisibleNodes) {
 				nodes = nodes.slice(0, maxVisibleNodes);
 			}
