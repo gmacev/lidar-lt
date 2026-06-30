@@ -17,7 +17,7 @@ import {
     POINT_SIZE_DEFAULTS,
     type ElevationPalette,
 } from './viewerConfig';
-import { createElevationGradient } from '@/features/Viewer/config/viridisPalette.ts';
+import { createElevationGradient } from '@/features/Viewer/config/elevationPalettes.ts';
 
 const HIGH_ELEVATION_TAIL_START_MIN = 0.75;
 const HIGH_ELEVATION_TAIL_START_MAX = 0.94;
