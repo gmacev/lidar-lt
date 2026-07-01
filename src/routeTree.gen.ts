@@ -21,7 +21,9 @@ const ViewerCellIdRoute = ViewerCellIdRouteImport.update({
   id: '/viewer/$cellId',
   path: '/viewer/$cellId',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any).lazy(() =>
+  import('./routes/viewer.$cellId.lazy').then((d) => d.Route),
+)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute

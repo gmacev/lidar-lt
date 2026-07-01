@@ -38,6 +38,20 @@ npm run build
 npm run serve
 ```
 
+## Generated assets
+
+The map uses a checked-in dark OpenFreeMap style so production startup does not transform and reload the style at runtime. Regenerate it deliberately when updating the upstream Liberty style:
+
+```bash
+npm run generate:map-style
+```
+
+Grid coordinates are stored at six decimal places, which is sufficient for the map resolution and reduces the production bundle. Run the structural GeoJSON optimizer after replacing the source grid:
+
+```bash
+npm run optimize:grid
+```
+
 ## Project Structure
 
 ```

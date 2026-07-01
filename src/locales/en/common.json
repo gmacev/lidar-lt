@@ -172,6 +172,11 @@
         "showControls": "Show controls",
         "loading": "Loading point cloud...",
         "error": "Error",
+        "runtime": {
+            "loading": "Loading the 3D viewer...",
+            "loadError": "The 3D viewer could not be loaded.",
+            "retry": "Try again"
+        },
         "loadError": {
             "metadataNotFoundTitle": "Point cloud is not available",
             "metadataNotFoundMessage": "{{sector}} has a map sector, but its LiDAR point cloud has not been generated yet.",

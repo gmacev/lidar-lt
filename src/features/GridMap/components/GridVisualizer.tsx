@@ -1,97 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Map, { Source, Layer, type LayerProps } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { StyleSpecification } from 'maplibre-gl';
 import { useTranslation } from 'react-i18next';
 import { useLithuaniaGrid } from '@/features/GridMap/hooks';
 import { GridSearchControl } from './GridSearchControl';
 import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
 
 const GRID_SOURCE_ID = 'lidar-grid';
-const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
-const DARK_WATER_COLOR = '#2b8cff';
-
-const darkenLibertyStyle = (style: StyleSpecification): StyleSpecification => ({
-    ...style,
-    layers: style.layers.map((layer) => {
-        const paint = { ...(layer.paint ?? {}) };
-        const id = layer.id.toLowerCase();
-
-        if (layer.type === 'background') {
-            return { ...layer, paint: { ...paint, 'background-color': '#090b08' } };
-        }
-
-        if (layer.type === 'fill') {
-            if (id.includes('building')) {
-                Object.assign(paint, {
-                    'fill-color': '#131715',
-                    'fill-outline-color': '#2b332f',
-                    'fill-opacity': 0.72,
-                });
-            } else if (id.includes('road')) {
-                Object.assign(paint, { 'fill-color': '#1b1711', 'fill-opacity': 0.36 });
-            } else if (id.includes('water')) {
-                Object.assign(paint, { 'fill-color': DARK_WATER_COLOR, 'fill-opacity': 0.58 });
-            } else if (
-                id.includes('park') ||
-                id.includes('wood') ||
-                id.includes('grass') ||
-                id.includes('landcover')
-            ) {
-                Object.assign(paint, {
-                    'fill-color': '#0b2410',
-                    'fill-outline-color': '#1f6a2a',
-                    'fill-opacity': 0.62,
-                });
-            } else if (id.includes('landuse')) {
-                Object.assign(paint, {
-                    'fill-color': '#0f150d',
-                    'fill-outline-color': '#1c2419',
-                    'fill-opacity': 0.72,
-                });
-            } else {
-                Object.assign(paint, { 'fill-color': '#0d100c' });
-            }
-        }
-
-        if (layer.type === 'line') {
-            if (id.includes('water')) {
-                Object.assign(paint, { 'line-color': DARK_WATER_COLOR, 'line-opacity': 0.98 });
-            } else if (id.includes('road') || id.includes('highway') || id.includes('rail')) {
-                Object.assign(paint, { 'line-color': '#3e3325', 'line-opacity': 0.28 });
-            } else if (id.includes('boundary')) {
-                Object.assign(paint, { 'line-color': '#6f756e', 'line-opacity': 0.56 });
-            } else {
-                Object.assign(paint, { 'line-color': '#2a302a', 'line-opacity': 0.52 });
-            }
-        }
-
-        if (layer.type === 'symbol') {
-            Object.assign(paint, {
-                'text-color': id.includes('country') || id.includes('city') ? '#f2f2ef' : '#c7c9c2',
-                'text-halo-color': '#10120e',
-                'text-halo-width': 1.25,
-            });
-        }
-
-        if (layer.type === 'fill-extrusion' && id.includes('building')) {
-            Object.assign(paint, {
-                'fill-extrusion-color': '#18201d',
-                'fill-extrusion-opacity': 0.42,
-            });
-        }
-
-        if (layer.type === 'raster') {
-            Object.assign(paint, {
-                'raster-opacity': 0,
-                'raster-saturation': -0.6,
-                'raster-brightness-max': 0.35,
-            });
-        }
-
-        return { ...layer, paint } as typeof layer;
-    }),
-});
+const MAP_STYLE_URL = '/styles/liberty-dark.json';
 
 const getMapLabelExpression = (language: string) =>
     language.startsWith('en')
@@ -101,29 +17,6 @@ const getMapLabelExpression = (language: string) =>
 export function GridVisualizer() {
     const { t, i18n } = useTranslation();
     const { data, mapRef, tooltip, search, handlers } = useLithuaniaGrid();
-    const [mapStyle, setMapStyle] = useState<StyleSpecification | string>(MAP_STYLE_URL);
-
-    useEffect(() => {
-        let isMounted = true;
-
-        fetch(MAP_STYLE_URL)
-            .then((response) => response.json() as Promise<StyleSpecification>)
-            .then((style) => {
-                if (isMounted) {
-                    setMapStyle(darkenLibertyStyle(style));
-                }
-            })
-            .catch(() => {
-                if (isMounted) {
-                    setMapStyle(MAP_STYLE_URL);
-                }
-            });
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
-
     useEffect(() => {
         const map = mapRef.current?.getMap();
         if (!map) return;
@@ -238,7 +131,7 @@ export function GridVisualizer() {
                     zoom: 6.5,
                 }}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle={mapStyle}
+                mapStyle={MAP_STYLE_URL}
                 interactiveLayerIds={['grid-fill']}
                 onClick={handlers.onClick}
                 onMouseMove={handlers.onMouseMove}

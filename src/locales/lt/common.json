@@ -172,6 +172,11 @@
         "showControls": "Rodyti valdiklius",
         "loading": "Kraunami taškų debesys...",
         "error": "Klaida",
+        "runtime": {
+            "loading": "Įkeliama 3D peržiūra...",
+            "loadError": "Nepavyko įkelti 3D peržiūros.",
+            "retry": "Bandyti dar kartą"
+        },
         "loadError": {
             "metadataNotFoundTitle": "Taškų debesis nepasiekiamas",
             "metadataNotFoundMessage": "{{sector}} yra žemėlapio dalis, bet jo LiDAR taškų debesis dar nebuvo sugeneruotas.",
