@@ -229,6 +229,7 @@
         "elevationAxis": "Aukštis (m)",
         "distance": "Atstumas",
         "elevation": "Aukštis",
+        "localRelief": "Viet. skirtumas",
         "segment": "Atkarpa",
         "classification": "Klasė",
         "segments": "atkarpos",

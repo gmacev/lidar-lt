@@ -62,6 +62,8 @@ interface HoverIndex {
 const EMPTY_BOUNDS: ViewBounds = { minX: 0, maxX: 1, minY: 0, maxY: 1 };
 const HOVER_BUCKET_COUNT = 1024;
 const GROUND_TRACE_MAX_GAP_METERS = 1;
+const LOCAL_RELIEF_SEARCH_RADIUS_METERS = 5;
+const LOCAL_RELIEF_CENTER_IGNORE_METERS = 0.75;
 
 function niceStep(range: number, targetTicks: number) {
     const rough = range / Math.max(1, targetTicks);
@@ -119,8 +121,79 @@ function lowerBoundBinIndex(bins: ProfileBin[], distance: number) {
     return low;
 }
 
+function median(values: number[]) {
+    if (values.length === 0) return null;
+
+    const sorted = values.slice().sort((a, b) => a - b);
+    const middle = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function getBaselineElevation(bin: ProfileBin) {
+    if (bin.groundElevation !== null && Number.isFinite(bin.groundElevation)) {
+        return bin.groundElevation;
+    }
+    return Number.isFinite(bin.minElevation) ? bin.minElevation : null;
+}
+
+function getReliefSide(bins: ProfileBin[], minDistance: number, maxDistance: number) {
+    const elevations: number[] = [];
+    const distances: number[] = [];
+    const startIndex = lowerBoundBinIndex(bins, minDistance);
+
+    for (let i = startIndex; i < bins.length && bins[i].distance <= maxDistance; i++) {
+        const elevation = getBaselineElevation(bins[i]);
+        if (elevation === null) continue;
+
+        elevations.push(elevation);
+        distances.push(bins[i].distance);
+    }
+
+    const elevation = median(elevations);
+    const distance = median(distances);
+    return elevation === null || distance === null ? null : { distance, elevation };
+}
+
+function calculateLocalRelief(
+    bins: ProfileBin[],
+    distance: number,
+    elevation: number
+): number | null {
+    const left = getReliefSide(
+        bins,
+        distance - LOCAL_RELIEF_SEARCH_RADIUS_METERS,
+        distance - LOCAL_RELIEF_CENTER_IGNORE_METERS
+    );
+    const right = getReliefSide(
+        bins,
+        distance + LOCAL_RELIEF_CENTER_IGNORE_METERS,
+        distance + LOCAL_RELIEF_SEARCH_RADIUS_METERS
+    );
+
+    let baseline: number | null = null;
+    if (left && right) {
+        const span = right.distance - left.distance;
+        if (Math.abs(span) <= Number.EPSILON) {
+            baseline = (left.elevation + right.elevation) / 2;
+        } else {
+            const ratio = (distance - left.distance) / span;
+            baseline = left.elevation + (right.elevation - left.elevation) * ratio;
+        }
+    } else {
+        baseline = left?.elevation ?? right?.elevation ?? null;
+    }
+
+    return baseline === null ? null : elevation - baseline;
+}
+
 function formatMeters(value: number | null, digits = 1) {
     return value === null ? '—' : `${value.toFixed(digits)} m`;
+}
+
+function formatSignedMeters(value: number | null) {
+    if (value === null) return '--';
+    if (Math.abs(value) < 0.005) return '0.00 m';
+    return `${value > 0 ? '+' : ''}${value.toFixed(2)} m`;
 }
 
 export function HeightProfilePanel({
@@ -150,6 +223,7 @@ export function HeightProfilePanel({
     const tooltipRef = useRef<HTMLDivElement>(null);
     const tooltipDistanceRef = useRef<HTMLSpanElement>(null);
     const tooltipElevationRef = useRef<HTMLSpanElement>(null);
+    const tooltipLocalReliefRef = useRef<HTMLSpanElement>(null);
     const tooltipDetailsRef = useRef<HTMLDivElement>(null);
     const cacheRef = useRef<ProjectionCache | null>(null);
     const hoverIndexRef = useRef<HoverIndex | null>(null);
@@ -500,6 +574,11 @@ export function HeightProfilePanel({
         if (tooltipElevationRef.current) {
             tooltipElevationRef.current.textContent = `${sample.elevation[index].toFixed(2)} m`;
         }
+        if (tooltipLocalReliefRef.current) {
+            tooltipLocalReliefRef.current.textContent = formatSignedMeters(
+                calculateLocalRelief(bins, sample.mileage[index], sample.elevation[index])
+            );
+        }
         if (tooltipDetailsRef.current) {
             tooltipDetailsRef.current.textContent = `${t('profile.segment')} P${segmentIndex + 1}–P${segmentIndex + 2} · ${t('profile.classification')} ${sample.classification[index]}`;
         }
@@ -795,6 +874,9 @@ export function HeightProfilePanel({
                             <span className="font-semibold text-neon-amber">Y</span>
                             <span className="text-white/55">{t('profile.elevation')}</span>
                             <span ref={tooltipElevationRef} className="text-right text-white" />
+                            <span className="font-semibold text-neon-amber">dZ</span>
+                            <span className="text-white/55">{t('profile.localRelief')}</span>
+                            <span ref={tooltipLocalReliefRef} className="text-right text-white" />
                         </div>
                         <div
                             ref={tooltipDetailsRef}

@@ -229,6 +229,7 @@
         "elevationAxis": "Elevation (m)",
         "distance": "Distance",
         "elevation": "Elevation",
+        "localRelief": "Local relief",
         "segment": "Segment",
         "classification": "Class",
         "segments": "segments",
