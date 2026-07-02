@@ -348,6 +348,16 @@ function getTileCoordinates(bounds: Lks94Bounds, zoom: number): TileCoordinate[]
     return tiles;
 }
 
+function getCoverageTileCoordinates(coverageBounds: readonly Lks94Bounds[], zoom: number) {
+    const uniqueTiles = new Map<string, TileCoordinate>();
+    for (const bounds of coverageBounds) {
+        for (const tile of getTileCoordinates(bounds, zoom)) {
+            uniqueTiles.set(`${tile.z}/${tile.x}/${tile.y}`, tile);
+        }
+    }
+    return [...uniqueTiles.values()];
+}
+
 async function getTileJson(signal: AbortSignal) {
     if (tileJsonCache) return tileJsonCache;
     const response = await fetch(TILEJSON_URL, { signal });
@@ -386,16 +396,17 @@ function isCandidateInsideBounds(candidate: MapLabelCandidate, bounds: Lks94Boun
     return x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY;
 }
 
-export async function fetchMapLabels(bounds: Lks94Bounds, signal: AbortSignal) {
+export async function fetchMapLabels(coverageBounds: readonly Lks94Bounds[], signal: AbortSignal) {
+    if (coverageBounds.length === 0) return [];
     const tileJson = await getTileJson(signal);
     const maximumZoom = Math.min(tileJson.maxzoom ?? MAX_SOURCE_ZOOM, MAX_SOURCE_ZOOM);
     const minimumZoom = Math.max(tileJson.minzoom ?? MIN_SOURCE_ZOOM, MIN_SOURCE_ZOOM);
     let zoom = maximumZoom;
-    let tiles = getTileCoordinates(bounds, zoom);
+    let tiles = getCoverageTileCoordinates(coverageBounds, zoom);
 
     while (tiles.length > MAX_TILE_REQUESTS && zoom > minimumZoom) {
         zoom -= 1;
-        tiles = getTileCoordinates(bounds, zoom);
+        tiles = getCoverageTileCoordinates(coverageBounds, zoom);
     }
     if (tiles.length > MAX_TILE_REQUESTS) {
         throw new Error('Point-cloud bounds require too many map tiles');
@@ -420,6 +431,6 @@ export async function fetchMapLabels(bounds: Lks94Bounds, signal: AbortSignal) {
     );
     if (successful.length === 0) throw new Error('All OpenFreeMap tile requests failed');
     return deduplicateCandidates(successful.flatMap((result) => result.value)).filter((candidate) =>
-        isCandidateInsideBounds(candidate, bounds)
+        coverageBounds.some((bounds) => isCandidateInsideBounds(candidate, bounds))
     );
 }

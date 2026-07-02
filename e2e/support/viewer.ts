@@ -468,6 +468,7 @@ interface MockViewerOptions {
     metadata?: MetadataMode;
     potree?: PotreeMode;
     mapLabels?: MapLabelsMode;
+    sourceManifest?: object;
 }
 
 export async function installMockViewer(page: Page, options: MockViewerOptions = {}) {
@@ -543,7 +544,7 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify(MOCK_SOURCE_MANIFEST),
+            body: JSON.stringify(options.sourceManifest ?? MOCK_SOURCE_MANIFEST),
         });
     });
 }

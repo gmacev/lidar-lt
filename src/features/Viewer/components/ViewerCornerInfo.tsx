@@ -1,18 +1,12 @@
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
+import type { SourceManifest } from '@/features/Viewer/hooks/useSourceManifest';
 import { SourceAttribution } from './SourceAttribution';
 import { ViewerMapStatus } from './ViewerMapStatus';
 
-interface SourceManifest {
-    sourceFileDateRange?: {
-        from?: string | null;
-        to?: string | null;
-    };
-}
-
 interface ViewerCornerInfoProps {
-    manifestUrl: string;
+    manifest: SourceManifest | null;
     viewerRef: RefObject<PotreeViewer | null>;
     uiVisible: boolean;
     mapLabelsEnabled: boolean;
@@ -32,7 +26,7 @@ function formatDateRange(range: SourceManifest['sourceFileDateRange']) {
 }
 
 export function ViewerCornerInfo({
-    manifestUrl,
+    manifest,
     viewerRef,
     uiVisible,
     mapLabelsEnabled,
@@ -40,31 +34,7 @@ export function ViewerCornerInfo({
     onVisibleChange,
 }: ViewerCornerInfoProps) {
     const { t } = useTranslation();
-    const [manifestState, setManifestState] = useState<{
-        manifestUrl: string;
-        dateRange: string | null;
-    } | null>(null);
-
-    useEffect(() => {
-        const controller = new AbortController();
-
-        void fetch(manifestUrl, { signal: controller.signal })
-            .then((response) => (response.ok ? response.json() : null))
-            .then((data: SourceManifest | null) => {
-                setManifestState({
-                    manifestUrl,
-                    dateRange: formatDateRange(data?.sourceFileDateRange),
-                });
-            })
-            .catch((error: unknown) => {
-                if (error instanceof DOMException && error.name === 'AbortError') return;
-                setManifestState({ manifestUrl, dateRange: null });
-            });
-
-        return () => controller.abort();
-    }, [manifestUrl]);
-
-    const dateRange = manifestState?.manifestUrl === manifestUrl ? manifestState.dateRange : null;
+    const dateRange = formatDateRange(manifest?.sourceFileDateRange);
     const showSourceDetails = uiVisible && Boolean(dateRange);
     const isVisible = showSourceDetails || mapLabelsEnabled;
 

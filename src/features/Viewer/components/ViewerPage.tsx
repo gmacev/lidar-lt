@@ -7,6 +7,7 @@ import { useViewerUrlState } from '@/features/Viewer/hooks/useViewerUrlState';
 import { useViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNavigationActions';
 import { useViewerTools } from '@/features/Viewer/hooks/useViewerTools';
 import { useMapLabels } from '@/features/Viewer/hooks/useMapLabels';
+import { useSourceManifest } from '@/features/Viewer/hooks/useSourceManifest';
 import { useKvrViewerLabels } from '@/features/Viewer/hooks/useKvrViewerLabels';
 import { useReliefAzimuthCycle } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
@@ -33,6 +34,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const { t, i18n } = useTranslation();
     const dataUrl = getViewerDataUrl(cellId);
     const sourceManifestUrl = getViewerSourceManifestUrl(cellId);
+    const sourceManifestState = useSourceManifest(sourceManifestUrl);
     const [uiVisible, setUiVisible] = useState(true);
     const [isSourceAttributionVisible, setIsSourceAttributionVisible] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(isMobile);
@@ -83,6 +85,8 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const sectorLabel = initialState.sectorName ?? cellId;
     const mapLabelsEnabled = initialState.mapLabels === true;
     const mapLabelState = useMapLabels({
+        coverageBounds: sourceManifestState.coverageBounds,
+        coverageReady: sourceManifestState.settled,
         enabled: mapLabelsEnabled,
         language: i18n.resolvedLanguage ?? i18n.language,
         sectorId: cellId,
@@ -127,7 +131,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
 
             {!isLoading && !error && (
                 <ViewerCornerInfo
-                    manifestUrl={sourceManifestUrl}
+                    manifest={sourceManifestState.manifest}
                     viewerRef={viewerRef}
                     uiVisible={uiVisible}
                     mapLabelsEnabled={mapLabelsEnabled}

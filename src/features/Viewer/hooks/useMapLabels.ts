@@ -1,9 +1,15 @@
 import { useEffect, useState, type RefObject } from 'react';
 import type { PotreeViewer } from '@/common/types/potree';
-import { fetchMapLabels, type MapLabelCandidate } from '@/features/Viewer/utils/mapLabelProvider';
+import {
+    fetchMapLabels,
+    type Lks94Bounds,
+    type MapLabelCandidate,
+} from '@/features/Viewer/utils/mapLabelProvider';
 import { getViewerWorldBounds, type ViewerLabel } from '@/features/Viewer/utils/viewerLabels';
 
 interface UseMapLabelsOptions {
+    coverageBounds: readonly Lks94Bounds[];
+    coverageReady: boolean;
     enabled: boolean;
     language: string;
     sectorId: string;
@@ -35,7 +41,14 @@ function getLabelEmphasis(category: MapLabelCandidate['category']): ViewerLabel[
     return 'tertiary';
 }
 
-export function useMapLabels({ enabled, language, sectorId, viewerRef }: UseMapLabelsOptions) {
+export function useMapLabels({
+    coverageBounds,
+    coverageReady,
+    enabled,
+    language,
+    sectorId,
+    viewerRef,
+}: UseMapLabelsOptions) {
     const [candidateData, setCandidateData] = useState<{
         sectorId: string;
         values: MapLabelCandidate[];
@@ -43,7 +56,7 @@ export function useMapLabels({ enabled, language, sectorId, viewerRef }: UseMapL
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        if (!enabled) return;
+        if (!enabled || !coverageReady) return;
 
         const controller = new AbortController();
         let frameId = 0;
@@ -56,8 +69,14 @@ export function useMapLabels({ enabled, language, sectorId, viewerRef }: UseMapL
                 return;
             }
 
+            const fallbackBounds: Lks94Bounds = {
+                minX: bounds.min.x,
+                minY: bounds.min.y,
+                maxX: bounds.max.x,
+                maxY: bounds.max.y,
+            };
             void fetchMapLabels(
-                { minX: bounds.min.x, minY: bounds.min.y, maxX: bounds.max.x, maxY: bounds.max.y },
+                coverageBounds.length > 0 ? coverageBounds : [fallbackBounds],
                 controller.signal
             )
                 .then((nextCandidates) => {
@@ -82,7 +101,7 @@ export function useMapLabels({ enabled, language, sectorId, viewerRef }: UseMapL
             controller.abort();
             cancelAnimationFrame(frameId);
         };
-    }, [enabled, sectorId, viewerRef]);
+    }, [coverageBounds, coverageReady, enabled, sectorId, viewerRef]);
 
     const candidates =
         enabled && candidateData?.sectorId === sectorId ? candidateData.values : EMPTY_CANDIDATES;

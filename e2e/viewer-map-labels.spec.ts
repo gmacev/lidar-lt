@@ -54,6 +54,30 @@ test.describe('viewer map labels', () => {
         await expect(page.getByText('Map labels unavailable')).toBeVisible();
         await expect(page.getByTestId('viewer-container').locator('canvas')).toBeVisible();
     });
+
+    test('limits labels to the source-file footprint of a partial sector', async ({ page }) => {
+        await installMockViewer(page, {
+            sourceManifest: {
+                sourceFileDateRange: { from: '2025', to: '2025' },
+                sourceFiles: [
+                    {
+                        bounds: {
+                            minx: 581430,
+                            miny: 6060600,
+                            maxx: 581480,
+                            maxy: 6060700,
+                        },
+                    },
+                ],
+            },
+        });
+        await page.goto(`${CANONICAL_VIEWER_PATH}&mapLabels=true`);
+
+        await expect(page.getByTestId('viewer-map-labels')).toContainText('Vilnius');
+        await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Neris');
+        await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Test Lake');
+        await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Test Quarry');
+    });
 });
 
 async function expectViewerLabelsReady(page: import('@playwright/test').Page) {
