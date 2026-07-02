@@ -117,7 +117,6 @@ function optionalSearchEnum<const T extends readonly [string, ...string[]]>(
 const COLOR_MODES = ['elevation', 'intensity'] as const;
 const POINT_SHAPES = ['square', 'circle', 'paraboloid'] as const;
 const POINT_SIZE_MODES = ['fixed', 'adaptive'] as const;
-const POINT_QUALITIES = ['standard', 'high'] as const;
 const ELEVATION_PALETTES = ['custom', 'terrain', 'grayscale'] as const;
 const PROJECTIONS = ['PERSPECTIVE', 'ORTHOGRAPHIC'] as const;
 const BACKGROUNDS = ['skybox', 'gradient', 'black'] as const;
@@ -132,8 +131,6 @@ export type PointShape = (typeof POINT_SHAPES)[number];
 
 export type PointSizeMode = (typeof POINT_SIZE_MODES)[number];
 
-export type PointQuality = (typeof POINT_QUALITIES)[number];
-
 export type ElevationPalette = (typeof ELEVATION_PALETTES)[number];
 
 export type Projection = (typeof PROJECTIONS)[number];
@@ -141,7 +138,6 @@ export type Projection = (typeof PROJECTIONS)[number];
 export const POINT_APPEARANCE_DEFAULTS = {
     shape: 'circle' as PointShape,
     sizeMode: 'adaptive' as PointSizeMode,
-    quality: 'standard' as PointQuality,
     elevationPalette: 'custom' as ElevationPalette,
 } as const;
 
@@ -180,7 +176,6 @@ export const ViewerStateSchema = z.object({
     // Rendering settings (short names to avoid Potree URL conflicts)
     ps: optionalSearchNumber, // point size
     psm: optionalSearchEnum(POINT_SIZE_MODES), // point size mode
-    pq: optionalSearchEnum(POINT_QUALITIES), // point quality
     mns: optionalSearchNumber, // min node size
     psh: optionalSearchEnum(POINT_SHAPES), // point shape
     zScale: optionalSearchNumber, // vertical exaggeration

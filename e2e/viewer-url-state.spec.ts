@@ -30,12 +30,11 @@ test.describe('viewer URL state', () => {
     test('ignores invalid params instead of crashing the route', async ({ page }) => {
         await installMockViewer(page);
         await page.goto(
-            `/viewer/${CANONICAL_CELL_ID}?sectorName=VILNIUS+%28centras%29&colorMode=bad&psm=giant&pq=ultra&psh=triangle&ep=rainbow&projection=isometric&bg=blue&sb=3&pb=not-a-number`
+            `/viewer/${CANONICAL_CELL_ID}?sectorName=VILNIUS+%28centras%29&colorMode=bad&psm=giant&psh=triangle&ep=rainbow&projection=isometric&bg=blue&sb=3&pb=not-a-number`
         );
         await expectViewerReady(page);
 
         await expect(page.getByTestId('viewer-color-mode-elevation')).toHaveClass(/laser-green/);
-        await expect(page.getByTestId('viewer-point-quality-standard')).toHaveClass(/laser-green/);
         await expect(page.getByTestId('viewer-point-shape-circle')).toHaveClass(/laser-green/);
         await expect(page.getByTestId('viewer-point-size-mode-adaptive')).toHaveClass(
             /laser-green/

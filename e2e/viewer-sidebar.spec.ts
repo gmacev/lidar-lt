@@ -59,9 +59,6 @@ test.describe('viewer sidebar settings', () => {
         await setRangeValue(page, 'viewer-relief-azimuth', 180);
         await expectSearchParam(page, 'reliefAzimuth', '180');
 
-        await page.getByTestId('viewer-point-quality-high').click();
-        await expectSearchParam(page, 'pq', 'high');
-
         await page.getByTestId('viewer-point-shape-square').click();
         await expectSearchParam(page, 'psh', 'square');
 

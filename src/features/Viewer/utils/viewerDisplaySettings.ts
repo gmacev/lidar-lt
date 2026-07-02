@@ -52,7 +52,6 @@ const VIEWER_DISPLAY_SETTING_KEYS = [
     'reliefAzimuth',
     'ps',
     'psm',
-    'pq',
     'mns',
     'psh',
     'zScale',
@@ -79,7 +78,6 @@ const viewerDisplaySettingsPick = {
     reliefAzimuth: true,
     ps: true,
     psm: true,
-    pq: true,
     mns: true,
     psh: true,
     zScale: true,
@@ -241,7 +239,7 @@ export function applyViewerDisplaySettings(
     viewer.setFOV(settings.fov ?? PERFORMANCE_DEFAULTS.fov);
     viewer.setPointBudget(settings.pb ?? getDefaultPointBudget());
     viewer.setMinNodeSize(settings.mns ?? PERFORMANCE_DEFAULTS.minNodeSize);
-    viewer.useHQ = (settings.pq ?? POINT_APPEARANCE_DEFAULTS.quality) === 'high';
+    viewer.useHQ = false;
     viewer.setEDLEnabled(settings.edlEnabled ?? EDL_DEFAULTS.enabled);
     viewer.setEDLStrength(settings.edlStrength ?? EDL_DEFAULTS.strength);
     viewer.setEDLRadius(settings.edlRadius ?? EDL_DEFAULTS.radius);

@@ -11,7 +11,6 @@ export {
     type ElevationPalette,
     type PointShape,
     type PointSizeMode,
-    type PointQuality,
 } from './viewerConfig';
 export {
     configureMaterialForElevation,
