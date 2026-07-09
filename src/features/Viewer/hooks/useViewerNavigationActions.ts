@@ -8,6 +8,7 @@ import {
 } from '@/features/Viewer/utils/viewerDefaults';
 import {
     applyViewerDisplaySettings,
+    normalizePresetElevationRange,
     replaceViewerDisplaySettings,
 } from '@/features/Viewer/utils/viewerDisplaySettings';
 import type { ViewerPreset } from '@/features/Viewer/utils/viewerPresetStorage';
@@ -108,13 +109,14 @@ export function useViewerNavigationActions({
     const handleLoadPreset = (preset: ViewerPreset) => {
         cancelPendingUrlUpdate();
 
-        applyViewerDisplaySettings(viewerRef.current, preset.state);
-        const nextSidebarState = replaceViewerDisplaySettings(initialState, preset.state);
+        const presetState = normalizePresetElevationRange(viewerRef.current, preset.state);
+        applyViewerDisplaySettings(viewerRef.current, presetState);
+        const nextSidebarState = replaceViewerDisplaySettings(initialState, presetState);
         setSidebarInitialState(nextSidebarState);
         bumpSidebarResetKey();
 
         void navigate({
-            search: (prev) => replaceViewerDisplaySettings(prev, preset.state),
+            search: (prev) => replaceViewerDisplaySettings(prev, presetState),
             replace: true,
         });
     };

@@ -106,6 +106,25 @@ export function getAutoElevationRange(pointcloud: PointCloud): [number, number] 
     return (pointcloud as PointCloudWithBaseRange)._autoElevationRange ?? null;
 }
 
+/**
+ * Gets this point cloud's automatic elevation range at a given Z scale without
+ * changing its current material state.
+ */
+export function getAutoElevationRangeForZScale(
+    pointcloud: PointCloud,
+    zScale: number
+): [number, number] | null {
+    const pc = pointcloud as PointCloudWithBaseRange;
+    const baseRange = pc._baseElevationRange;
+
+    if (!baseRange) {
+        return getAutoElevationRange(pointcloud);
+    }
+
+    const posZ = pointcloud.position.z || 0;
+    return [(baseRange[0] - posZ) * zScale + posZ, (baseRange[1] - posZ) * zScale + posZ];
+}
+
 export function setElevationPalette(pointcloud: PointCloud, palette: ElevationPalette) {
     const pc = pointcloud as PointCloudWithBaseRange;
     pc._elevationPalette = palette;

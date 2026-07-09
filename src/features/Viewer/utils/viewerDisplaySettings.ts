@@ -5,6 +5,7 @@ import {
     configureMaterialForIntensity,
     EDL_DEFAULTS,
     getDefaultPointBudget,
+    getAutoElevationRangeForZScale,
     PERFORMANCE_DEFAULTS,
     POINT_APPEARANCE_DEFAULTS,
     POINT_SIZE_DEFAULTS,
@@ -137,6 +138,38 @@ export function replaceViewerDisplaySettings(
         },
         settings
     );
+}
+
+/**
+ * Presets may have been saved in a sector with a different ground elevation.
+ * Keep a manual range when it fits the current sector, but reset an out-of-
+ * bounds one to the same automatic range used when switching Auto to Manual.
+ */
+export function normalizePresetElevationRange(
+    viewer: PotreeViewer | null,
+    state: ViewerDisplaySettings
+): ViewerDisplaySettings {
+    const savedRange = getElevationRange(state);
+    const pointcloud = viewer?.scene?.pointclouds?.[0];
+
+    if (!savedRange || !pointcloud) {
+        return state;
+    }
+
+    const autoRange = getAutoElevationRangeForZScale(
+        pointcloud,
+        state.zScale ?? Z_SCALE_DEFAULTS.scale
+    );
+
+    if (!autoRange || (savedRange[0] >= autoRange[0] && savedRange[1] <= autoRange[1])) {
+        return state;
+    }
+
+    return {
+        ...state,
+        elevationMin: autoRange[0],
+        elevationMax: autoRange[1],
+    };
 }
 
 function getElevationRange(settings: ViewerDisplaySettings): [number, number] | undefined {

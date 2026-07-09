@@ -16,6 +16,7 @@ export {
     configureMaterialForElevation,
     configureMaterialForIntensity,
     getAutoElevationRange,
+    getAutoElevationRangeForZScale,
     setElevationPalette,
     setManualElevationRange,
 } from './potreeMaterialConfig';
