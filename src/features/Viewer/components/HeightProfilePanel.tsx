@@ -244,8 +244,7 @@ export function HeightProfilePanel({
 }: HeightProfilePanelProps) {
     const { t } = useTranslation();
     const { resolvedTheme } = useTheme();
-    const profilePalette =
-        resolvedTheme === 'light' ? LIGHT_PROFILE_PALETTE : DARK_PROFILE_PALETTE;
+    const profilePalette = resolvedTheme === 'light' ? LIGHT_PROFILE_PALETTE : DARK_PROFILE_PALETTE;
     const containerRef = useRef<HTMLDivElement>(null);
     const dataCanvasRef = useRef<HTMLCanvasElement>(null);
     const pointsCanvasRef = useRef<HTMLCanvasElement>(null);

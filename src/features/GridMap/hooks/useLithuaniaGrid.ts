@@ -78,7 +78,7 @@ export function useLithuaniaGrid(mapStyleKey: string) {
             prevMatchedIds.current = new Set(matchedIdsRef.current);
         };
 
-        map.once('idle', restoreFeatureStates);
+        void map.once('idle', restoreFeatureStates);
 
         return () => {
             map.off('idle', restoreFeatureStates);

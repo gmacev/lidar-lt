@@ -22,10 +22,7 @@ function clampByte(value: number): number {
     return Math.max(0, Math.min(255, Math.round(value)));
 }
 
-export function configurePotreeBackgroundTexture(
-    PotreeLib: Potree,
-    theme: ResolvedTheme
-): void {
+export function configurePotreeBackgroundTexture(PotreeLib: Potree, theme: ResolvedTheme): void {
     const THREE = window.THREE;
     const palette =
         theme === 'light' ? POTREE_LIGHT_BACKGROUND_GRADIENT : POTREE_BACKGROUND_GRADIENT;

@@ -1,11 +1,7 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import { ThemeContext, type ThemeContextValue } from './ThemeContext';
 import { applyTheme, resolveTheme } from './theme';
-import {
-    THEME_STORAGE_KEY,
-    themePreferenceStorage,
-    type ThemePreference,
-} from './themeStorage';
+import { THEME_STORAGE_KEY, themePreferenceStorage, type ThemePreference } from './themeStorage';
 
 interface ThemeProviderProps {
     children: ReactNode;

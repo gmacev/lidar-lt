@@ -3,7 +3,17 @@
  * Based on actual usage patterns in this project
  */
 
-import { Box3, Vector3, Color, WebGLRenderer, Camera, Matrix4 } from 'three';
+import {
+    Box3,
+    Vector3,
+    Color,
+    WebGLRenderer,
+    Camera,
+    Matrix4,
+    DataTexture,
+    Scene,
+    Object3D,
+} from 'three';
 
 // ============================================================================
 // Potree Enums
@@ -272,9 +282,9 @@ export interface PotreeViewer {
 
     background: string | null;
     skybox: {
-        camera: THREE.Camera;
-        scene: THREE.Scene;
-        parent: THREE.Object3D;
+        camera: Camera;
+        scene: Scene;
+        parent: Object3D;
     } | null;
 
     addEventListener(type: string, listener: (event?: unknown) => void): void;
@@ -435,11 +445,11 @@ export interface Potree {
     ProfileRequest: typeof ProfileRequest;
     CameraMode: typeof CameraMode;
     Utils: {
-        createBackgroundTexture(width: number, height: number): THREE.DataTexture;
+        createBackgroundTexture(width: number, height: number): DataTexture;
         loadSkybox(path: string): {
-            camera: THREE.Camera;
-            scene: THREE.Scene;
-            parent: THREE.Object3D;
+            camera: Camera;
+            scene: Scene;
+            parent: Object3D;
         };
         getMousePointCloudIntersection(
             mouse: { x: number; y: number },
