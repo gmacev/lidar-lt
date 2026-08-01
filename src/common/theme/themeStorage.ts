@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { createStorage } from '@/common/utils/storage';
 
 export const THEME_STORAGE_KEY = 'lidar:theme';
-export const DEFAULT_THEME_PREFERENCE = 'dark' as const;
+const DEFAULT_THEME_PREFERENCE = 'dark' as const;
 
-export const themePreferenceSchema = z.enum(['light', 'dark']);
+const themePreferenceSchema = z.enum(['light', 'dark']);
 
 export type ThemePreference = z.infer<typeof themePreferenceSchema>;
 
