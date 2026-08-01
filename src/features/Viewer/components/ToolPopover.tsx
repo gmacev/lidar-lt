@@ -26,7 +26,7 @@ export function ToolPopover({
             width={width}
             side="left"
             align="start"
-            className={className}
+            className={`theme-surface ${className}`}
         >
             {children}
         </Popover>

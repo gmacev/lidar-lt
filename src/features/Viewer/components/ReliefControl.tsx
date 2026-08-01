@@ -90,7 +90,9 @@ export function ReliefControl({
                 />
             </div>
 
-            <div className={`flex flex-col gap-1 ${!reliefEnabled ? 'opacity-40' : ''}`}>
+            <div
+                className={`theme-disabled-section flex flex-col gap-1 ${!reliefEnabled ? 'opacity-40' : ''}`}
+            >
                 <label className="flex justify-between text-xs text-white/70">
                     <span className="flex items-center gap-1.5">
                         {t('relief.strength')}
@@ -117,7 +119,9 @@ export function ReliefControl({
                 />
             </div>
 
-            <div className={`flex flex-col gap-1 ${!reliefEnabled ? 'opacity-40' : ''}`}>
+            <div
+                className={`theme-disabled-section flex flex-col gap-1 ${!reliefEnabled ? 'opacity-40' : ''}`}
+            >
                 <div className="flex items-center justify-between text-xs text-white/70">
                     <span className="flex items-center gap-1.5">
                         {t('relief.azimuth')}

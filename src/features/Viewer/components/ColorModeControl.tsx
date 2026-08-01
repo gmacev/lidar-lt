@@ -558,11 +558,18 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                     onPointerUp={handleElevationTrackPointerEnd}
                                 >
                                     <div
-                                        className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/15"
+                                        className="viewer-range-track absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/15"
                                         style={{
-                                            background: `linear-gradient(to right, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.15) ${elevationRangePercent(elevationRange.range[0])}%, rgba(0,255,136,0.65) ${elevationRangePercent(elevationRange.range[0])}%, rgba(0,255,136,0.65) ${elevationRangePercent(elevationRange.range[1])}%, rgba(255,255,255,0.15) ${elevationRangePercent(elevationRange.range[1])}%, rgba(255,255,255,0.15) 100%)`,
+                                            background: `linear-gradient(to right, var(--viewer-double-range-inactive-border) 0%, var(--viewer-double-range-inactive-border) ${elevationRangePercent(elevationRange.range[0])}%, var(--viewer-double-range-active-border) ${elevationRangePercent(elevationRange.range[0])}%, var(--viewer-double-range-active-border) ${elevationRangePercent(elevationRange.range[1])}%, var(--viewer-double-range-inactive-border) ${elevationRangePercent(elevationRange.range[1])}%, var(--viewer-double-range-inactive-border) 100%)`,
                                         }}
-                                    />
+                                    >
+                                        <div
+                                            className="absolute inset-px rounded-full"
+                                            style={{
+                                                background: `linear-gradient(to right, var(--viewer-double-range-inactive) 0%, var(--viewer-double-range-inactive) ${elevationRangePercent(elevationRange.range[0])}%, var(--viewer-double-range-active) ${elevationRangePercent(elevationRange.range[0])}%, var(--viewer-double-range-active) ${elevationRangePercent(elevationRange.range[1])}%, var(--viewer-double-range-inactive) ${elevationRangePercent(elevationRange.range[1])}%, var(--viewer-double-range-inactive) 100%)`,
+                                            }}
+                                        />
+                                    </div>
                                     <button
                                         data-testid="viewer-elevation-min"
                                         aria-label={t('colorMode.min')}
@@ -577,7 +584,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                         onPointerDown={(event) =>
                                             handleElevationThumbPointerDown(0, event)
                                         }
-                                        className="absolute top-1/2 size-[20px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full border-2 border-white/90 bg-[#676774] transition-colors hover:bg-[#4f4f5f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-laser-green/70"
+                                        className="viewer-range-thumb absolute top-1/2 size-[20px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full border-2 border-white/90 bg-[#676774] transition-colors hover:bg-[#4f4f5f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-laser-green/70"
                                         style={{
                                             left: elevationThumbLeft(elevationRange.range[0]),
                                         }}
@@ -596,7 +603,7 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                         onPointerDown={(event) =>
                                             handleElevationThumbPointerDown(1, event)
                                         }
-                                        className="absolute top-1/2 size-[20px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full border-2 border-white/90 bg-[#676774] transition-colors hover:bg-[#4f4f5f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-laser-green/70"
+                                        className="viewer-range-thumb absolute top-1/2 size-[20px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full border-2 border-white/90 bg-[#676774] transition-colors hover:bg-[#4f4f5f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-laser-green/70"
                                         style={{
                                             left: elevationThumbLeft(elevationRange.range[1]),
                                         }}

@@ -6,6 +6,7 @@ export { Popover } from './Popover';
 export { Icon } from './Icon';
 export type { IconName } from './Icon';
 export { LanguageSwitcher } from './LanguageSwitcher';
+export { ThemeSwitcher } from './ThemeSwitcher';
 export { ModalProvider } from './Modal';
 export type { ModalContentProps } from './Modal';
 export { ToastProvider, toast } from './Toast';

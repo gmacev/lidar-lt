@@ -46,7 +46,7 @@ export function ViewerCornerInfo({
 
     return (
         <div
-            className={`flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-x-2 gap-y-1 rounded-tl-sm border border-b-0 border-r-0 border-white/10 bg-black/65 px-1 py-0.5 text-[10px] font-medium leading-none text-white/70 ${className}`}
+            className={`theme-surface theme-corner-info flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-x-2 gap-y-1 rounded-tl-sm border border-b-0 border-r-0 border-white/10 bg-void-black/65 px-1 py-0.5 text-[10px] font-medium leading-none text-white/70 ${className}`}
         >
             {showSourceDetails && (
                 <>
@@ -71,7 +71,7 @@ export function ViewerCornerInfo({
                         href="https://openfreemap.org/"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-white/75 underline-offset-2 hover:text-white hover:underline"
+                        className="theme-corner-link text-white/75 underline-offset-2 hover:text-white hover:underline"
                     >
                         OpenFreeMap
                     </a>
@@ -80,7 +80,7 @@ export function ViewerCornerInfo({
                         href="https://openmaptiles.org/"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-white/75 underline-offset-2 hover:text-white hover:underline"
+                        className="theme-corner-link text-white/75 underline-offset-2 hover:text-white hover:underline"
                     >
                         OpenMapTiles
                     </a>
@@ -89,7 +89,7 @@ export function ViewerCornerInfo({
                         href="https://www.openstreetmap.org/copyright"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-white/75 underline-offset-2 hover:text-white hover:underline"
+                        className="theme-corner-link text-white/75 underline-offset-2 hover:text-white hover:underline"
                     >
                         OpenStreetMap
                     </a>

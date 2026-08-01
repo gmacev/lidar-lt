@@ -91,7 +91,7 @@ export function KvrInspectButton({
                 isOpen={isPopoverOpen}
                 testId="viewer-kvr-popover"
                 width={360}
-                className="flex max-h-[500px] flex-col overflow-hidden rounded-lg border border-white/10 bg-black/95 p-4 pr-3 text-white shadow-2xl shadow-black/40"
+                className="theme-surface flex max-h-[500px] flex-col overflow-hidden rounded-lg border border-white/10 bg-void-black/95 p-4 pr-3 text-white shadow-2xl shadow-black/40"
             >
                 <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 pb-1.5">
                     <div>

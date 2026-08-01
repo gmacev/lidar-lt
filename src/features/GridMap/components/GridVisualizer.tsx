@@ -5,9 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { useLithuaniaGrid } from '@/features/GridMap/hooks';
 import { GridSearchControl } from './GridSearchControl';
 import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
+import { ThemeSwitcher } from '@/common/components/ThemeSwitcher';
+import { useTheme } from '@/common/theme';
 
 const GRID_SOURCE_ID = 'lidar-grid';
-const MAP_STYLE_URL = '/styles/liberty-dark.json';
+const MAP_STYLE_URLS = {
+    light: '/styles/liberty-light.json',
+    dark: '/styles/liberty-dark.json',
+} as const;
 
 const getMapLabelExpression = (language: string) =>
     language.startsWith('en')
@@ -16,7 +21,9 @@ const getMapLabelExpression = (language: string) =>
 
 export function GridVisualizer() {
     const { t, i18n } = useTranslation();
-    const { data, mapRef, tooltip, search, handlers } = useLithuaniaGrid();
+    const { resolvedTheme } = useTheme();
+    const { data, mapRef, tooltip, search, handlers } = useLithuaniaGrid(resolvedTheme);
+
     useEffect(() => {
         const map = mapRef.current?.getMap();
         if (!map) return;
@@ -83,9 +90,27 @@ export function GridVisualizer() {
         id: 'grid-line',
         type: 'line',
         paint: {
-            'line-color': '#b8842a',
-            'line-width': 1,
-            'line-opacity': search.matchedIds.size > 0 ? 0.18 : 0.32,
+            'line-color': resolvedTheme === 'light' ? '#855b18' : '#b8842a',
+            'line-width': resolvedTheme === 'light' ? 1.15 : 1,
+            'line-opacity':
+                resolvedTheme === 'light'
+                    ? search.matchedIds.size > 0
+                        ? 0.32
+                        : 0.55
+                    : search.matchedIds.size > 0
+                      ? 0.18
+                      : 0.32,
+        },
+    };
+
+    const lineCasingLayer: LayerProps = {
+        id: 'grid-line-casing',
+        type: 'line',
+        paint: {
+            'line-color': resolvedTheme === 'light' ? '#f7f4ec' : 'rgba(0, 0, 0, 0)',
+            'line-width': resolvedTheme === 'light' ? 2.45 : 0,
+            'line-opacity':
+                resolvedTheme === 'light' ? (search.matchedIds.size > 0 ? 0.34 : 0.68) : 0,
         },
     };
 
@@ -118,9 +143,10 @@ export function GridVisualizer() {
                 totalCount={totalCount}
             />
 
-            {/* Language switcher - top right */}
-            <div className="absolute right-2 top-2 z-10 sm:right-4 sm:top-4">
-                <LanguageSwitcher />
+            {/* Appearance and language controls - top right */}
+            <div className="absolute right-2 top-2 z-10 flex items-start gap-2 sm:right-4 sm:top-4">
+                <ThemeSwitcher />
+                <LanguageSwitcher themed />
             </div>
 
             <Map
@@ -131,7 +157,7 @@ export function GridVisualizer() {
                     zoom: 6.5,
                 }}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle={MAP_STYLE_URL}
+                mapStyle={MAP_STYLE_URLS[resolvedTheme]}
                 interactiveLayerIds={['grid-fill']}
                 onClick={handlers.onClick}
                 onMouseMove={handlers.onMouseMove}
@@ -140,6 +166,7 @@ export function GridVisualizer() {
             >
                 <Source id={GRID_SOURCE_ID} type="geojson" data={data} promoteId="id">
                     <Layer {...fillLayer} />
+                    <Layer {...lineCasingLayer} />
                     <Layer {...lineLayer} />
                     <Layer {...matchedLineLayer} />
                 </Source>
@@ -147,10 +174,10 @@ export function GridVisualizer() {
 
             {tooltip && (
                 <div
-                    className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full rounded border border-neon-cyan bg-black/80 px-3 py-2 text-neon-cyan"
+                    className="pointer-events-none absolute z-50 -translate-x-1/2 -translate-y-full rounded border border-theme-brand bg-panel-bg px-3 py-2 text-theme-brand"
                     style={{ left: tooltip.x, top: tooltip.y - 10 }}
                 >
-                    <div className="font-mono text-xs text-gray-400">
+                    <div className="font-mono text-xs text-panel-muted">
                         {t('grid.sectorId')}: {tooltip.id}
                     </div>
                     <div className="text-sm font-bold">{tooltip.name}</div>

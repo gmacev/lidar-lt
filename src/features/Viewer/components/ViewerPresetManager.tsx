@@ -23,7 +23,7 @@ const PRESET_ERROR_KEYS: Record<ViewerPresetMutationError, string> = {
 };
 
 const inputClassName =
-    'min-w-0 flex-1 rounded border border-white/10 bg-black/25 px-2 py-1.5 text-xs text-white placeholder:text-white/30 outline-none transition-colors focus:border-neon-amber/60 focus:bg-black/45';
+    'theme-preset-input min-w-0 flex-1 rounded border border-white/10 bg-black/25 px-2 py-1.5 text-xs text-white placeholder:text-white/30 outline-none transition-colors focus:border-neon-amber/60 focus:bg-black/45';
 
 const primaryButtonClassName =
     'inline-flex items-center justify-center gap-1 rounded border border-laser-green/35 bg-laser-green/10 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-laser-green transition-colors hover:border-laser-green/65 hover:bg-laser-green/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-laser-green/60';
@@ -233,7 +233,7 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
                         return (
                             <div
                                 key={preset.id}
-                                className="rounded-md border border-white/10 bg-black/20 p-2"
+                                className="theme-preset-card rounded-md border border-white/10 bg-black/20 p-2"
                             >
                                 {isEditing ? (
                                     <div className="flex gap-1.5">

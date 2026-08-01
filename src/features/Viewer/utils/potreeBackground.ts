@@ -1,5 +1,9 @@
-import { POTREE_BACKGROUND_GRADIENT } from '@/features/Viewer/config/viewerConfig';
-import type { Potree } from '@/common/types/potree';
+import {
+    POTREE_BACKGROUND_GRADIENT,
+    POTREE_LIGHT_BACKGROUND_GRADIENT,
+} from '@/features/Viewer/config/viewerConfig';
+import type { Potree, PotreeViewer } from '@/common/types/potree';
+import type { ResolvedTheme } from '@/common/theme';
 
 type Rgb = readonly [number, number, number];
 
@@ -18,11 +22,16 @@ function clampByte(value: number): number {
     return Math.max(0, Math.min(255, Math.round(value)));
 }
 
-export function configurePotreeBackgroundTexture(PotreeLib: Potree): void {
+export function configurePotreeBackgroundTexture(
+    PotreeLib: Potree,
+    theme: ResolvedTheme
+): void {
     const THREE = window.THREE;
-    const center = parseHexColor(POTREE_BACKGROUND_GRADIENT.center);
-    const edge = parseHexColor(POTREE_BACKGROUND_GRADIENT.edge);
-    const noiseStrength = POTREE_BACKGROUND_GRADIENT.noise;
+    const palette =
+        theme === 'light' ? POTREE_LIGHT_BACKGROUND_GRADIENT : POTREE_BACKGROUND_GRADIENT;
+    const center = parseHexColor(palette.center);
+    const edge = parseHexColor(palette.edge);
+    const noiseStrength = palette.noise;
 
     PotreeLib.Utils.createBackgroundTexture = (width: number, height: number) => {
         const size = width * height;
@@ -47,4 +56,32 @@ export function configurePotreeBackgroundTexture(PotreeLib: Potree): void {
 
         return texture;
     };
+}
+
+export function applyPotreeBackgroundTheme(
+    PotreeLib: Potree,
+    viewer: PotreeViewer,
+    theme: ResolvedTheme
+): void {
+    configurePotreeBackgroundTexture(PotreeLib, theme);
+
+    const backgroundMaterial = viewer.scene.sceneBG.children
+        .map((child) => (child as { material?: unknown }).material)
+        .find(
+            (material): material is import('three').MeshBasicMaterial =>
+                typeof material === 'object' &&
+                material !== null &&
+                !Array.isArray(material) &&
+                'map' in material
+        );
+
+    if (!backgroundMaterial) return;
+
+    const previousTexture = backgroundMaterial.map;
+    const texture = PotreeLib.Utils.createBackgroundTexture(512, 512);
+
+    texture.minFilter = texture.magFilter = window.THREE.LinearFilter;
+    backgroundMaterial.map = texture;
+    backgroundMaterial.needsUpdate = true;
+    previousTexture?.dispose();
 }

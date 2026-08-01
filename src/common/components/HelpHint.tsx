@@ -28,7 +28,7 @@ export function HelpHint({
     return (
         <Popover
             align={align}
-            className={`rounded-lg border border-white/10 bg-void-black/90 px-3 py-2.5 text-[13px] leading-snug text-white/75 shadow-[0_18px_50px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ${popoverClassName}`}
+            className={`theme-surface rounded-lg border border-white/10 bg-void-black/90 px-3 py-2.5 text-[13px] leading-snug text-white/75 shadow-[0_18px_50px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ${popoverClassName}`}
             role="tooltip"
             side={side}
             trigger={
@@ -40,7 +40,7 @@ export function HelpHint({
                 />
             }
             triggerAriaLabel={ariaLabel}
-            triggerClassName={`group/help flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.025] text-[10px] font-bold text-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:border-neon-cyan/45 hover:bg-neon-cyan/10 hover:text-neon-cyan focus-visible:border-neon-cyan focus-visible:text-neon-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan/30 ${className}`}
+            triggerClassName={`theme-help-trigger group/help flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.025] text-[10px] font-bold text-white/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all duration-200 hover:border-neon-cyan/45 hover:bg-neon-cyan/10 hover:text-neon-cyan focus-visible:border-neon-cyan focus-visible:text-neon-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-cyan/30 ${className}`}
             width={width}
         >
             {title && (

@@ -38,7 +38,7 @@ export const ToolbarToolButton = forwardRef<HTMLButtonElement, ToolbarToolButton
                     aria-label={label}
                     aria-pressed={isActive}
                     data-active={isActive ? 'true' : 'false'}
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-amber/70 ${
+                    className={`theme-surface theme-tool-button flex h-10 w-10 items-center justify-center rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon-amber/70 ${
                         isActive
                             ? resolvedActiveClassName
                             : 'bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95'
@@ -62,7 +62,7 @@ export const ToolbarToolButton = forwardRef<HTMLButtonElement, ToolbarToolButton
                     align="center"
                     gap={8}
                     role="tooltip"
-                    className="pointer-events-none w-max rounded-md border border-white/10 bg-black/95 px-2.5 py-1.5 text-xs font-medium leading-snug text-white/90 shadow-lg"
+                    className="theme-surface pointer-events-none w-max rounded-md border border-white/10 bg-void-black/95 px-2.5 py-1.5 text-xs font-medium leading-snug text-white/90 shadow-lg"
                 >
                     {label}
                 </Popover>

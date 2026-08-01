@@ -119,7 +119,7 @@ const enabledIconClassName =
     'transition-transform duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/sector-arrow:scale-125 group-focus-visible/sector-arrow:scale-125 group-active/sector-arrow:scale-110 motion-reduce:transition-none motion-reduce:transform-none';
 
 const disabledButtonClassName =
-    'flex h-5 w-5 cursor-not-allowed items-center justify-center text-white/20';
+    'theme-sector-arrow-disabled flex h-5 w-5 cursor-not-allowed items-center justify-center text-white/20';
 
 export function SectorNavigation({ cellId, onNavigate }: SectorNavigationProps) {
     const { t } = useTranslation();
@@ -174,7 +174,7 @@ export function SectorNavigation({ cellId, onNavigate }: SectorNavigationProps) 
                             key={direction}
                             align="center"
                             anchorRef={navigationRef}
-                            className="rounded-lg border border-white/10 bg-void-black/90 px-3 py-2.5 text-center text-[13px] leading-snug text-white/75 shadow-[0_18px_50px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)]"
+                            className="theme-surface rounded-lg border border-white/10 bg-void-black/90 px-3 py-2.5 text-center text-[13px] leading-snug text-white/75 shadow-[0_18px_50px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)]"
                             onTriggerClick={() => onNavigate(sector)}
                             role="tooltip"
                             side="top"

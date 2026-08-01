@@ -70,7 +70,7 @@ export function Modal({
 
             {/* Modal container */}
             <div
-                className="relative z-10 w-full max-w-md rounded-xl border border-white/10 bg-void-black/95 shadow-2xl"
+                className="theme-surface relative z-10 w-full max-w-md rounded-xl border border-white/10 bg-void-black/95 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}

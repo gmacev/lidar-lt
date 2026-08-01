@@ -55,16 +55,16 @@ export function AnnotationTool({
                 isOpen={isPanelOpen}
                 testId="viewer-annotation-popover"
                 width={280}
-                className="flex flex-col gap-2 rounded-lg border border-white/10 bg-glass-bg p-3"
+                className="theme-surface theme-tool-popup flex flex-col gap-2 rounded-lg border border-white/10 bg-glass-bg p-3"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-white/60 uppercase tracking-wide">
+                    <span className="theme-tool-heading text-xs font-medium text-white/60 uppercase tracking-wide">
                         {t('annotation.annotations')}
                     </span>
                     <button
                         onClick={onTogglePanel}
-                        className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-plasma-red hover:bg-plasma-red/10 transition-all"
+                        className="theme-tool-muted-button flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-plasma-red hover:bg-plasma-red/10 transition-all"
                         title={t('flood.close')}
                     >
                         <Icon name="close" size={12} strokeWidth={2.5} />
@@ -73,7 +73,7 @@ export function AnnotationTool({
 
                 {/* Show All checkbox */}
                 {annotations.length > 0 && (
-                    <label className="flex items-center gap-2 text-xs text-white/80 hover:bg-white/5 rounded px-1 py-0.5 cursor-pointer select-none border-b border-white/10 pb-2">
+                    <label className="theme-tool-body theme-tool-row flex items-center gap-2 text-xs text-white/80 hover:bg-white/5 rounded px-1 py-0.5 cursor-pointer select-none border-b border-white/10 pb-2">
                         <input
                             type="checkbox"
                             checked={allVisible}
@@ -89,7 +89,7 @@ export function AnnotationTool({
 
                 {/* Annotation list */}
                 {annotations.length === 0 ? (
-                    <div className="text-xs text-white/40 text-center py-4">
+                    <div className="theme-tool-secondary text-xs text-white/40 text-center py-4">
                         {t('annotation.noAnnotations')}
                     </div>
                 ) : (
@@ -97,7 +97,7 @@ export function AnnotationTool({
                         {annotations.map((ann) => (
                             <div
                                 key={ann.id}
-                                className="flex items-center gap-1.5 group hover:bg-white/5 rounded px-1 py-0.5"
+                                className="theme-tool-row flex items-center gap-1.5 group hover:bg-white/5 rounded px-1 py-0.5"
                             >
                                 {/* Visibility checkbox */}
                                 <input
@@ -109,7 +109,7 @@ export function AnnotationTool({
 
                                 {/* Title */}
                                 <span
-                                    className="text-xs text-white/80 truncate flex-1 cursor-pointer hover:text-neon-cyan"
+                                    className="theme-tool-body text-xs text-white/80 truncate flex-1 cursor-pointer hover:text-neon-cyan"
                                     onClick={() => onNavigate(ann.id)}
                                     title={ann.title}
                                 >
@@ -122,7 +122,7 @@ export function AnnotationTool({
                                         e.stopPropagation();
                                         onDelete(ann.id);
                                     }}
-                                    className="flex h-5 w-5 items-center justify-center rounded text-white/30 hover:text-plasma-red hover:bg-plasma-red/10 transition-all flex-shrink-0"
+                                    className="theme-tool-muted-button flex h-5 w-5 items-center justify-center rounded text-white/30 hover:text-plasma-red hover:bg-plasma-red/10 transition-all flex-shrink-0"
                                     title={t('annotation.delete')}
                                 >
                                     <Icon name="trash" size={12} />
@@ -138,7 +138,7 @@ export function AnnotationTool({
                         data-testid="viewer-annotation-start-placement"
                         onClick={onStartPlacement}
                         disabled={isPlacing}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-neon-cyan border border-neon-cyan/30 bg-neon-cyan/10 hover:bg-neon-cyan/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="theme-annotation-primary flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-neon-cyan border border-neon-cyan/30 bg-neon-cyan/10 hover:bg-neon-cyan/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <Icon name="plus" size={12} />
                         {t('annotation.addAnnotation')}
@@ -147,7 +147,7 @@ export function AnnotationTool({
                     {annotations.length > 0 && (
                         <button
                             onClick={handleDeleteAll}
-                            className="flex items-center gap-1 px-2 py-1.5 rounded text-xs text-white/50 hover:text-plasma-red hover:bg-plasma-red/10 transition-all"
+                            className="theme-tool-secondary flex items-center gap-1 px-2 py-1.5 rounded text-xs text-white/50 hover:text-plasma-red hover:bg-plasma-red/10 transition-all"
                         >
                             <Icon name="trash" size={12} />
                             {t('annotation.deleteAll')}

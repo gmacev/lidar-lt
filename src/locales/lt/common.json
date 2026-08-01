@@ -12,6 +12,10 @@
         "mapDataFrom": "duomenys iš",
         "sourceCode": "Atvirasis kodas GitHub"
     },
+    "theme": {
+        "switchToLight": "Įjungti šviesią temą",
+        "switchToDark": "Įjungti tamsią temą"
+    },
     "sidebar": {
         "visualization": "Vizualizacija",
         "classifications": "Klasifikacijos",

@@ -8,8 +8,12 @@ import {
 } from '@/features/Viewer/config';
 import { getCurrentCameraState } from '@/features/Viewer/utils/viewerDefaults';
 import { applyViewerDisplaySettings } from '@/features/Viewer/utils/viewerDisplaySettings';
-import { configurePotreeBackgroundTexture } from '@/features/Viewer/utils/potreeBackground';
+import {
+    applyPotreeBackgroundTheme,
+    configurePotreeBackgroundTexture,
+} from '@/features/Viewer/utils/potreeBackground';
 import { isTouchDevice } from '@/common/utils/screenSize';
+import { useTheme } from '@/common/theme';
 import type { LoadPointCloudResult, Potree, PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 
@@ -259,6 +263,7 @@ async function validateMetadataUrl(
 }
 
 export function usePotree(options: UsePotreeOptions): UsePotreeResult {
+    const { resolvedTheme } = useTheme();
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<PotreeViewer | null>(null);
     const [state, setState] = useState<PotreeState>({ isLoading: true, error: null });
@@ -269,6 +274,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
     // Use refs for values that shouldn't trigger re-initialization
     const updateUrlRef = useRef(updateUrl);
     const initialStateRef = useRef(initialState);
+    const resolvedThemeRef = useRef(resolvedTheme);
     const lastStateRef = useRef<string>('');
     // Track whether user has interacted with the camera - prevents syncing
     // during initial fitToScreen animation which causes the 45-degree rotation bug
@@ -283,6 +289,16 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
         updateUrlRef.current = updateUrl;
         initialStateRef.current = initialState;
     }, [updateUrl, initialState]);
+
+    useEffect(() => {
+        resolvedThemeRef.current = resolvedTheme;
+
+        const viewer = viewerRef.current;
+        const PotreeLib = window.Potree;
+        if (!viewer || !PotreeLib) return;
+
+        applyPotreeBackgroundTheme(PotreeLib, viewer, resolvedTheme);
+    }, [resolvedTheme]);
 
     // Sync camera state to URL via callback
     const syncCamera = () => {
@@ -422,7 +438,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
                 return;
             }
 
-            configurePotreeBackgroundTexture(PotreeLib);
+            configurePotreeBackgroundTexture(PotreeLib, resolvedThemeRef.current);
 
             // Create Potree Viewer
             viewer = new PotreeLib.Viewer(container);

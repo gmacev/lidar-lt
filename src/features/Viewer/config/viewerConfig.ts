@@ -147,6 +147,12 @@ export const POTREE_BACKGROUND_GRADIENT = {
     noise: 0.012,
 } as const;
 
+export const POTREE_LIGHT_BACKGROUND_GRADIENT = {
+    center: '#899997',
+    edge: '#647479',
+    noise: 0.008,
+} as const;
+
 export const ViewerStateSchema = z.object({
     // Camera position
     x: optionalSearchNumber,

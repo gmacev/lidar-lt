@@ -17,7 +17,7 @@ export function SourceAttribution({ dateRange }: SourceAttributionProps) {
                 href="https://www.geoportal.lt/"
                 target="_blank"
                 rel="noreferrer"
-                className="whitespace-nowrap text-white/75 underline-offset-2 transition-colors hover:text-white hover:underline focus-visible:text-white focus-visible:underline focus-visible:outline-none"
+                className="theme-corner-link whitespace-nowrap text-white/75 underline-offset-2 transition-colors hover:text-white hover:underline focus-visible:text-white focus-visible:underline focus-visible:outline-none"
             >
                 {t('sourceAttribution.provider')}
             </a>

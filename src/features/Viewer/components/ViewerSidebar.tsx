@@ -69,7 +69,7 @@ export function ViewerSidebar({
         <div
             data-testid="viewer-sidebar"
             data-collapsed={isCollapsed ? 'true' : 'false'}
-            className={`fixed left-0 top-0 z-50 flex h-full transition-all duration-300 ${
+            className={`theme-surface theme-viewer-sidebar fixed left-0 top-0 z-50 flex h-full transition-all duration-300 ${
                 isCollapsed ? '-translate-x-full' : 'translate-x-0'
             }`}
         >
@@ -193,7 +193,7 @@ export function ViewerSidebar({
             <button
                 data-testid="viewer-sidebar-toggle"
                 onClick={handleToggleCollapsed}
-                className={`absolute -right-4 top-1/2 flex h-24 w-4 -translate-y-1/2 items-center justify-center rounded-r-xl border-y border-r border-white/10 bg-glass-bg transition-all duration-300 hover:w-6 hover:bg-black/95 group ${
+                className={`theme-sidebar-toggle absolute -right-4 top-1/2 flex h-24 w-4 -translate-y-1/2 items-center justify-center rounded-r-xl border-y border-r border-white/10 bg-glass-bg transition-all duration-300 hover:w-6 hover:bg-black/95 group ${
                     isCollapsed ? 'opacity-100 shadow-[4px_0_15px_rgba(0,0,0,0.5)]' : 'opacity-80'
                 }`}
                 aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}

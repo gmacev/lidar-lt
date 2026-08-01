@@ -42,7 +42,7 @@ export function AnnotationModal({ onClose, onConfirm }: ModalContentProps<Annota
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder={t('annotation.titlePlaceholder')}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/30 outline-none transition-all focus:border-neon-cyan/50 focus:bg-white/10"
+                        className="theme-annotation-input w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/30 outline-none transition-all focus:border-neon-cyan/50 focus:bg-white/10"
                         autoFocus
                     />
                 </div>
@@ -61,7 +61,7 @@ export function AnnotationModal({ onClose, onConfirm }: ModalContentProps<Annota
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder={t('annotation.descriptionPlaceholder')}
                         rows={3}
-                        className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/30 outline-none transition-all focus:border-neon-cyan/50 focus:bg-white/10"
+                        className="theme-annotation-input w-full resize-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-white/30 outline-none transition-all focus:border-neon-cyan/50 focus:bg-white/10"
                     />
                 </div>
 
@@ -77,7 +77,7 @@ export function AnnotationModal({ onClose, onConfirm }: ModalContentProps<Annota
                     <button
                         type="submit"
                         disabled={!isValid}
-                        className="rounded-lg border border-neon-cyan/30 bg-neon-cyan/20 px-4 py-2 text-sm font-medium text-neon-cyan transition-all hover:bg-neon-cyan/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-neon-cyan/20"
+                        className="theme-annotation-primary rounded-lg border border-neon-cyan/30 bg-neon-cyan/20 px-4 py-2 text-sm font-medium text-neon-cyan transition-all hover:bg-neon-cyan/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-neon-cyan/20"
                     >
                         {t('annotation.save')}
                     </button>

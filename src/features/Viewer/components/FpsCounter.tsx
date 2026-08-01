@@ -31,7 +31,7 @@ export function FpsCounter() {
     return (
         <div
             ref={labelRef}
-            className="pointer-events-none flex h-4 w-[50px] shrink-0 items-center justify-center rounded border border-white/10 bg-glass-bg font-mono text-[10px] leading-none text-white/55"
+            className="theme-fps-counter pointer-events-none flex h-4 w-[50px] shrink-0 items-center justify-center rounded border border-white/10 bg-glass-bg font-mono text-[10px] leading-none text-white/55"
         >
             -- FPS
         </div>

@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { SEOHead } from '@/common/components';
 import { GridVisualizer } from '@/features/GridMap';
 
+const footerLinkClassName =
+    'theme-grid-footer-link text-theme-brand/85 underline-offset-2 transition-colors hover:text-theme-brand focus-visible:text-theme-brand focus-visible:underline focus-visible:outline-none';
+
 export const Route = createFileRoute('/')({
     component: HomePage,
 });
@@ -13,8 +16,8 @@ function HomePage() {
     return (
         <>
             <SEOHead title={t('seo.homeTitle')} description={t('seo.homeDescription')} path="/" />
-            <div className="flex h-screen flex-col overflow-hidden bg-void-black">
-                <header className="flex shrink-0 justify-center border-b border-glass-border p-4">
+            <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-panel-text">
+                <header className="theme-grid-chrome flex shrink-0 justify-center border-b border-panel-border p-4">
                     <div className="flex max-w-full items-center justify-center gap-3 sm:gap-4">
                         <img
                             src="/lidar-icon.svg"
@@ -23,10 +26,10 @@ function HomePage() {
                             className="size-10 shrink-0 sm:size-12"
                         />
                         <div className="min-w-0">
-                            <h1 className="text-center text-lg font-bold tracking-widest text-neon-amber sm:text-2xl">
+                            <h1 className="text-center text-lg font-bold tracking-widest text-theme-brand sm:text-2xl">
                                 {t('home.title')}
                             </h1>
-                            <p className="text-center text-sm text-white/40">
+                            <p className="text-center text-sm text-panel-muted">
                                 {t('home.subtitle')}
                             </p>
                         </div>
@@ -39,13 +42,13 @@ function HomePage() {
                     </div>
                 </main>
 
-                <footer className="shrink-0 border-t border-glass-border p-2 text-center text-xs text-white/30">
+                <footer className="theme-grid-chrome shrink-0 border-t border-panel-border p-2 text-center text-xs text-panel-muted">
                     {t('home.dataSource')}{' '}
                     <a
                         href="https://www.geoportal.lt/"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-inherit opacity-60 transition-[color,opacity] hover:text-white/50 hover:opacity-100 focus-visible:text-white/50 focus-visible:opacity-100 focus-visible:underline focus-visible:underline-offset-2 focus-visible:outline-none"
+                        className={footerLinkClassName}
                     >
                         geoportal.lt
                     </a>{' '}
@@ -54,7 +57,7 @@ function HomePage() {
                         href="https://openfreemap.org/"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-inherit opacity-60 transition-[color,opacity] hover:text-white/50 hover:opacity-100 focus-visible:text-white/50 focus-visible:opacity-100 focus-visible:underline focus-visible:underline-offset-2 focus-visible:outline-none"
+                        className={footerLinkClassName}
                     >
                         OpenFreeMap
                     </a>{' '}
@@ -63,7 +66,7 @@ function HomePage() {
                         href="https://www.openstreetmap.org/copyright"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-inherit opacity-60 transition-[color,opacity] hover:text-white/50 hover:opacity-100 focus-visible:text-white/50 focus-visible:opacity-100 focus-visible:underline focus-visible:underline-offset-2 focus-visible:outline-none"
+                        className={footerLinkClassName}
                     >
                         OpenStreetMap
                     </a>{' '}
@@ -72,7 +75,7 @@ function HomePage() {
                         href="https://github.com/gmacev/lidar-lt"
                         target="_blank"
                         rel="noreferrer"
-                        className="text-inherit opacity-60 transition-[color,opacity] hover:text-white/50 hover:opacity-100 focus-visible:text-white/50 focus-visible:opacity-100 focus-visible:underline focus-visible:underline-offset-2 focus-visible:outline-none"
+                        className={footerLinkClassName}
                     >
                         {t('home.sourceCode')}
                     </a>

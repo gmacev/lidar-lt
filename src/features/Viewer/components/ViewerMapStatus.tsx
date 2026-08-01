@@ -372,7 +372,7 @@ export function ViewerMapStatus({ viewerRef }: ViewerMapStatusProps) {
     return (
         <>
             {status.scale && (
-                <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-white/70">
+                <span className="theme-map-status inline-flex items-center gap-1.5 font-mono text-[10px] text-white/70">
                     <span
                         className="relative inline-block h-2 border border-t-0 border-white/45"
                         style={{ width: status.scale.width }}
@@ -391,7 +391,7 @@ export function ViewerMapStatus({ viewerRef }: ViewerMapStatusProps) {
                     type="button"
                     onClick={() => void copyCoordinates()}
                     className={`inline-flex items-center rounded font-mono text-[10px] leading-none transition-colors hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none ${
-                        copied ? 'text-neon-green' : 'text-white/75'
+                        copied ? 'text-neon-green' : 'theme-map-status text-white/75'
                     }`}
                     aria-label={t('viewerMapStatus.copyCoordinates')}
                     title={

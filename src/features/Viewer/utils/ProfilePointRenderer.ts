@@ -24,6 +24,7 @@ interface ProfilePointRenderOptions {
     colorMin: number;
     colorMax: number;
     classificationVisibility: Uint8Array;
+    lightMode: boolean;
 }
 
 const VERTEX_SHADER = `
@@ -76,7 +77,9 @@ precision mediump float;
 
 varying float v_elevation;
 
-vec3 elevation_color(float value) {
+uniform float u_light_mode;
+
+vec3 dark_elevation_color(float value) {
     const vec3 c0 = vec3(0.231, 0.322, 0.545);
     const vec3 c1 = vec3(0.129, 0.569, 0.549);
     const vec3 c2 = vec3(0.369, 0.788, 0.384);
@@ -92,8 +95,27 @@ vec3 elevation_color(float value) {
     return mix(c4, c5, scaled - 4.0);
 }
 
+vec3 light_elevation_color(float value) {
+    const vec3 c0 = vec3(0.184, 0.286, 0.510);
+    const vec3 c1 = vec3(0.071, 0.455, 0.431);
+    const vec3 c2 = vec3(0.220, 0.529, 0.286);
+    const vec3 c3 = vec3(0.659, 0.529, 0.094);
+    const vec3 c4 = vec3(0.737, 0.388, 0.063);
+    const vec3 c5 = vec3(0.686, 0.196, 0.165);
+
+    float scaled = clamp(value, 0.0, 0.99999) * 5.0;
+    if (scaled < 1.0) return mix(c0, c1, scaled);
+    if (scaled < 2.0) return mix(c1, c2, scaled - 1.0);
+    if (scaled < 3.0) return mix(c2, c3, scaled - 2.0);
+    if (scaled < 4.0) return mix(c3, c4, scaled - 3.0);
+    return mix(c4, c5, scaled - 4.0);
+}
+
 void main() {
-    gl_FragColor = vec4(elevation_color(v_elevation), 0.82);
+    vec3 color = u_light_mode > 0.5
+        ? light_elevation_color(v_elevation)
+        : dark_elevation_color(v_elevation);
+    gl_FragColor = vec4(color, u_light_mode > 0.5 ? 0.9 : 0.82);
 }
 `;
 
@@ -158,6 +180,7 @@ export class ProfilePointRenderer {
     private readonly resolutionLocation: WebGLUniformLocation;
     private readonly colorRangeLocation: WebGLUniformLocation;
     private readonly pointSizeLocation: WebGLUniformLocation;
+    private readonly lightModeLocation: WebGLUniformLocation;
     private uploadedPosition: Float32Array | null = null;
     private visibilityMask = new Uint8Array(256);
     private pointCount = 0;
@@ -191,6 +214,7 @@ export class ProfilePointRenderer {
         const resolutionLocation = getUniform(gl, program, 'u_resolution');
         const colorRangeLocation = getUniform(gl, program, 'u_color_range');
         const pointSizeLocation = getUniform(gl, program, 'u_point_size');
+        const lightModeLocation = getUniform(gl, program, 'u_light_mode');
         if (
             positionLocation < 0 ||
             visibilityLocation < 0 ||
@@ -198,7 +222,8 @@ export class ProfilePointRenderer {
             !plotLocation ||
             !resolutionLocation ||
             !colorRangeLocation ||
-            !pointSizeLocation
+            !pointSizeLocation ||
+            !lightModeLocation
         ) {
             gl.deleteProgram(program);
             gl.deleteBuffer(positionBuffer);
@@ -218,7 +243,8 @@ export class ProfilePointRenderer {
             plotLocation,
             resolutionLocation,
             colorRangeLocation,
-            pointSizeLocation
+            pointSizeLocation,
+            lightModeLocation
         );
     }
 
@@ -234,7 +260,8 @@ export class ProfilePointRenderer {
         plotLocation: WebGLUniformLocation,
         resolutionLocation: WebGLUniformLocation,
         colorRangeLocation: WebGLUniformLocation,
-        pointSizeLocation: WebGLUniformLocation
+        pointSizeLocation: WebGLUniformLocation,
+        lightModeLocation: WebGLUniformLocation
     ) {
         this.canvas = canvas;
         this.gl = gl;
@@ -248,6 +275,7 @@ export class ProfilePointRenderer {
         this.resolutionLocation = resolutionLocation;
         this.colorRangeLocation = colorRangeLocation;
         this.pointSizeLocation = pointSizeLocation;
+        this.lightModeLocation = lightModeLocation;
     }
 
     private uploadSample(sample: ProfileSample) {
@@ -297,6 +325,7 @@ export class ProfilePointRenderer {
         colorMin,
         colorMax,
         classificationVisibility,
+        lightMode,
     }: ProfilePointRenderOptions) {
         const pixelWidth = Math.max(1, Math.floor(width * dpr));
         const pixelHeight = Math.max(1, Math.floor(height * dpr));
@@ -335,6 +364,7 @@ export class ProfilePointRenderer {
         gl.uniform2f(this.resolutionLocation, pixelWidth, pixelHeight);
         gl.uniform2f(this.colorRangeLocation, colorMin, colorMax);
         gl.uniform1f(this.pointSizeLocation, Math.max(1.5, 1.45 * dpr));
+        gl.uniform1f(this.lightModeLocation, lightMode ? 1 : 0);
 
         const scissorLeft = Math.max(0, Math.floor(plot.left * dpr));
         const scissorBottom = Math.max(0, Math.floor(pixelHeight - (plot.top + plot.height) * dpr));

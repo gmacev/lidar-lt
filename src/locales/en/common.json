@@ -12,6 +12,10 @@
         "mapDataFrom": "Data from",
         "sourceCode": "Open source on GitHub"
     },
+    "theme": {
+        "switchToLight": "Switch to light mode",
+        "switchToDark": "Switch to dark mode"
+    },
     "sidebar": {
         "visualization": "Visualization",
         "classifications": "Classifications",

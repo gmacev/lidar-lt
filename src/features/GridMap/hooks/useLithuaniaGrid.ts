@@ -14,7 +14,7 @@ interface TooltipData {
     id: string;
 }
 
-export function useLithuaniaGrid() {
+export function useLithuaniaGrid(mapStyleKey: string) {
     const navigate = useNavigate();
 
     // Data is now static import
@@ -30,10 +30,15 @@ export function useLithuaniaGrid() {
 
     // Sync matched state with map
     const prevMatchedIds = useRef<Set<string>>(new Set());
+    const matchedIdsRef = useRef(matchedIds);
+
+    useEffect(() => {
+        matchedIdsRef.current = matchedIds;
+    }, [matchedIds]);
 
     useEffect(() => {
         const map = mapRef.current?.getMap();
-        if (!map || !data) return;
+        if (!map?.getSource(GRID_SOURCE_ID) || !data) return;
 
         // Clear old matches
         prevMatchedIds.current.forEach((id) => {
@@ -51,6 +56,34 @@ export function useLithuaniaGrid() {
 
         prevMatchedIds.current = matchedIds;
     }, [matchedIds, data]);
+
+    useEffect(() => {
+        const map = mapRef.current?.getMap();
+        if (!map) return;
+
+        const restoreFeatureStates = () => {
+            if (!map.getSource(GRID_SOURCE_ID)) return;
+
+            matchedIdsRef.current.forEach((id) => {
+                map.setFeatureState({ source: GRID_SOURCE_ID, id }, { matched: true });
+            });
+
+            if (lastHoveredId.current) {
+                map.setFeatureState(
+                    { source: GRID_SOURCE_ID, id: lastHoveredId.current },
+                    { hover: true }
+                );
+            }
+
+            prevMatchedIds.current = new Set(matchedIdsRef.current);
+        };
+
+        map.once('idle', restoreFeatureStates);
+
+        return () => {
+            map.off('idle', restoreFeatureStates);
+        };
+    }, [mapStyleKey]);
 
     // Handlers
     const handleClick = (event: MapLayerMouseEvent) => {

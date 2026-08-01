@@ -70,7 +70,7 @@ export function CoordinateSearchControl({
                 <button
                     onClick={handleGo}
                     disabled={!isValid}
-                    className={`rounded px-3 py-1.5 text-sm font-medium transition-all ${
+                    className={`theme-coordinate-go rounded px-3 py-1.5 text-sm font-medium transition-all ${
                         isValid
                             ? 'bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan/40 hover:shadow-[0_0_10px_rgba(0,255,255,0.3)]'
                             : 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'

@@ -20,6 +20,7 @@ import type { ProfilePhase } from '@/features/Viewer/hooks/useProfileTool';
 import { ProfilePointRenderer } from '@/features/Viewer/utils/ProfilePointRenderer';
 import { PROFILE_WIDTH_DEFAULTS } from '@/features/Viewer/config';
 import { Icon } from '@/common/components';
+import { useTheme } from '@/common/theme';
 
 interface HeightProfilePanelProps {
     viewerRef: RefObject<PotreeViewer | null>;
@@ -64,6 +65,32 @@ const HOVER_BUCKET_COUNT = 1024;
 const GROUND_TRACE_MAX_GAP_METERS = 1;
 const LOCAL_RELIEF_SEARCH_RADIUS_METERS = 5;
 const LOCAL_RELIEF_CENTER_IGNORE_METERS = 0.75;
+
+const DARK_PROFILE_PALETTE = {
+    background: '#050708',
+    grid: 'rgba(255,255,255,0.08)',
+    tick: 'rgba(255,255,255,0.52)',
+    guide: 'rgba(255,184,0,0.32)',
+    guideLabel: 'rgba(255,184,0,0.8)',
+    ground: '#70d6a3',
+    frame: 'rgba(255,255,255,0.24)',
+    axis: 'rgba(255,255,255,0.48)',
+    crosshair: 'rgba(255,184,0,0.72)',
+    selectedPoint: '#ffb800',
+} as const;
+
+const LIGHT_PROFILE_PALETTE = {
+    background: '#deddd7',
+    grid: 'rgba(45,52,59,0.13)',
+    tick: '#4a5158',
+    guide: 'rgba(139,89,0,0.4)',
+    guideLabel: '#765000',
+    ground: '#267457',
+    frame: 'rgba(45,52,59,0.38)',
+    axis: '#3f474f',
+    crosshair: 'rgba(139,89,0,0.72)',
+    selectedPoint: '#8b5900',
+} as const;
 
 function niceStep(range: number, targetTicks: number) {
     const rough = range / Math.max(1, targetTicks);
@@ -216,6 +243,9 @@ export function HeightProfilePanel({
     sidebarVisible,
 }: HeightProfilePanelProps) {
     const { t } = useTranslation();
+    const { resolvedTheme } = useTheme();
+    const profilePalette =
+        resolvedTheme === 'light' ? LIGHT_PROFILE_PALETTE : DARK_PROFILE_PALETTE;
     const containerRef = useRef<HTMLDivElement>(null);
     const dataCanvasRef = useRef<HTMLCanvasElement>(null);
     const pointsCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -369,10 +399,10 @@ export function HeightProfilePanel({
         const scaleY = (value: number) =>
             plot.top + (1 - (value - bounds.minY) / (bounds.maxY - bounds.minY)) * plot.height;
 
-        context.fillStyle = '#050708';
+        context.fillStyle = profilePalette.background;
         context.fillRect(0, 0, canvasSize.width, canvasSize.height);
-        context.strokeStyle = 'rgba(255,255,255,0.08)';
-        context.fillStyle = 'rgba(255,255,255,0.52)';
+        context.strokeStyle = profilePalette.grid;
+        context.fillStyle = profilePalette.tick;
         context.font = '11px ui-monospace, SFMono-Regular, Menlo, monospace';
         context.lineWidth = 1;
 
@@ -420,14 +450,14 @@ export function HeightProfilePanel({
         for (const controlPoint of controlPoints) {
             const x = scaleX(controlPoint.distance);
             if (x < plot.left || x > plot.left + plot.width) continue;
-            context.strokeStyle = 'rgba(255,184,0,0.32)';
+            context.strokeStyle = profilePalette.guide;
             context.setLineDash([4, 4]);
             context.beginPath();
             context.moveTo(x, plot.top);
             context.lineTo(x, plot.top + plot.height);
             context.stroke();
             context.setLineDash([]);
-            context.fillStyle = 'rgba(255,184,0,0.8)';
+            context.fillStyle = profilePalette.guideLabel;
             const labelWidth = context.measureText(controlPoint.label).width;
             const labelX = x + labelWidth + 8 > plot.left + plot.width ? x - labelWidth - 4 : x + 4;
             context.fillText(controlPoint.label, labelX, plot.top + 12);
@@ -446,7 +476,7 @@ export function HeightProfilePanel({
         context.rect(plot.left, plot.top, plot.width, plot.height);
         context.clip();
         if (bins.length > 1) {
-            context.strokeStyle = '#70d6a3';
+            context.strokeStyle = profilePalette.ground;
             context.lineWidth = 1.5;
             context.beginPath();
             let previousGround: ProfileBin | null = null;
@@ -478,9 +508,9 @@ export function HeightProfilePanel({
         }
         context.restore();
 
-        context.strokeStyle = 'rgba(255,255,255,0.24)';
+        context.strokeStyle = profilePalette.frame;
         context.strokeRect(plot.left + 0.5, plot.top + 0.5, plot.width, plot.height);
-        context.fillStyle = 'rgba(255,255,255,0.48)';
+        context.fillStyle = profilePalette.axis;
         context.save();
         context.textAlign = 'right';
         context.fillText(t('profile.distanceAxis'), plot.left + plot.width, canvasSize.height - 7);
@@ -502,6 +532,7 @@ export function HeightProfilePanel({
             colorMin,
             colorMax,
             classificationVisibility,
+            lightMode: resolvedTheme === 'light',
         });
 
         cacheRef.current = { bounds, plot };
@@ -514,7 +545,20 @@ export function HeightProfilePanel({
 
     useEffect(() => {
         drawGraph();
-    }, [bins, canvasSize, collapsed, phase, revision, sample, segments, summary, t, viewerRef]);
+    }, [
+        bins,
+        canvasSize,
+        collapsed,
+        phase,
+        profilePalette,
+        resolvedTheme,
+        revision,
+        sample,
+        segments,
+        summary,
+        t,
+        viewerRef,
+    ]);
 
     useEffect(() => {
         const viewer = viewerRef.current;
@@ -552,14 +596,14 @@ export function HeightProfilePanel({
                 (sample.elevation[index] - cache.bounds.minY) /
                     (cache.bounds.maxY - cache.bounds.minY)) *
                 cache.plot.height;
-        context.strokeStyle = 'rgba(255,184,0,0.72)';
+        context.strokeStyle = profilePalette.crosshair;
         context.beginPath();
         context.moveTo(x, cache.plot.top);
         context.lineTo(x, cache.plot.top + cache.plot.height);
         context.moveTo(cache.plot.left, y);
         context.lineTo(cache.plot.left + cache.plot.width, y);
         context.stroke();
-        context.fillStyle = '#ffb800';
+        context.fillStyle = profilePalette.selectedPoint;
         context.beginPath();
         context.arc(x, y, 3.5, 0, Math.PI * 2);
         context.fill();
@@ -723,17 +767,17 @@ export function HeightProfilePanel({
 
     return (
         <section
-            className={`absolute bottom-0 right-0 z-40 border-t border-white/15 bg-[#080b0d]/[0.97] shadow-[0_-18px_50px_rgba(0,0,0,0.45)] transition-[left] duration-300 ${
+            className={`theme-surface theme-height-profile absolute bottom-0 right-0 z-40 border-t border-white/15 bg-[#080b0d]/[0.97] shadow-[0_-18px_50px_rgba(0,0,0,0.45)] transition-[left] duration-300 ${
                 sidebarVisible ? 'left-80' : 'left-0'
             } ${collapsed ? 'h-11' : 'h-[clamp(240px,34dvh,360px)]'}`}
             aria-label={t('profile.title')}
         >
-            <header className="flex h-11 items-center gap-3 border-b border-white/10 px-3">
+            <header className="theme-profile-header flex h-11 items-center gap-3 border-b border-white/10 px-3">
                 <div className="flex min-w-0 flex-col justify-center leading-none">
                     <span className="text-xs font-semibold uppercase tracking-[0.16em] text-neon-amber">
                         {t('profile.title')}
                     </span>
-                    <span className="mt-1.5 font-mono text-[11px] text-white/50">
+                    <span className="theme-profile-secondary mt-1.5 font-mono text-[11px] text-white/50">
                         {formatMeters(summary.length)} · {summary.segmentCount}{' '}
                         {t('profile.segments')} · {summary.acceptedPointCount.toLocaleString()}{' '}
                         {t('profile.points')}
@@ -762,14 +806,14 @@ export function HeightProfilePanel({
                             <button
                                 type="button"
                                 onClick={onDeleteLast}
-                                className="rounded border border-white/10 px-2.5 py-1 text-xs text-white/65 hover:text-white"
+                                className="theme-profile-button rounded border border-white/10 px-2.5 py-1 text-xs text-white/65 hover:text-white"
                             >
                                 {t('measurement.deleteLast')}
                             </button>
                             <button
                                 type="button"
                                 onClick={onNewProfile}
-                                className="rounded border border-white/10 px-2.5 py-1 text-xs text-white/65 hover:text-white"
+                                className="theme-profile-button rounded border border-white/10 px-2.5 py-1 text-xs text-white/65 hover:text-white"
                             >
                                 {t('profile.new')}
                             </button>
@@ -777,12 +821,12 @@ export function HeightProfilePanel({
                                 type="button"
                                 onClick={onExport}
                                 disabled={bins.length === 0}
-                                className="rounded border border-white/10 px-2.5 py-1 text-xs text-white/65 hover:text-white disabled:opacity-35"
+                                className="theme-profile-button rounded border border-white/10 px-2.5 py-1 text-xs text-white/65 hover:text-white disabled:opacity-35"
                             >
                                 {t('measurement.exportCsv')}
                             </button>
                             <label
-                                className="ml-2 flex items-center gap-2 border-l border-white/10 pl-3 text-[11px] text-white/55"
+                                className="theme-profile-secondary ml-2 flex items-center gap-2 border-l border-white/10 pl-3 text-[11px] text-white/55"
                                 title={t('profile.widthHint')}
                             >
                                 {t('profile.width')}
@@ -804,7 +848,7 @@ export function HeightProfilePanel({
                                     }}
                                     className="w-24 accent-neon-amber"
                                 />
-                                <span className="w-10 font-mono text-white/75">
+                                <span className="theme-profile-value w-10 font-mono text-white/75">
                                     {widthInput.toFixed(2)}m
                                 </span>
                             </label>
@@ -818,7 +862,7 @@ export function HeightProfilePanel({
                                 return !value;
                             })
                         }
-                        className="flex h-7 w-7 items-center justify-center text-white/55 hover:text-white"
+                        className="theme-profile-icon flex h-7 w-7 items-center justify-center text-white/55 hover:text-white"
                         aria-label={collapsed ? t('profile.expand') : t('profile.collapse')}
                     >
                         <Icon name={collapsed ? 'chevronUp' : 'chevronDown'} size={16} />
@@ -826,7 +870,7 @@ export function HeightProfilePanel({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex h-7 w-7 items-center justify-center text-white/55 hover:text-plasma-red"
+                        className="theme-profile-icon theme-profile-close flex h-7 w-7 items-center justify-center text-white/55 hover:text-plasma-red"
                         aria-label={t('profile.close')}
                     >
                         <Icon name="close" size={16} />
@@ -865,37 +909,52 @@ export function HeightProfilePanel({
                     <div
                         ref={tooltipRef}
                         hidden
-                        className="pointer-events-none absolute left-0 top-0 min-w-56 rounded border border-neon-amber/35 bg-black/95 px-3 py-2 font-mono text-xs leading-5 text-white/90 shadow-lg"
+                        className="theme-profile-tooltip pointer-events-none absolute left-0 top-0 min-w-56 rounded border border-neon-amber/35 bg-black/95 px-3 py-2 font-mono text-xs leading-5 text-white/90 shadow-lg"
                     >
                         <div className="grid grid-cols-[18px_1fr_auto] gap-x-2">
                             <span className="font-semibold text-neon-amber">X</span>
-                            <span className="text-white/55">{t('profile.distance')}</span>
-                            <span ref={tooltipDistanceRef} className="text-right text-white" />
+                            <span className="theme-profile-tooltip-label text-white/55">
+                                {t('profile.distance')}
+                            </span>
+                            <span
+                                ref={tooltipDistanceRef}
+                                className="theme-profile-tooltip-value text-right text-white"
+                            />
                             <span className="font-semibold text-neon-amber">Y</span>
-                            <span className="text-white/55">{t('profile.elevation')}</span>
-                            <span ref={tooltipElevationRef} className="text-right text-white" />
+                            <span className="theme-profile-tooltip-label text-white/55">
+                                {t('profile.elevation')}
+                            </span>
+                            <span
+                                ref={tooltipElevationRef}
+                                className="theme-profile-tooltip-value text-right text-white"
+                            />
                             <span className="font-semibold text-neon-amber">dZ</span>
-                            <span className="text-white/55">{t('profile.localRelief')}</span>
-                            <span ref={tooltipLocalReliefRef} className="text-right text-white" />
+                            <span className="theme-profile-tooltip-label text-white/55">
+                                {t('profile.localRelief')}
+                            </span>
+                            <span
+                                ref={tooltipLocalReliefRef}
+                                className="theme-profile-tooltip-value text-right text-white"
+                            />
                         </div>
                         <div
                             ref={tooltipDetailsRef}
-                            className="mt-1 border-t border-white/10 pt-1 text-[11px] text-white/50"
+                            className="theme-profile-tooltip-details mt-1 border-t border-white/10 pt-1 text-[11px] text-white/50"
                         />
                     </div>
 
                     {status === 'waiting' && (
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/45">
+                        <div className="theme-profile-empty pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/45">
                             {t('profile.drawHelp')}
                         </div>
                     )}
                     {status === 'loading' && sample.count === 0 && (
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/45">
+                        <div className="theme-profile-empty pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/45">
                             {t('profile.loading')}
                         </div>
                     )}
                     {status === 'empty' && (
-                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/45">
+                        <div className="theme-profile-empty pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-white/45">
                             {t('profile.empty')}
                         </div>
                     )}

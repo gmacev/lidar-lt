@@ -3,6 +3,31 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="color-scheme" content="dark light" />
+        <script>
+            (() => {
+                const fallbackPreference = 'dark';
+                let preference = fallbackPreference;
+
+                try {
+                    const storedPreference = localStorage.getItem('lidar:theme');
+                    if (storedPreference !== null) {
+                        const parsedPreference = JSON.parse(storedPreference);
+                        if (
+                            parsedPreference === 'light' ||
+                            parsedPreference === 'dark'
+                        ) {
+                            preference = parsedPreference;
+                        }
+                    }
+                } catch {
+                    preference = fallbackPreference;
+                }
+
+                document.documentElement.dataset.theme = preference;
+                document.documentElement.style.colorScheme = preference;
+            })();
+        </script>
 
         <!-- Primary meta tags -->
         <title>Lietuvos LiDAR žemėlapis - 3D taškų debesų peržiūra</title>

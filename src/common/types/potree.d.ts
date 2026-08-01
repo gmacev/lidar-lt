@@ -177,6 +177,7 @@ export interface PotreeScene {
     removeAnnotation(annotation: Annotation): void;
     // Underlying Three.js scene for adding custom objects
     scene: import('three').Scene;
+    sceneBG: import('three').Scene;
     profiles: Profile[];
 }
 

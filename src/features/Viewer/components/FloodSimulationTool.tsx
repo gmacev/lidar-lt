@@ -82,16 +82,16 @@ export function FloodSimulationTool({
                 isOpen={isActive}
                 testId="viewer-flood-popover"
                 width={220}
-                className="flex flex-col gap-3 rounded-lg border border-white/10 bg-glass-bg p-3"
+                className="theme-surface theme-tool-popup flex flex-col gap-3 rounded-lg border border-white/10 bg-glass-bg p-3"
             >
                 {/* Header row */}
                 <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-white/60 uppercase tracking-wide">
+                    <span className="theme-tool-heading text-xs font-medium text-white/60 uppercase tracking-wide">
                         {t('flood.waterLevel')}
                     </span>
                     <button
                         onClick={onReset}
-                        className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-plasma-red hover:bg-plasma-red/10 transition-all"
+                        className="theme-tool-muted-button flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-plasma-red hover:bg-plasma-red/10 transition-all"
                         title={t('flood.close')}
                     >
                         <Icon name="close" size={12} strokeWidth={2.5} />
@@ -100,10 +100,10 @@ export function FloodSimulationTool({
 
                 {/* Current level - prominent display */}
                 <div className="text-center">
-                    <span className="text-2xl font-bold text-blue-400 tabular-nums">
+                    <span className="theme-flood-value text-2xl font-bold text-blue-400 tabular-nums">
                         {waterLevel.toFixed(2)}
                     </span>
-                    <span className="text-sm text-blue-400/70 ml-1">m</span>
+                    <span className="theme-flood-value text-sm text-blue-400/70 ml-1">m</span>
                 </div>
 
                 {/* Slider with labels */}
@@ -118,17 +118,17 @@ export function FloodSimulationTool({
                         onChange={(e) => onWaterLevelChange(Number(e.target.value))}
                         className="w-full h-2 appearance-none cursor-pointer rounded-full"
                         style={{
-                            background: `linear-gradient(to right, #3b82f6 ${percentage}%, rgba(255,255,255,0.15) ${percentage}%)`,
+                            background: `linear-gradient(to right, #3b82f6 ${percentage}%, var(--viewer-tool-range-inactive) ${percentage}%)`,
                         }}
                         title={t('flood.waterLevelValue', {
                             value: formatElevation(waterLevel),
                         })}
                     />
                     <div className="flex justify-between">
-                        <span className="text-[10px] text-white/30">
+                        <span className="theme-tool-secondary text-[10px] text-white/30">
                             {formatElevation(minLevel)}
                         </span>
-                        <span className="text-[10px] text-white/30">
+                        <span className="theme-tool-secondary text-[10px] text-white/30">
                             {formatElevation(maxLevel)}
                         </span>
                     </div>
@@ -136,18 +136,18 @@ export function FloodSimulationTool({
 
                 {/* Step control with custom +/- buttons */}
                 <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                    <span className="text-[10px] text-white/40 uppercase tracking-wide">
+                    <span className="theme-tool-secondary text-[10px] text-white/40 uppercase tracking-wide">
                         {t('flood.step')}
                     </span>
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => onPrecisionChange(Math.max(0.01, precision / 2))}
-                            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-black/95 transition-all"
+                            className="theme-tool-muted-button flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-black/95 transition-all"
                             title={t('flood.decreaseStep')}
                         >
                             <Icon name="minus" size={10} strokeWidth={3} />
                         </button>
-                        <span className="text-xs text-white/60 tabular-nums min-w-[36px] text-center">
+                        <span className="theme-tool-body text-xs text-white/60 tabular-nums min-w-[36px] text-center">
                             {precision < 0.1
                                 ? precision.toFixed(2)
                                 : precision < 1
@@ -157,7 +157,7 @@ export function FloodSimulationTool({
                         </span>
                         <button
                             onClick={() => onPrecisionChange(Math.min(100, precision * 2))}
-                            className="flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-black/95 transition-all"
+                            className="theme-tool-muted-button flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-white hover:bg-black/95 transition-all"
                             title={t('flood.increaseStep')}
                         >
                             <Icon name="plus" size={10} strokeWidth={3} />

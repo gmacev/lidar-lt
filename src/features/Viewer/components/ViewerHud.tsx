@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
-import { GlassPanel, Icon, LanguageSwitcher } from '@/common/components';
+import { GlassPanel, Icon, LanguageSwitcher, ThemeSwitcher } from '@/common/components';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNavigationActions';
 import type { ReliefAzimuthCycleController } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
@@ -100,23 +100,25 @@ export function ViewerHud({
                         </div>
                     )}
 
-                    {/* Language switcher, UI toggle, and Controls - top right corner */}
+                    {/* Appearance, language, UI toggle, and controls - top right corner */}
                     <div
                         data-testid="viewer-top-controls"
                         className="absolute right-2 top-2 flex items-start gap-2 xl:right-4 xl:top-4"
                     >
+                        <ThemeSwitcher viewer />
                         <LanguageSwitcher />
                         {!isLoading && !hasError && (
                             <>
                                 <button
                                     data-testid="viewer-ui-toggle"
+                                    data-active="false"
                                     aria-label={
                                         uiVisible
                                             ? t('viewer.hideControls')
                                             : t('viewer.showControls')
                                     }
                                     onClick={() => onUiVisibleChange(!uiVisible)}
-                                    className="flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95"
+                                    className="theme-surface theme-tool-button flex h-10 w-10 items-center justify-center rounded-lg border transition-all bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95"
                                     title={
                                         uiVisible
                                             ? t('viewer.hideControls')
@@ -212,9 +214,10 @@ export function ViewerHud({
             {!uiVisible && !isLoading && !hasError && (
                 <button
                     data-testid="viewer-ui-toggle"
+                    data-active="false"
                     aria-label={t('viewer.showControls')}
                     onClick={() => onUiVisibleChange(!uiVisible)}
-                    className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95 xl:right-4 xl:top-4"
+                    className="theme-surface theme-tool-button absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg border transition-all z-20 bg-glass-bg border-white/10 text-white/70 hover:text-neon-amber hover:border-neon-amber/50 hover:bg-black/95 xl:right-4 xl:top-4"
                     title={t('viewer.showControls')}
                 >
                     <Icon name="eye" size={20} />
