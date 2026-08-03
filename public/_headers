@@ -1,2 +1,14 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+/index.html
+  Cache-Control: no-cache
+
+/viewer/*
+  Cache-Control: no-cache
+
+/sitemap.xml
+  Cache-Control: no-cache
+
+/robots.txt
+  Cache-Control: no-cache

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /lt-lidar-data/
+
+Sitemap: https://lidar.chgf.vu.lt/sitemap.xml
