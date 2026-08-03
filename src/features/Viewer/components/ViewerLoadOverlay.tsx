@@ -35,7 +35,7 @@ export function ViewerLoadOverlay({
         return (
             <div
                 data-testid="viewer-loading-overlay"
-                className="absolute inset-0 flex items-center justify-center bg-void-black/90"
+                className="theme-surface theme-viewer-load-overlay absolute inset-0 flex items-center justify-center bg-void-black/90"
             >
                 <DataLoader message={t('viewer.loading')} />
             </div>
@@ -47,7 +47,7 @@ export function ViewerLoadOverlay({
     return (
         <div
             data-testid="viewer-error-overlay"
-            className="absolute inset-0 flex items-center justify-center bg-void-black/90"
+            className="theme-surface theme-viewer-load-overlay absolute inset-0 flex items-center justify-center bg-void-black/90"
         >
             <GlassPanel
                 className="mx-4 flex max-w-lg flex-col items-center gap-4 p-5 text-center"

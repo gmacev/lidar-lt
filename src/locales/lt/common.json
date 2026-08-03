@@ -279,7 +279,7 @@
     },
     "search": {
         "coordinatePlaceholder": "54.687, 25.279",
-        "gridPlaceholder": "Ieškoti (ID, pavadinimas, coords)...",
+        "gridPlaceholder": "Ieškoti (ID, pavadinimas, koordinatės)...",
         "go": "Eiti",
         "found": "Rasta",
         "example": "Pvz: 35/71; Skuodas; 55.69, 26.43",

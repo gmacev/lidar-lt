@@ -53,9 +53,9 @@
     --theme-panel-hover: rgba(255, 255, 255, 0.08);
     --theme-panel-input: rgba(0, 0, 0, 0.8);
     --theme-brand: #ffb800;
-    --theme-grid-chrome-dot: rgba(255, 184, 0, 0.09);
-    --theme-grid-chrome-return: rgba(255, 184, 0, 0.17);
-    --theme-grid-chrome-line: rgba(255, 184, 0, 0.07);
+    --theme-grid-chrome-dot: rgba(255, 184, 0, 0.14);
+    --theme-grid-chrome-return: rgba(255, 184, 0, 0.27);
+    --theme-grid-chrome-line: rgba(255, 184, 0, 0.12);
     --theme-grid-chrome-mask: #000000;
     --theme-grid-chrome-highlight: rgba(255, 255, 255, 0.045);
 }
@@ -138,6 +138,10 @@
     --color-laser-green: #0a7655;
     --color-plasma-red: #bd3451;
     color: var(--viewer-panel-text);
+}
+
+:root[data-theme='light'] .theme-viewer-load-overlay {
+    background-image: radial-gradient(circle at 50% 45%, #899997 0%, #647479 100%);
 }
 
 :root[data-theme='light'] .theme-color-invariant {
