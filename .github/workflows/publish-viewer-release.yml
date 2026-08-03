@@ -133,19 +133,13 @@ jobs:
                     release-assets/lidar-lt-viewer.tar.gz \
                     release-assets/lidar-lt-viewer.tar.gz.sha256
 
-            - name: Show VPS deployment command
+            - name: Show deployment command
               shell: bash
-              env:
-                  RELEASE_TAG: ${{ steps.release.outputs.tag }}
               run: |
-                  asset_base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
                   {
                     echo "## Deploy the viewer"
                     echo
                     echo '```bash'
-                    echo './deploy_lidar_viewer.sh \\'
-                    echo "  --release \"${RELEASE_TAG}\" \\"
-                    echo "  --artifact-url \"${asset_base}/lidar-lt-viewer.tar.gz\" \\"
-                    echo "  --checksum-url \"${asset_base}/lidar-lt-viewer.tar.gz.sha256\""
+                    echo './deploy_lidar_viewer.sh'
                     echo '```'
                   } >> "$GITHUB_STEP_SUMMARY"
