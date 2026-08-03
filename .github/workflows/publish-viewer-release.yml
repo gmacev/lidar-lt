@@ -1,0 +1,151 @@
+name: Publish viewer release
+
+on:
+    workflow_dispatch:
+        inputs:
+            release_tag:
+                description: Optional release tag (default uses the date and commit SHA)
+                required: false
+                type: string
+
+concurrency:
+    group: publish-viewer-release
+    cancel-in-progress: false
+
+jobs:
+    build:
+        name: Build static viewer
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        env:
+            VITE_EPT_BASE_URL: ${{ vars.VITE_EPT_BASE_URL }}
+            SITE_URL: ${{ vars.SITE_URL }}
+        steps:
+            - name: Check out source
+              uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+            - name: Set up Node.js
+              uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+              with:
+                  node-version: '24'
+                  cache: npm
+
+            - name: Validate production configuration
+              shell: bash
+              run: |
+                  test -n "$VITE_EPT_BASE_URL" || {
+                    echo "VITE_EPT_BASE_URL repository variable is not set" >&2
+                    exit 1
+                  }
+                  test -n "$SITE_URL" || {
+                    echo "SITE_URL repository variable is not set" >&2
+                    exit 1
+                  }
+                  [[ "$VITE_EPT_BASE_URL" == https://* ]] || {
+                    echo "VITE_EPT_BASE_URL must use HTTPS" >&2
+                    exit 1
+                  }
+                  [[ "$SITE_URL" == https://* ]] || {
+                    echo "SITE_URL must use HTTPS" >&2
+                    exit 1
+                  }
+
+            - name: Install locked dependencies without lifecycle scripts
+              run: npm ci --ignore-scripts
+
+            - name: Build production viewer
+              run: npm run build
+
+            - name: Package deployment artifact
+              shell: bash
+              run: |
+                  test -f dist/index.html
+                  test -f dist/sitemap.xml
+
+                  mkdir -p release-assets
+                  tar -C dist -czf release-assets/lidar-lt-viewer.tar.gz .
+                  cd release-assets
+                  sha256sum lidar-lt-viewer.tar.gz > lidar-lt-viewer.tar.gz.sha256
+
+            - name: Transfer release assets to publisher job
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: lidar-lt-viewer-release
+                  path: |
+                      release-assets/lidar-lt-viewer.tar.gz
+                      release-assets/lidar-lt-viewer.tar.gz.sha256
+                  if-no-files-found: error
+                  compression-level: 0
+                  retention-days: 1
+
+    publish:
+        name: Publish GitHub Release
+        needs: build
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Download packaged viewer
+              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                  name: lidar-lt-viewer-release
+                  path: release-assets
+
+            - name: Select release tag
+              id: release
+              shell: bash
+              env:
+                  REQUESTED_TAG: ${{ inputs.release_tag }}
+              run: |
+                  release_tag="$REQUESTED_TAG"
+                  if [[ -z "$release_tag" ]]; then
+                    release_tag="viewer-$(date -u +%Y-%m-%d)-${GITHUB_SHA::7}"
+                  fi
+
+                  [[ "$release_tag" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]] || {
+                    echo "Invalid release tag: $release_tag" >&2
+                    exit 1
+                  }
+
+                  echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+
+            - name: Validate downloaded release assets
+              shell: bash
+              run: |
+                  test -f release-assets/lidar-lt-viewer.tar.gz
+                  test -f release-assets/lidar-lt-viewer.tar.gz.sha256
+                  cd release-assets
+                  sha256sum --check lidar-lt-viewer.tar.gz.sha256
+
+            - name: Publish release assets
+              shell: bash
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  RELEASE_TAG: ${{ steps.release.outputs.tag }}
+              run: |
+                  gh release create "$RELEASE_TAG" \
+                    --repo "$GITHUB_REPOSITORY" \
+                    --target "$GITHUB_SHA" \
+                    --title "LiDAR viewer $RELEASE_TAG" \
+                    --notes "Pre-built static viewer for deployment to the VU LiDAR server. Source commit: $GITHUB_SHA" \
+                    --latest \
+                    release-assets/lidar-lt-viewer.tar.gz \
+                    release-assets/lidar-lt-viewer.tar.gz.sha256
+
+            - name: Show VPS deployment command
+              shell: bash
+              env:
+                  RELEASE_TAG: ${{ steps.release.outputs.tag }}
+              run: |
+                  asset_base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
+                  {
+                    echo "## Deploy on the VU server"
+                    echo
+                    echo '```bash'
+                    echo './deploy_lidar_viewer.sh \\'
+                    echo "  --release \"${RELEASE_TAG}\" \\"
+                    echo "  --artifact-url \"${asset_base}/lidar-lt-viewer.tar.gz\" \\"
+                    echo "  --checksum-url \"${asset_base}/lidar-lt-viewer.tar.gz.sha256\""
+                    echo '```'
+                  } >> "$GITHUB_STEP_SUMMARY"
