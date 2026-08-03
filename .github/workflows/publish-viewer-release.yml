@@ -128,7 +128,7 @@ jobs:
                     --repo "$GITHUB_REPOSITORY" \
                     --target "$GITHUB_SHA" \
                     --title "LiDAR viewer $RELEASE_TAG" \
-                    --notes "Pre-built static viewer for deployment to the VU LiDAR server. Source commit: $GITHUB_SHA" \
+                    --notes "Pre-built static viewer deployment artifact. Source commit: $GITHUB_SHA" \
                     --latest \
                     release-assets/lidar-lt-viewer.tar.gz \
                     release-assets/lidar-lt-viewer.tar.gz.sha256
@@ -140,7 +140,7 @@ jobs:
               run: |
                   asset_base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
                   {
-                    echo "## Deploy on the VU server"
+                    echo "## Deploy the viewer"
                     echo
                     echo '```bash'
                     echo './deploy_lidar_viewer.sh \\'
