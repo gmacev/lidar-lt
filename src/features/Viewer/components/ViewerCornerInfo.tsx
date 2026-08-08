@@ -10,6 +10,7 @@ interface ViewerCornerInfoProps {
     viewerRef: RefObject<PotreeViewer | null>;
     uiVisible: boolean;
     mapLabelsEnabled: boolean;
+    orthophotoCompareEnabled: boolean;
     className?: string;
     onVisibleChange?: (visible: boolean) => void;
 }
@@ -30,12 +31,13 @@ export function ViewerCornerInfo({
     viewerRef,
     uiVisible,
     mapLabelsEnabled,
+    orthophotoCompareEnabled,
     className = '',
     onVisibleChange,
 }: ViewerCornerInfoProps) {
     const { t } = useTranslation();
     const dateRange = formatDateRange(manifest?.sourceFileDateRange);
-    const showSourceDetails = uiVisible && Boolean(dateRange);
+    const showSourceDetails = (uiVisible || orthophotoCompareEnabled) && Boolean(dateRange);
     const isVisible = showSourceDetails || mapLabelsEnabled;
 
     useEffect(() => {

@@ -1,11 +1,13 @@
 import { useTranslation } from 'react-i18next';
-import type { PotreeViewer, Potree } from '@/common/types/potree';
+import type { PotreeViewer } from '@/common/types/potree';
 import type { Projection } from '@/features/Viewer/config/viewerConfig';
+import { setViewerProjection } from '@/features/Viewer/utils/viewerDefaults';
 
 interface CameraProjectionControlProps {
     viewerRef: React.RefObject<PotreeViewer | null>;
     projection: Projection;
     onChange: (mode: Projection) => void;
+    disabled?: boolean;
 }
 
 type ProjectionOption = { value: Projection; labelKey: string };
@@ -19,28 +21,18 @@ export function CameraProjectionControl({
     viewerRef,
     projection,
     onChange,
+    disabled = false,
 }: CameraProjectionControlProps) {
     const { t } = useTranslation();
 
     const handleProjectionChange = (newProjection: Projection) => {
-        const viewer = viewerRef.current;
-        const PotreeLib: Potree | undefined = window.Potree;
-
-        if (!viewer || !PotreeLib) return;
-
-        if (newProjection === 'ORTHOGRAPHIC') {
-            viewer.setCameraMode(PotreeLib.CameraMode.ORTHOGRAPHIC);
-        } else {
-            viewer.setCameraMode(PotreeLib.CameraMode.PERSPECTIVE);
-        }
+        if (disabled || !setViewerProjection(viewerRef.current, newProjection)) return;
 
         onChange(newProjection);
-        // We do not update the URL for projection anymore to avoid weird bug
-        // where it doesn't render point cloud data to finer detail when page loads with Orthographic projection
     };
 
     const buttonClass = (isActive: boolean) =>
-        `flex-1 py-1.5 text-[11px] font-medium transition-all text-center ${
+        `flex-1 py-1.5 text-[11px] font-medium transition-all text-center disabled:cursor-not-allowed ${
             isActive
                 ? 'bg-laser-green/20 text-laser-green border-laser-green'
                 : 'text-white/60 hover:text-white/80 border-white/20 hover:border-white/40 hover:bg-white/5'
@@ -55,6 +47,7 @@ export function CameraProjectionControl({
                         key={option.value}
                         data-testid={`viewer-projection-${option.value.toLowerCase()}`}
                         className={buttonClass(projection === option.value)}
+                        disabled={disabled}
                         onClick={() => handleProjectionChange(option.value)}
                     >
                         {t(option.labelKey)}

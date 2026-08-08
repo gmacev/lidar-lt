@@ -235,6 +235,8 @@ interface AnnotationTool {
 
 interface PotreeControls {
     enabled: boolean;
+    pitchLocked: boolean;
+    stop?(): void;
     addEventListener(event: string, callback: () => void): void;
 }
 

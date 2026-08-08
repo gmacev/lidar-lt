@@ -1,5 +1,5 @@
 import type { PotreeViewer } from '@/common/types/potree';
-import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import type { Projection, ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { applyViewerDisplaySettings } from './viewerDisplaySettings';
 
 function toFixedFinite(value: number, digits: number): number | undefined {
@@ -21,14 +21,26 @@ export function getCurrentCameraState(viewer: PotreeViewer | null): Partial<View
     };
 }
 
+export function setViewerProjection(
+    viewer: PotreeViewer | null,
+    projection: Projection
+): boolean {
+    const PotreeLib = window.Potree;
+    if (!viewer || !PotreeLib?.CameraMode) return false;
+
+    viewer.setCameraMode(
+        projection === 'ORTHOGRAPHIC'
+            ? PotreeLib.CameraMode.ORTHOGRAPHIC
+            : PotreeLib.CameraMode.PERSPECTIVE
+    );
+    return true;
+}
+
 export function resetPotreeViewerDisplayDefaults(viewer: PotreeViewer | null): void {
     if (!viewer) return;
 
     applyViewerDisplaySettings(viewer, {});
     viewer.setBackground('gradient');
 
-    const PotreeLib = window.Potree;
-    if (PotreeLib?.CameraMode) {
-        viewer.setCameraMode(PotreeLib.CameraMode.PERSPECTIVE);
-    }
+    setViewerProjection(viewer, 'PERSPECTIVE');
 }

@@ -102,7 +102,7 @@ function ToastItem({ item }: { item: ToastRecord }) {
 
     return (
         <div
-            className={`toast-enter pointer-events-auto w-full overflow-hidden rounded-lg border bg-deep-space/96 shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-md ${styles.accent}`}
+            className={`theme-surface theme-toast toast-enter pointer-events-auto w-full overflow-hidden rounded-lg border bg-deep-space/96 shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-md ${styles.accent}`}
             role={item.variant === 'error' ? 'alert' : 'status'}
             aria-live={liveMode}
             aria-atomic="true"
@@ -119,10 +119,14 @@ function ToastItem({ item }: { item: ToastRecord }) {
                     <Icon name={styles.icon} size={17} strokeWidth={2} />
                 </div>
 
-                <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold leading-5 text-white">{item.title}</p>
+                <div className={`min-w-0 flex-1 ${!item.description ? 'self-center' : ''}`}>
+                    <p className="theme-toast-title text-sm font-semibold leading-5 text-white">
+                        {item.title}
+                    </p>
                     {item.description && (
-                        <p className="mt-0.5 text-xs leading-5 text-white/65">{item.description}</p>
+                        <p className="theme-toast-description mt-0.5 text-xs leading-5 text-white/65">
+                            {item.description}
+                        </p>
                     )}
                     {item.action && (
                         <button
@@ -140,7 +144,7 @@ function ToastItem({ item }: { item: ToastRecord }) {
 
                 <button
                     type="button"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/35 transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                    className="theme-toast-close flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-white/35 transition-colors hover:bg-white/8 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                     onClick={() => dismissToast(item.id)}
                     aria-label={t('common.dismissNotification')}
                 >

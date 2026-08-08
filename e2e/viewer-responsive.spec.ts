@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { gotoMockedViewer } from './support/viewer';
+import { CANONICAL_VIEWER_PATH, gotoMockedViewer } from './support/viewer';
 
 test.describe('viewer responsive layout', () => {
     test('desktop shows sidebar and right rail without collapsed state', async ({
@@ -41,5 +41,21 @@ test.describe('viewer responsive layout', () => {
         await page.getByTestId('viewer-ui-toggle').click();
         await expect(page.getByTestId('viewer-right-rail')).toBeVisible();
         await expect(page.getByTestId('viewer-sidebar')).toBeVisible();
+    });
+
+    test('mobile keeps the orthophoto split usable when the HUD is hidden', async ({
+        page,
+    }, testInfo) => {
+        test.skip(testInfo.project.name !== 'mobile-chromium', 'mobile-only assertion');
+
+        await gotoMockedViewer(page, `${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
+        const slider = page.getByTestId('viewer-orthophoto-split');
+        await expect(slider).toBeVisible();
+        expect((await slider.boundingBox())?.width).toBeGreaterThanOrEqual(44);
+
+        await page.getByTestId('viewer-ui-toggle').click();
+        await expect(page.getByTestId('viewer-right-rail')).toBeHidden();
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toBeVisible();
+        await expect(slider).toBeVisible();
     });
 });
