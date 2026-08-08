@@ -67062,6 +67062,70 @@ void main() {
 
 		constructor(url) {
 			this.url = url;
+			this.hierarchyBuffer = null;
+			this.hierarchyPrefetchPromise = null;
+			this.hierarchyRangeRequests = 0;
+			this.hierarchyCacheHits = 0;
+			this.hierarchyPrefetchBytes = 0;
+		}
+
+		scheduleHierarchyPrefetch(url) {
+			if (this.hierarchyBuffer) {
+				return Promise.resolve();
+			}
+
+			if (this.hierarchyPrefetchPromise) {
+				return this.hierarchyPrefetchPromise;
+			}
+
+			const maxHierarchyBytes = 32 * 1024 * 1024;
+			this.hierarchyPrefetchPromise = new Promise(resolve => setTimeout(resolve, 0))
+				.then(async () => {
+					let lastError = null;
+
+					for (let attempt = 0; attempt < 3; attempt++) {
+						try {
+							let response = await fetch(url, { priority: "low" });
+							if (response.status !== 200) {
+								throw new Error(`Expected 200 for hierarchy prefetch ${url}, received ${response.status}`);
+							}
+
+							const declaredLength = Number(response.headers.get("content-length"));
+							if (Number.isFinite(declaredLength) && declaredLength > maxHierarchyBytes) {
+								if (response.body) {
+									await response.body.cancel();
+								}
+								console.warn(
+									`Skipped ${declaredLength}-byte hierarchy prefetch because it exceeds `
+									+ `${maxHierarchyBytes} bytes.`
+								);
+								return;
+							}
+
+							let buffer = await response.arrayBuffer();
+							if (buffer.byteLength > maxHierarchyBytes) {
+								console.warn(
+									`Skipped ${buffer.byteLength}-byte hierarchy prefetch because it exceeds `
+									+ `${maxHierarchyBytes} bytes.`
+								);
+								return;
+							}
+
+							this.hierarchyBuffer = buffer;
+							this.hierarchyPrefetchBytes = buffer.byteLength;
+							return;
+						} catch (error) {
+							lastError = error;
+							if (attempt < 2) {
+								await new Promise(resolve => setTimeout(resolve, 150 * (attempt + 1)));
+							}
+						}
+					}
+
+					console.warn("Failed to prefetch Potree hierarchy; using range requests.", lastError);
+				});
+
+			return this.hierarchyPrefetchPromise;
 		}
 
 		async loadRangeBuffer(url, first, last, expectedByteSize, priority = "auto") {
@@ -67352,13 +67416,13 @@ void main() {
 			}
 		}
 
-		parseHierarchy(node, buffer) {
+		parseHierarchy(node, buffer, byteOffset = 0, byteLength = buffer.byteLength - byteOffset) {
 
-			let view = new DataView(buffer);
+			let view = new DataView(buffer, byteOffset, byteLength);
 			let tStart = performance.now();
 
 			let bytesPerNode = 22;
-			let numNodes = buffer.byteLength / bytesPerNode;
+			let numNodes = byteLength / bytesPerNode;
 
 			let octree = node.octreeGeometry;
 			// let nodes = [node];
@@ -67453,8 +67517,32 @@ void main() {
 
 			let first = hierarchyByteOffset;
 			let last = first + hierarchyByteSize - 1n;
+			let cachedOffset = Number(first);
+			let cachedLength = Number(hierarchyByteSize);
 
+			if (
+				this.hierarchyBuffer
+				&& Number.isSafeInteger(cachedOffset)
+				&& Number.isSafeInteger(cachedLength)
+				&& cachedOffset >= 0
+				&& cachedLength >= 0
+				&& cachedOffset + cachedLength <= this.hierarchyBuffer.byteLength
+			) {
+				this.hierarchyCacheHits++;
+				this.parseHierarchy(
+					node,
+					this.hierarchyBuffer,
+					cachedOffset,
+					cachedLength
+				);
+				return;
+			}
+
+			this.hierarchyRangeRequests++;
 			let buffer = await this.loadRangeBuffer(hierarchyPath, first, last, hierarchyByteSize, "high");
+			if (first === 0n) {
+				this.scheduleHierarchyPrefetch(hierarchyPath);
+			}
 
 			this.parseHierarchy(node, buffer);
 
