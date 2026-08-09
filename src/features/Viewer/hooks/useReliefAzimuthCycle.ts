@@ -50,6 +50,7 @@ function createController(
         azimuth: initialState.reliefAzimuth ?? RELIEF_DEFAULTS.azimuth,
         duration: null,
     };
+    let cycleStartAzimuth: number | null = null;
     const listeners = new Set<() => void>();
 
     const publish = (nextSnapshot: ReliefAzimuthCycleSnapshot) => {
@@ -91,6 +92,13 @@ function createController(
         updateUrl({ reliefAzimuth: azimuth });
     };
 
+    const restoreCycleStartAzimuth = () => {
+        const azimuth = cycleStartAzimuth ?? snapshot.azimuth;
+        cycleStartAzimuth = null;
+        applyAzimuth(azimuth);
+        updateUrl({ reliefAzimuth: normalizeAzimuth(azimuth) });
+    };
+
     const controller: InternalController = {
         getSnapshot: () => snapshot,
         subscribe: (listener) => {
@@ -109,15 +117,19 @@ function createController(
             stopAnimation();
             if (nextDuration === null) {
                 publish({ ...snapshot, duration: null });
-                commitCurrentAzimuth();
+                restoreCycleStartAzimuth();
                 return;
             }
 
+            if (snapshot.duration === null) {
+                cycleStartAzimuth = snapshot.azimuth;
+            }
             publish({ ...snapshot, duration: nextDuration });
             startAnimation();
         },
         setAzimuthManually: (azimuth) => {
             stopAnimation();
+            cycleStartAzimuth = null;
             applyAzimuth(azimuth, null);
         },
         setReliefEnabled: (enabled) => {
@@ -132,6 +144,7 @@ function createController(
         reset: (state) => {
             stopAnimation();
             reliefEnabled = state.reliefEnabled ?? RELIEF_DEFAULTS.enabled;
+            cycleStartAzimuth = null;
             applyAzimuth(state.reliefAzimuth ?? RELIEF_DEFAULTS.azimuth, null);
         },
         setRuntime: (nextViewerRef, nextUpdateUrl) => {

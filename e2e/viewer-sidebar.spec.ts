@@ -115,6 +115,7 @@ test.describe('viewer sidebar settings', () => {
         await expect(cycle).toHaveText(/Off/i);
         await expect(azimuth).toHaveValue('180');
 
+        const azimuthBeforeCycle = Number(await azimuth.inputValue());
         await cycle.click();
         await expect(cycle).toHaveText(/10s/i);
         await cycle.click();
@@ -124,9 +125,8 @@ test.describe('viewer sidebar settings', () => {
         await cycle.click();
         await expect(cycle).toHaveText(/Off/i);
 
-        const stoppedAzimuth = Number(await azimuth.inputValue());
-        await page.waitForTimeout(100);
-        await expect(azimuth).toHaveValue(String(stoppedAzimuth));
+        await expect(azimuth).toHaveValue(String(azimuthBeforeCycle));
+        await expectSearchParam(page, 'reliefAzimuth', String(azimuthBeforeCycle));
 
         await cycle.click();
         await expect(cycle).toHaveText(/10s/i);
