@@ -463,11 +463,40 @@ const MOCK_POTREE_SCRIPT = String.raw`
 type MetadataMode = 'ok' | 'not-found' | 'unavailable';
 type PotreeMode = 'mock' | 'missing';
 type MapLabelsMode = 'ok' | 'unavailable';
+type OrthophotoMode = 'ok' | 'unavailable' | 'partial' | 'tiles-unavailable';
+
+const MOCK_ORTHOPHOTO_METADATA = {
+    currentVersion: 11.3,
+    singleFusedMapCache: true,
+    fullExtent: {
+        xmin: 300000,
+        ymin: 5970000,
+        xmax: 700000,
+        ymax: 6260000,
+        spatialReference: { wkid: 2600, latestWkid: 3346 },
+    },
+    tileInfo: {
+        rows: 256,
+        cols: 256,
+        origin: { x: -5122000, y: 10000100 },
+        lods: [
+            { level: 8, resolution: 2.116670900008467, scale: 8000 },
+            { level: 9, resolution: 1.0583354500042335, scale: 4000 },
+            { level: 10, resolution: 0.5291677250021167, scale: 2000 },
+            { level: 11, resolution: 0.26458386250105836, scale: 1000 },
+            { level: 12, resolution: 0.13229193125052918, scale: 500 },
+        ],
+    },
+};
+
+const MOCK_ORTHOPHOTO_TILE_BASE64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
 interface MockViewerOptions {
     metadata?: MetadataMode;
     potree?: PotreeMode;
     mapLabels?: MapLabelsMode;
+    orthophoto?: OrthophotoMode;
     sourceManifest?: object;
 }
 
@@ -475,6 +504,38 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
     const metadataMode = options.metadata ?? 'ok';
     const potreeMode = options.potree ?? 'mock';
     const mapLabelsMode = options.mapLabels ?? 'ok';
+    const orthophotoMode = options.orthophoto ?? 'ok';
+    let orthophotoTileRequest = 0;
+
+    await page.route('**/geoportal/ort-recent**', async (route) => {
+        if (orthophotoMode === 'unavailable') {
+            await route.fulfill({ status: 503, body: '' });
+            return;
+        }
+
+        if (route.request().url().includes('/tile/')) {
+            orthophotoTileRequest += 1;
+            if (
+                orthophotoMode === 'tiles-unavailable' ||
+                (orthophotoMode === 'partial' && orthophotoTileRequest % 2 === 1)
+            ) {
+                await route.fulfill({ status: 503, body: '' });
+                return;
+            }
+            await route.fulfill({
+                status: 200,
+                contentType: 'image/png',
+                body: Buffer.from(MOCK_ORTHOPHOTO_TILE_BASE64, 'base64'),
+            });
+            return;
+        }
+
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(MOCK_ORTHOPHOTO_METADATA),
+        });
+    });
 
     await page.route('https://kvr.kpd.lt/arcgis/rest/services/KVR/**/query?**', async (route) => {
         await route.fulfill({

@@ -58875,6 +58875,18 @@ uniform float reliefPerspective;
 
 varying vec2 vUv;
 
+float depthResponseNormalization(float depth){
+	if(reliefPerspective > 0.5 || depth == 0.0){
+		return 1.0;
+	}
+
+	// Perspective log-depth differences are naturally invariant as the camera
+	// moves. Orthographic depth differences are not: they vary with the ratio
+	// between view-space depth and the frustum radius. projectionScale.x is the
+	// reciprocal of that radius, so this restores the same screen-space response.
+	return max(0.0001, exp2(depth) * abs(reliefProjectionScale.x));
+}
+
 float response(float depth, float radiusScale, float slopeCompensation, float boundaryWeight){
 	vec2 uvRadius = (radius * radiusScale) / vec2(screenWidth, screenHeight);
 	
@@ -59006,6 +59018,7 @@ float reliefShade(float depth){
 		vec2 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
 		gradient = mix(fineGradient, smoothGradient, 0.65 * edlSlopeCompensation);
 	}
+	gradient *= depthResponseNormalization(depth);
 	float amount = dot(gradient, normalize(reliefLightDirection)) * 220.0 * reliefStrength;
 	float highlight = smoothstep(0.0, 1.0, max(amount, 0.0));
 	float shadow = smoothstep(0.0, 1.0, max(-amount, 0.0));
@@ -59031,6 +59044,7 @@ void main() {
 		float tiltedResponse = 0.3 * fineResponse + 1.15 * broadResponse;
 		res = mix(fineResponse, tiltedResponse, edlSlopeCompensation);
 	}
+	res *= depthResponseNormalization(edlDepth);
 	float minimumShade = 0.15 * edlSlopeCompensation;
 	float effectiveStrength = edlStrength;
 	float shade = minimumShade + (1.0 - minimumShade) * exp(-res * 300.0 * effectiveStrength);
@@ -59108,6 +59122,18 @@ uniform sampler2D uEDLColor;
 uniform sampler2D uEDLDepth;
 
 varying vec2 vUv;
+
+float depthResponseNormalization(float depth){
+	if(reliefPerspective > 0.5 || depth == 0.0){
+		return 1.0;
+	}
+
+	// Perspective log-depth differences are naturally invariant as the camera
+	// moves. Orthographic depth differences are not: they vary with the ratio
+	// between view-space depth and the frustum radius. projectionScale.x is the
+	// reciprocal of that radius, so this restores the same screen-space response.
+	return max(0.0001, exp2(depth) * abs(reliefProjectionScale.x));
+}
 
 float response(float depth, float radiusScale, float slopeCompensation, float boundaryWeight){
 	vec2 uvRadius = (radius * radiusScale) / vec2(screenWidth, screenHeight);
@@ -59251,6 +59277,7 @@ float reliefShade(float depth){
 		vec2 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
 		gradient = mix(fineGradient, smoothGradient, 0.65 * edlSlopeCompensation);
 	}
+	gradient *= depthResponseNormalization(depth);
 	float amount = dot(gradient, normalize(reliefLightDirection)) * 220.0 * reliefStrength;
 	float highlight = smoothstep(0.0, 1.0, max(amount, 0.0));
 	float shadow = smoothstep(0.0, 1.0, max(-amount, 0.0));
@@ -59278,6 +59305,7 @@ void main(){
 		float tiltedResponse = 0.3 * fineResponse + 1.15 * broadResponse;
 		res = mix(fineResponse, tiltedResponse, edlSlopeCompensation);
 	}
+	res *= depthResponseNormalization(depth);
 	float minimumShade = 0.15 * edlSlopeCompensation;
 	float effectiveStrength = edlStrength;
 	float shade = minimumShade + (1.0 - minimumShade) * exp(-res * 300.0 * effectiveStrength);
@@ -67268,7 +67296,13 @@ void main() {
 								bufferAttribute.normalized = true;
 								geometry.setAttribute('indices', bufferAttribute);
 							} else {
-								const bufferAttribute = new BufferAttribute(new Float32Array(buffer), 1);
+								let AttributeArray = Float32Array;
+								if (buffers[property].bufferType === "uint16") {
+									AttributeArray = Uint16Array;
+								} else if (buffers[property].bufferType === "uint8") {
+									AttributeArray = Uint8Array;
+								}
+								const bufferAttribute = new BufferAttribute(new AttributeArray(buffer), 1);
 
 								let batchAttribute = buffers[property].attribute;
 								bufferAttribute.potree = {
@@ -82738,6 +82772,86 @@ ENDSEC
 	 */
 
 
+	function queueStableOrthographicZoom(controls, delta) {
+		if (
+			!controls.scene ||
+			controls.scene.cameraMode !== CameraMode.ORTHOGRAPHIC
+		) {
+			return false;
+		}
+
+		let view = controls.scene.view;
+		let element = controls.renderer.domElement;
+		let width = element.clientWidth;
+		let height = element.clientHeight;
+		if (width <= 0 || height <= 0) {
+			return true;
+		}
+
+		let mouse = controls.viewer.inputHandler.mouse;
+		if (!controls.orthographicZoomAnchor) {
+			controls.orthographicZoomAnchor = new Vector2();
+		}
+		controls.orthographicZoomAnchor.set(
+			2 * mouse.x / width - 1,
+			1 - 2 * mouse.y / height
+		);
+
+		let currentTarget = controls.orthographicZoomTarget ?? view.radius;
+		let zoomFactor = Math.exp(-delta * 0.2);
+		controls.orthographicZoomTarget = Math.max(0.01, currentTarget * zoomFactor);
+		return true;
+	}
+
+	function updateStableOrthographicZoom(controls, view, delta) {
+		let target = controls.orthographicZoomTarget;
+		if (
+			controls.scene.cameraMode !== CameraMode.ORTHOGRAPHIC ||
+			target == null
+		) {
+			controls.orthographicZoomTarget = null;
+			return false;
+		}
+
+		let element = controls.renderer.domElement;
+		let width = element.clientWidth;
+		let height = element.clientHeight;
+		if (width <= 0 || height <= 0) {
+			return true;
+		}
+
+		let progression = 1 - Math.pow(0.5, 20 * delta);
+		let previousRadius = view.radius;
+		let nextRadius = previousRadius + (target - previousRadius) * progression;
+		let radiusChange = previousRadius - nextRadius;
+		let anchor = controls.orthographicZoomAnchor;
+		let inverseAspect = height / width;
+		let right = view.getSide();
+		let up = right.clone().cross(view.direction).normalize();
+
+		// Keep Potree's camera-to-pivot distance in sync with the orthographic
+		// frustum. EDL and relief use view-space depth differences, so changing only
+		// the frustum would make both effects fade in and out as the view is zoomed.
+		view.position.addScaledVector(view.direction, radiusChange);
+
+		// Keep the same map coordinate beneath the cursor while the frustum scales.
+		view.position.addScaledVector(right, radiusChange * anchor.x);
+		view.position.addScaledVector(up, radiusChange * anchor.y * inverseAspect);
+		view.radius = nextRadius;
+		controls.viewer.setMoveSpeed(nextRadius / 2.5);
+
+		if (Math.abs(target - nextRadius) <= Math.max(0.0001, target * 0.0001)) {
+			let finalRadiusChange = nextRadius - target;
+			view.position.addScaledVector(view.direction, finalRadiusChange);
+			view.position.addScaledVector(right, finalRadiusChange * anchor.x);
+			view.position.addScaledVector(up, finalRadiusChange * anchor.y * inverseAspect);
+			view.radius = target;
+			controls.orthographicZoomTarget = null;
+		}
+
+		return true;
+	}
+
 	class OrbitControls extends EventDispatcher {
 
 		constructor(viewer) {
@@ -82750,6 +82864,7 @@ ENDSEC
 			this.sceneControls = new Scene();
 
 			this.rotationSpeed = 5;
+			this.pitchLocked = false;
 
 			this.fadeFactor = 20;
 			this.yawDelta = 0;
@@ -82779,7 +82894,9 @@ ENDSEC
 
 				if (e.drag.mouse === MOUSE$1.LEFT) {
 					this.yawDelta -= ndrag.x * this.rotationSpeed; // inverted for natural feel
-					this.pitchDelta -= ndrag.y * this.rotationSpeed; // inverted for natural feel
+					if (!this.pitchLocked) {
+						this.pitchDelta -= ndrag.y * this.rotationSpeed; // inverted for natural feel
+					}
 
 					this.stopTweens();
 				} else if (e.drag.mouse === MOUSE$1.RIGHT) {
@@ -82795,6 +82912,12 @@ ENDSEC
 			};
 
 			let scroll = (e) => {
+				if (queueStableOrthographicZoom(this, e.delta)) {
+					this.radiusDelta = 0;
+					this.stopTweens();
+					return;
+				}
+
 				let resolvedRadius = this.scene.view.radius + this.radiusDelta;
 				// Hybrid zoom: proportional to radius but with minimum floor
 				let zoomStep = Math.max(100, resolvedRadius * 0.15);
@@ -82880,6 +83003,7 @@ ENDSEC
 			this.pitchDelta = 0;
 			this.radiusDelta = 0;
 			this.panDelta.set(0, 0);
+			this.orthographicZoomTarget = null;
 		}
 
 		zoomToLocation(mouse) {
@@ -82984,16 +83108,18 @@ ENDSEC
 			}
 
 			{ // apply zoom
-				let progression = Math.min(1, this.fadeFactor * delta);
+				if (!updateStableOrthographicZoom(this, view, delta)) {
+					let progression = Math.min(1, this.fadeFactor * delta);
 
-				// let radius = view.radius + progression * this.radiusDelta * view.radius * 0.1;
-				let radius = view.radius + progression * this.radiusDelta;
+					// let radius = view.radius + progression * this.radiusDelta * view.radius * 0.1;
+					let radius = view.radius + progression * this.radiusDelta;
 
-				let V = view.direction.multiplyScalar(-radius);
-				let position = new Vector3().addVectors(view.getPivot(), V);
-				view.radius = radius;
+					let V = view.direction.multiplyScalar(-radius);
+					let position = new Vector3().addVectors(view.getPivot(), V);
+					view.radius = radius;
 
-				view.position.copy(position);
+					view.position.copy(position);
+				}
 			}
 
 			{
@@ -83303,6 +83429,7 @@ ENDSEC
 			this.sceneControls = new Scene();
 
 			this.rotationSpeed = 10;
+			this.pitchLocked = false;
 
 			this.fadeFactor = 20;
 			this.wheelDelta = 0;
@@ -83324,7 +83451,12 @@ ENDSEC
 					return;
 				}
 
-				if (!this.pivot) {
+				let view = this.viewer.scene.view;
+				let stableOrthographicPan =
+					e.drag.mouse === MOUSE$1.LEFT &&
+					this.scene.cameraMode === CameraMode.ORTHOGRAPHIC;
+
+				if (!this.pivot && !stableOrthographicPan) {
 					return;
 				}
 
@@ -83336,38 +83468,54 @@ ENDSEC
 
 				let camStart = this.camStart;
 				let camera = this.scene.getActiveCamera();
-				let view = this.viewer.scene.view;
 
 				// let camera = this.viewer.scene.camera;
 				let mouse = e.drag.end;
 				let domElement = this.viewer.renderer.domElement;
 
 				if (e.drag.mouse === MOUSE$1.LEFT) {
+					if (stableOrthographicPan) {
+						this.orthographicZoomTarget = null;
+						this.wheelDelta = 0;
+						this.zoomDelta.set(0, 0, 0);
+						this.tweens.forEach(tween => tween.stop());
+						this.tweens = [];
 
-					let ray = Utils.mouseToRay(mouse, camera, domElement.clientWidth, domElement.clientHeight);
-					let plane = new Plane().setFromNormalAndCoplanarPoint(
-						new Vector3(0, 0, 1),
-						this.pivot);
+						let worldPerPixel = 2 * view.radius / domElement.clientWidth;
+						let dragX = e.drag.lastDrag.x * worldPerPixel;
+						let dragY = e.drag.lastDrag.y * worldPerPixel;
+						let right = view.getSide();
+						let up = right.clone().cross(view.direction).normalize();
 
-					let distanceToPlane = ray.distanceToPlane(plane);
+						view.position.addScaledVector(right, -dragX);
+						view.position.addScaledVector(up, dragY);
+						this.viewer.setMoveSpeed(view.radius / 2.5);
+					} else {
+						let ray = Utils.mouseToRay(mouse, camera, domElement.clientWidth, domElement.clientHeight);
+						let plane = new Plane().setFromNormalAndCoplanarPoint(
+							new Vector3(0, 0, 1),
+							this.pivot);
 
-					if (distanceToPlane > 0) {
-						let I = new Vector3().addVectors(
-							camStart.position,
-							ray.direction.clone().multiplyScalar(distanceToPlane));
+						let distanceToPlane = ray.distanceToPlane(plane);
 
-						let movedBy = new Vector3().subVectors(
-							I, this.pivot);
+						if (distanceToPlane > 0) {
+							let I = new Vector3().addVectors(
+								camStart.position,
+								ray.direction.clone().multiplyScalar(distanceToPlane));
 
-						let newCamPos = camStart.position.clone().sub(movedBy);
+							let movedBy = new Vector3().subVectors(
+								I, this.pivot);
 
-						view.position.copy(newCamPos);
+							let newCamPos = camStart.position.clone().sub(movedBy);
 
-						{
-							let distance = newCamPos.distanceTo(this.pivot);
-							view.radius = distance;
-							let speed = view.radius / 2.5;
-							this.viewer.setMoveSpeed(speed);
+							view.position.copy(newCamPos);
+
+							{
+								let distance = newCamPos.distanceTo(this.pivot);
+								view.radius = distance;
+								let speed = view.radius / 2.5;
+								this.viewer.setMoveSpeed(speed);
+							}
 						}
 					}
 				} else if (e.drag.mouse === MOUSE$1.RIGHT) {
@@ -83377,7 +83525,7 @@ ENDSEC
 					};
 
 					let yawDelta = -ndrag.x * this.rotationSpeed * 0.5;
-					let pitchDelta = -ndrag.y * this.rotationSpeed * 0.2;
+					let pitchDelta = this.pitchLocked ? 0 : -ndrag.y * this.rotationSpeed * 0.2;
 
 					let originalPitch = view.pitch;
 					let tmpView = view.clone();
@@ -83430,6 +83578,12 @@ ENDSEC
 			};
 
 			let scroll = (e) => {
+				if (queueStableOrthographicZoom(this, e.delta)) {
+					this.wheelDelta = 0;
+					this.zoomDelta.set(0, 0, 0);
+					return;
+				}
+
 				this.wheelDelta += e.delta;
 			};
 
@@ -83452,6 +83606,7 @@ ENDSEC
 		stop() {
 			this.wheelDelta = 0;
 			this.zoomDelta.set(0, 0, 0);
+			this.orthographicZoomTarget = null;
 		}
 
 		zoomToLocation(mouse) {
@@ -83522,9 +83677,10 @@ ENDSEC
 			let fade = Math.pow(0.5, this.fadeFactor * delta);
 			let progression = 1 - fade;
 			let camera = this.scene.getActiveCamera();
+			let stableOrthographicZoom = updateStableOrthographicZoom(this, view, delta);
 
 			// compute zoom
-			if (this.wheelDelta !== 0) {
+			if (!stableOrthographicZoom && this.wheelDelta !== 0) {
 				let I = Utils.getMousePointCloudIntersection(
 					this.viewer.inputHandler.mouse,
 					this.scene.getActiveCamera(),
@@ -83551,7 +83707,7 @@ ENDSEC
 			}
 
 			// apply zoom
-			if (this.zoomDelta.length() !== 0) {
+			if (!stableOrthographicZoom && this.zoomDelta.length() !== 0) {
 				let p = this.zoomDelta.clone().multiplyScalar(progression);
 
 				let newPos = new Vector3().addVectors(view.position, p);

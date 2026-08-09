@@ -144,6 +144,27 @@
     background-image: radial-gradient(circle at 50% 45%, #899997 0%, #647479 100%);
 }
 
+:root[data-theme='light'] .theme-toast {
+    --color-deep-space: #cfcec7;
+    box-shadow:
+        0 14px 42px rgba(31, 38, 42, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    backdrop-filter: none;
+}
+
+:root[data-theme='light'] .theme-toast .theme-toast-description {
+    color: #454d54;
+}
+
+:root[data-theme='light'] .theme-toast .theme-toast-close {
+    color: #5a6167;
+}
+
+:root[data-theme='light'] .theme-toast .theme-toast-close:hover {
+    background-color: rgba(32, 37, 44, 0.09);
+    color: #252b31;
+}
+
 :root[data-theme='light'] .theme-color-invariant {
     --color-white: #ffffff;
     --color-laser-green: #00ff88;

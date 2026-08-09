@@ -166,10 +166,24 @@ onmessage = function (event) {
 
 			attributeBuffers[pointAttribute.name] = { buffer: buff, attribute: pointAttribute };
 		}else {
-			let buff = new ArrayBuffer(numPoints * 4);
-			let f32 = new Float32Array(buff);
-
 			let [offset, scale] = [0, 1];
+			let bufferType = "float32";
+			let bytesPerValue = 4;
+			let TypedArray = Float32Array;
+			let attributeType = pointAttribute.type.name;
+
+			if(pointAttribute.name === "intensity" && attributeType === "uint16"){
+				bufferType = "uint16";
+				bytesPerValue = 2;
+				TypedArray = Uint16Array;
+			}else if(pointAttribute.name === "classification" && attributeType === "uint8"){
+				bufferType = "uint8";
+				bytesPerValue = 1;
+				TypedArray = Uint8Array;
+			}
+
+			let buff = new ArrayBuffer(numPoints * bytesPerValue);
+			let values = new TypedArray(buff);
 
 			const getterMap = {
 				"int8":   view.getInt8,
@@ -196,11 +210,12 @@ onmessage = function (event) {
 				let pointOffset = j * bytesPerPoint;
 				let value = getter(pointOffset + attributeOffset, true);
 
-				f32[j] = (value - offset) * scale;
+				values[j] = (value - offset) * scale;
 			}
 
 			attributeBuffers[pointAttribute.name] = { 
 				buffer: buff,
+				bufferType: bufferType,
 				attribute: pointAttribute,
 				offset: offset,
 				scale: scale,

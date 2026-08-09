@@ -208,6 +208,13 @@
         "errorTitle": "Map labels unavailable",
         "errorDescription": "OpenStreetMap labels could not be loaded. Turn the layer off and on to retry."
     },
+    "orthophotoCompare": {
+        "toggle": "Compare with current orthophoto",
+        "sliderLabel": "Orthophoto comparison position",
+        "projectionChanged": "Camera switched to orthographic projection",
+        "errorTitle": "Orthophoto unavailable",
+        "errorDescription": "Geoportal orthophoto imagery could not be loaded. Turn comparison off and on to retry."
+    },
     "measurement": {
         "distance": "Measure Distance",
         "area": "Measure Area",

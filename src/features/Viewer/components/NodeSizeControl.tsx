@@ -47,7 +47,7 @@ export function NodeSizeControl({ viewerRef, initialState, updateUrl }: NodeSize
             <input
                 data-testid="viewer-min-node-size"
                 type="range"
-                min="5"
+                min="0"
                 max="100" // 100 is very coarse, 5 is very fine
                 step="5"
                 value={minNodeSize}

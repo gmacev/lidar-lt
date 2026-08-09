@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { expectSearchParam, gotoMockedViewer, setRangeValue } from './support/viewer';
+import {
+    expectNoSearchParam,
+    expectSearchParam,
+    gotoMockedViewer,
+    setRangeValue,
+} from './support/viewer';
 
 test.describe('viewer sidebar settings', () => {
     test('updates visualization params from color, intensity, projection, and FOV controls', async ({
@@ -29,7 +34,12 @@ test.describe('viewer sidebar settings', () => {
         await expectSearchParam(page, 'fov', '80');
 
         await page.getByTestId('viewer-projection-orthographic').click();
+        await expectSearchParam(page, 'projection', 'ORTHOGRAPHIC');
         await expect(page.getByTestId('viewer-fov')).toBeDisabled();
+
+        await page.getByTestId('viewer-projection-perspective').click();
+        await expectNoSearchParam(page, 'projection');
+        await expect(page.getByTestId('viewer-fov')).toBeEnabled();
     });
 
     test('updates classification, EDL, relief, and point-cloud params', async ({ page }) => {

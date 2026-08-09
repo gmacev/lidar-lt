@@ -6,7 +6,10 @@ import {
     RELIEF_DEFAULTS,
     getDefaultPointBudget,
 } from '@/features/Viewer/config';
-import { getCurrentCameraState } from '@/features/Viewer/utils/viewerDefaults';
+import {
+    getCurrentCameraState,
+    setViewerProjection,
+} from '@/features/Viewer/utils/viewerDefaults';
 import { applyViewerDisplaySettings } from '@/features/Viewer/utils/viewerDisplaySettings';
 import {
     applyPotreeBackgroundTheme,
@@ -362,8 +365,23 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
                 viewer.setTopView();
             }
 
-            if (PotreeLib?.CameraMode) {
-                viewer.setCameraMode(PotreeLib.CameraMode.PERSPECTIVE);
+            if (!PotreeLib?.CameraMode) {
+                setState({ isLoading: false, error: null });
+                return;
+            }
+
+            // Bootstrap in perspective so Potree can perform its initial detail
+            // selection normally, then restore an explicitly shared orthographic
+            // view on the next frame after the point cloud has been attached.
+            setViewerProjection(viewer, 'PERSPECTIVE');
+            if (initialStateRef.current.projection === 'ORTHOGRAPHIC') {
+                requestAnimationFrame(() => {
+                    if (isDisposed()) return;
+
+                    setViewerProjection(viewer, 'ORTHOGRAPHIC');
+                    setState({ isLoading: false, error: null });
+                });
+                return;
             }
 
             setState({ isLoading: false, error: null });

@@ -163,6 +163,14 @@ const icons = {
             <path d="M18 15h5" />
         </>
     ),
+    imageryCompare: () => (
+        <>
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M12 4v16" />
+            <path d="m4.5 16 3.5-4 4 4" />
+            <circle cx="16.5" cy="9" r="2" />
+        </>
+    ),
 
     // Sidebar icons
     palette: () => (

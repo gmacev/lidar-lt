@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { GlassPanel, Icon, LanguageSwitcher, ThemeSwitcher } from '@/common/components';
-import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import type { Projection, ViewerState } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNavigationActions';
 import type { ReliefAzimuthCycleController } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
 import type {
@@ -20,6 +20,7 @@ import { KvrInspectButton } from './KvrInspectButton';
 import { MapLabelsButton } from './MapLabelsButton';
 import { SectorNavigation } from './SectorNavigation';
 import { ToolbarToolButton } from './ToolbarToolButton';
+import { OrthophotoCompareButton } from './OrthophotoCompareButton';
 
 interface ViewerHudProps {
     cellId: string;
@@ -30,12 +31,18 @@ interface ViewerHudProps {
     kvr: ViewerKvrToolModel;
     markers: ViewerMarkersModel;
     mapLabelsEnabled: boolean;
+    orthophotoCompareAvailable: boolean;
+    orthophotoCompareEnabled: boolean;
+    onOrthophotoCompareChange: (enabled: boolean) => void;
     navigation: ViewerNavigationActions;
     onBack: () => void;
     onSidebarCollapsedChange: (collapsed: boolean) => void;
     onUiVisibleChange: (visible: boolean) => void;
     orientNorth: () => void;
     profile: ViewerProfilePanelModel;
+    projection: Projection;
+    projectionLocked: boolean;
+    onProjectionChange: (projection: Projection) => void;
     reliefAzimuthCycle: ReliefAzimuthCycleController;
     sidebarInitialState: ViewerState;
     sidebarResetKey: number;
@@ -54,12 +61,18 @@ export function ViewerHud({
     kvr,
     markers,
     mapLabelsEnabled,
+    orthophotoCompareAvailable,
+    orthophotoCompareEnabled,
+    onOrthophotoCompareChange,
     navigation,
     onBack,
     onSidebarCollapsedChange,
     onUiVisibleChange,
     orientNorth,
     profile,
+    projection,
+    projectionLocked,
+    onProjectionChange,
     reliefAzimuthCycle,
     sidebarInitialState,
     sidebarResetKey,
@@ -176,6 +189,12 @@ export function ViewerHud({
                                         updateUrl({ mapLabels: enabled ? true : undefined })
                                     }
                                 />
+                                {orthophotoCompareAvailable && (
+                                    <OrthophotoCompareButton
+                                        enabled={orthophotoCompareEnabled}
+                                        onChange={onOrthophotoCompareChange}
+                                    />
+                                )}
                                 <GoogleMapsButton viewerRef={viewerRef} />
                                 <KvrInspectButton
                                     focusRequest={kvr.focusRequest}
@@ -205,6 +224,9 @@ export function ViewerHud({
                             reliefAzimuthCycle={reliefAzimuthCycle}
                             onCollapsedChange={onSidebarCollapsedChange}
                             resetKey={sidebarResetKey}
+                            projection={projection}
+                            projectionLocked={projectionLocked}
+                            onProjectionChange={onProjectionChange}
                         />
                     )}
                 </>

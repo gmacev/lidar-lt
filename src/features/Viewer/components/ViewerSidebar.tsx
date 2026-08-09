@@ -27,6 +27,9 @@ interface ViewerSidebarProps {
     reliefAzimuthCycle: ReliefAzimuthCycleController;
     onCollapsedChange: (collapsed: boolean) => void;
     resetKey: number;
+    projection: Projection;
+    projectionLocked: boolean;
+    onProjectionChange: (projection: Projection) => void;
 }
 
 import { isMobile } from '@/common/utils/screenSize';
@@ -46,16 +49,15 @@ export function ViewerSidebar({
     reliefAzimuthCycle,
     onCollapsedChange,
     resetKey,
+    projection,
+    projectionLocked,
+    onProjectionChange,
 }: ViewerSidebarProps) {
     const { t } = useTranslation();
     // Start collapsed on small screens (< 640px / sm breakpoint)
     const [isCollapsed, setIsCollapsed] = useState(isMobile);
-    const [projection, setProjection] = useState<Projection>(
-        initialState.projection ?? 'PERSPECTIVE'
-    );
-
     const handleResetDefaults = () => {
-        setProjection('PERSPECTIVE');
+        onProjectionChange('PERSPECTIVE');
         onResetDefaults();
     };
 
@@ -121,7 +123,8 @@ export function ViewerSidebar({
                                 <CameraProjectionControl
                                     viewerRef={viewerRef}
                                     projection={projection}
-                                    onChange={setProjection}
+                                    disabled={projectionLocked}
+                                    onChange={onProjectionChange}
                                 />
 
                                 <FOVControl

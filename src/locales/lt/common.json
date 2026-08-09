@@ -208,6 +208,13 @@
         "errorTitle": "Žemėlapio pavadinimai nepasiekiami",
         "errorDescription": "Nepavyko įkelti OpenStreetMap pavadinimų. Išjunkite ir vėl įjunkite sluoksnį."
     },
+    "orthophotoCompare": {
+        "toggle": "Palyginti su naujausiu ortofoto",
+        "sliderLabel": "Ortofoto palyginimo padėtis",
+        "projectionChanged": "Kamera perjungta į ortografinę projekciją",
+        "errorTitle": "Ortofoto nepasiekiamas",
+        "errorDescription": "Nepavyko įkelti Geoportal ortofoto vaizdų. Išjunkite ir vėl įjunkite palyginimą."
+    },
     "measurement": {
         "distance": "Matuoti atstumą",
         "area": "Matuoti plotą",
