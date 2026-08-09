@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     findGeographicSectorIds,
     loadGeographicSearchIndex,
@@ -7,41 +7,45 @@ import {
 
 type SearchStatus = 'idle' | 'loading' | 'success' | 'error';
 
+interface SearchResult {
+    query: string;
+    status: Extract<SearchStatus, 'success' | 'error'>;
+    matchedIds: Set<string>;
+}
+
+const EMPTY_MATCHED_IDS = new Set<string>();
+
 export function useGeographicSearch(query: string, enabled: boolean) {
-    const requestId = useRef(0);
-    const [status, setStatus] = useState<SearchStatus>('idle');
-    const [matchedIds, setMatchedIds] = useState<Set<string>>(new Set());
+    const normalizedQuery = normalizeGeographicName(query);
+    const activeQuery = enabled && normalizedQuery.length >= 2 ? normalizedQuery : null;
+    const [result, setResult] = useState<SearchResult | null>(null);
 
     useEffect(() => {
-        const normalizedQuery = normalizeGeographicName(query);
-        const currentRequestId = ++requestId.current;
-
-        if (!enabled || normalizedQuery.length < 2) {
-            setStatus('idle');
-            setMatchedIds(new Set());
-            return;
-        }
-
-        setStatus('loading');
-        setMatchedIds(new Set());
+        if (!activeQuery) return;
         let cancelled = false;
 
         void loadGeographicSearchIndex()
             .then((index) => {
-                if (cancelled || requestId.current !== currentRequestId) return;
-                setMatchedIds(findGeographicSectorIds(index, normalizedQuery));
-                setStatus('success');
+                if (cancelled) return;
+                setResult({
+                    query: activeQuery,
+                    status: 'success',
+                    matchedIds: findGeographicSectorIds(index, activeQuery),
+                });
             })
             .catch(() => {
-                if (cancelled || requestId.current !== currentRequestId) return;
-                setMatchedIds(new Set());
-                setStatus('error');
+                if (cancelled) return;
+                setResult({ query: activeQuery, status: 'error', matchedIds: EMPTY_MATCHED_IDS });
             });
 
         return () => {
             cancelled = true;
         };
-    }, [enabled, query]);
+    }, [activeQuery]);
 
-    return { status, matchedIds };
+    if (!activeQuery) return { status: 'idle' as const, matchedIds: EMPTY_MATCHED_IDS };
+    if (result?.query !== activeQuery) {
+        return { status: 'loading' as const, matchedIds: EMPTY_MATCHED_IDS };
+    }
+    return { status: result.status, matchedIds: result.matchedIds };
 }
