@@ -62171,9 +62171,7 @@ void main() {
 		}
 
 		let loadAttempts = 0;
-		let maxNodesLoading = Potree.memoryPressure || useConservativeChromiumLoading()
-			? 1
-			: Potree.maxNodesLoading;
+		let maxNodesLoading = getMaxNodesLoading();
 		for (let i = 0; i < unloadedGeometry.length && loadAttempts < maxNodesLoading; i++) {
 			let started = unloadedGeometry[i].load();
 			if (started !== false) {
@@ -66862,9 +66860,7 @@ void main() {
 				return false;
 			}
 
-			let maxNodesLoading = Potree.memoryPressure || useConservativeChromiumLoading()
-				? 1
-				: Potree.maxNodesLoading;
+			let maxNodesLoading = getMaxNodesLoading();
 			if (Potree.numNodesLoading >= maxNodesLoading) {
 				return false;
 			}
@@ -66938,6 +66934,14 @@ void main() {
 	function useConservativeChromiumLoading() {
 		return Potree.isChromiumRuntime
 			&& Potree.pointBudget >= CHROMIUM_CONSERVATIVE_BUDGET;
+	}
+
+	function getMaxNodesLoading() {
+		if (Potree.memoryPressure || useConservativeChromiumLoading()) {
+			return 1;
+		}
+
+		return Potree.isChromiumRuntime ? 2 : Potree.maxNodesLoading;
 	}
 
 	function isMemoryAllocationFailure(error) {
@@ -91687,7 +91691,7 @@ ENDSEC
 	let maxVisibleNodes = 2048;
 	let framenumber = 0;
 	let numNodesLoading = 0;
-	let maxNodesLoading = 2; // Reduced to prevent OOM during Brotli decompression in workers
+	let maxNodesLoading = 4;
 	let memoryPressure = false;
 	let memoryRecoveryUntil = 0;
 	let memoryRecoveryFailures = 0;
