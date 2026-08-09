@@ -2084,6 +2084,8 @@ let BrotliDecode = BrotliDecodeClosure();
 
 Potree = {};
 
+const NATIVE_LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+
 function dealign24b(mortoncode){
 	// see https://stackoverflow.com/questions/45694690/how-i-can-remove-all-odds-bits-in-c
 
@@ -2161,16 +2163,15 @@ onmessage = function (event) {
 
 	let gridSize = 32;
 	let grid = new Uint32Array(gridSize ** 3);
+	let gridScaleX = gridSize / size.x;
+	let gridScaleY = gridSize / size.y;
+	let gridScaleZ = gridSize / size.z;
 	let toIndex = (x, y, z) => {
 
 		// min is already subtracted
-		let dx = gridSize * x / size.x;
-		let dy = gridSize * y / size.y;
-		let dz = gridSize * z / size.z;
-
-		let ix = Math.min(parseInt(dx), gridSize - 1);
-		let iy = Math.min(parseInt(dy), gridSize - 1);
-		let iz = Math.min(parseInt(dz), gridSize - 1);
+		let ix = Math.min(Math.trunc(x * gridScaleX), gridSize - 1);
+		let iy = Math.min(Math.trunc(y * gridScaleY), gridSize - 1);
+		let iz = Math.min(Math.trunc(z * gridScaleZ), gridSize - 1);
 
 		let index = ix + iy * gridSize + iz * gridSize * gridSize;
 
@@ -2312,9 +2313,9 @@ onmessage = function (event) {
 
 
 
-				let x = parseInt(X) * scale[0] + offset[0] - min.x;
-				let y = parseInt(Y) * scale[1] + offset[1] - min.y;
-				let z = parseInt(Z) * scale[2] + offset[2] - min.z;
+				let x = X * scale[0] + offset[0] - min.x;
+				let y = Y * scale[1] + offset[1] - min.y;
+				let z = Z * scale[2] + offset[2] - min.z;
 
 				let index = toIndex(x, y, z);
 				let count = grid[index]++;
@@ -2398,6 +2399,24 @@ onmessage = function (event) {
 				bufferType = "uint8";
 				bytesPerValue = 1;
 				TypedArray = Uint8Array;
+			}
+
+			let canBulkCopy = bufferType === "uint8"
+				|| (bufferType === "uint16" && NATIVE_LITTLE_ENDIAN);
+			if(canBulkCopy){
+				let byteLength = numPoints * bytesPerValue;
+				let sourceStart = byteOffset;
+				let buff = buffer.buffer.slice(sourceStart, sourceStart + byteLength);
+				byteOffset += byteLength;
+
+				attributeBuffers[pointAttribute.name] = {
+					buffer: buff,
+					bufferType: bufferType,
+					attribute: pointAttribute,
+					offset: offset,
+					scale: scale,
+				};
+				continue;
 			}
 
 			let buff = new ArrayBuffer(numPoints * bytesPerValue);

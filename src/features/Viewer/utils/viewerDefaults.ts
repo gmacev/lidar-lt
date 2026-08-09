@@ -21,10 +21,7 @@ export function getCurrentCameraState(viewer: PotreeViewer | null): Partial<View
     };
 }
 
-export function setViewerProjection(
-    viewer: PotreeViewer | null,
-    projection: Projection
-): boolean {
+export function setViewerProjection(viewer: PotreeViewer | null, projection: Projection): boolean {
     const PotreeLib = window.Potree;
     if (!viewer || !PotreeLib?.CameraMode) return false;
 
