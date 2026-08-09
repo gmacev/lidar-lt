@@ -117,8 +117,7 @@ function getVisiblePlane(viewer: PotreeViewer, planeZ: number) {
         maxX: Math.max(...points.map((point) => point.x)),
         maxY: Math.max(...points.map((point) => point.y)),
     };
-    const metersPerPixel =
-        Math.hypot(points[1]!.x - points[0]!.x, points[1]!.y - points[0]!.y) / width;
+    const metersPerPixel = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y) / width;
 
     return { bounds, metersPerPixel };
 }

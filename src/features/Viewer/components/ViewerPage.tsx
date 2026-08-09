@@ -47,9 +47,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const [projection, setProjection] = useState<Projection>(
         initialState.projection ?? 'PERSPECTIVE'
     );
-    const effectiveProjection: Projection = orthophotoCompareEnabled
-        ? 'ORTHOGRAPHIC'
-        : projection;
+    const effectiveProjection: Projection = orthophotoCompareEnabled ? 'ORTHOGRAPHIC' : projection;
     useViewerDataOriginPreconnect();
 
     const {

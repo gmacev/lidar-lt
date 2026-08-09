@@ -35,9 +35,7 @@ test.describe('viewer orthophoto comparison', () => {
         await expect(page.getByText('Camera switched to orthographic projection')).toBeVisible();
         await expect(page.getByTestId('viewer-projection-orthographic')).toBeDisabled();
         await expect(page.getByTestId('viewer-projection-perspective')).toBeDisabled();
-        await expect(page.getByTestId('viewer-projection-orthographic')).toHaveClass(
-            /laser-green/
-        );
+        await expect(page.getByTestId('viewer-projection-orthographic')).toHaveClass(/laser-green/);
         await expectNoSearchParam(page, 'projection');
 
         await page.reload();

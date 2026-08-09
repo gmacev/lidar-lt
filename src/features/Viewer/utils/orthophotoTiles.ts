@@ -98,14 +98,14 @@ export function createOrthophotoTilePlan(options: {
         lods,
         metersPerPixel / Math.max(1, Math.min(devicePixelRatio, 2))
     );
-    let coordinates = getTileCoordinates(metadata, lods[lodIndex]!, visibleCoverage);
+    let coordinates = getTileCoordinates(metadata, lods[lodIndex], visibleCoverage);
 
     while (coordinates.length > maxTiles && lodIndex > 0) {
         lodIndex -= 1;
-        coordinates = getTileCoordinates(metadata, lods[lodIndex]!, visibleCoverage);
+        coordinates = getTileCoordinates(metadata, lods[lodIndex], visibleCoverage);
     }
 
-    const lod = lods[lodIndex]!;
+    const lod = lods[lodIndex];
     const tileWidth = metadata.tileInfo.columns * lod.resolution;
     const tileHeight = metadata.tileInfo.rows * lod.resolution;
     const fragments: OrthophotoTileFragment[] = [];

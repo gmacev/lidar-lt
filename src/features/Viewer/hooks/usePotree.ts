@@ -6,10 +6,7 @@ import {
     RELIEF_DEFAULTS,
     getDefaultPointBudget,
 } from '@/features/Viewer/config';
-import {
-    getCurrentCameraState,
-    setViewerProjection,
-} from '@/features/Viewer/utils/viewerDefaults';
+import { getCurrentCameraState, setViewerProjection } from '@/features/Viewer/utils/viewerDefaults';
 import { applyViewerDisplaySettings } from '@/features/Viewer/utils/viewerDisplaySettings';
 import {
     applyPotreeBackgroundTheme,
