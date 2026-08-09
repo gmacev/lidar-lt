@@ -141,6 +141,7 @@ export function GridVisualizer() {
                 onChange={search.setQuery}
                 matchedCount={matchedCount}
                 totalCount={totalCount}
+                searchStatus={search.status}
             />
 
             {/* Appearance and language controls - top right */}

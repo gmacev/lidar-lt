@@ -286,11 +286,14 @@
     },
     "search": {
         "coordinatePlaceholder": "54.687, 25.279",
-        "gridPlaceholder": "Search (ID, name, coords)...",
+        "gridPlaceholder": "Sector, place, or coordinates...",
+        "gridSearchLabel": "Search for a sector or geographic object",
         "go": "Go",
+        "searching": "Searching…",
         "found": "Found",
-        "example": "E.g: 35/71; Skuodas; 55.69, 26.43",
-        "clearSearch": "Clear search"
+        "example": "E.g. 35/71; Skuodas; 55.69, 26.43",
+        "clearSearch": "Clear search",
+        "geographicSearchError": "The local geographic search data could not be loaded."
     },
     "grid": {
         "sectorId": "SECTOR ID"

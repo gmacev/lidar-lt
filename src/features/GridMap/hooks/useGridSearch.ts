@@ -1,36 +1,64 @@
 import { useState } from 'react';
-import type { FeatureCollection, Geometry } from 'geojson';
+import type { FeatureCollection, Geometry, Position } from 'geojson';
 
-// Ray-casting algorithm for point in polygon
-function isPointInPolygon(point: [number, number], vs: number[][]): boolean {
-    const x = point[0],
-        y = point[1];
+const GEOMETRY_EPSILON = 1e-10;
+
+function isPointOnSegment(point: Position, start: Position, end: Position) {
+    const [x, y] = point;
+    const [startX, startY] = start;
+    const [endX, endY] = end;
+    const crossProduct = (y - startY) * (endX - startX) - (x - startX) * (endY - startY);
+    if (Math.abs(crossProduct) > GEOMETRY_EPSILON) return false;
+    return (
+        x >= Math.min(startX, endX) - GEOMETRY_EPSILON &&
+        x <= Math.max(startX, endX) + GEOMETRY_EPSILON &&
+        y >= Math.min(startY, endY) - GEOMETRY_EPSILON &&
+        y <= Math.max(startY, endY) + GEOMETRY_EPSILON
+    );
+}
+
+function isPointInRing(point: Position, ring: Position[]) {
     let inside = false;
-    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-        const xi = vs[i][0],
-            yi = vs[i][1];
-        const xj = vs[j][0],
-            yj = vs[j][1];
+    for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
+        const currentPoint = ring[index];
+        const previousPoint = ring[previous];
+        if (!currentPoint || !previousPoint) continue;
+        if (isPointOnSegment(point, previousPoint, currentPoint)) return true;
 
-        const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-        if (intersect) inside = !inside;
+        const [x, y] = point;
+        const [currentX, currentY] = currentPoint;
+        const [previousX, previousY] = previousPoint;
+        const crossesRay =
+            currentY > y !== previousY > y &&
+            x < ((previousX - currentX) * (y - currentY)) / (previousY - currentY) + currentX;
+        if (crossesRay) inside = !inside;
     }
     return inside;
 }
 
-function isPointInFeature(point: [number, number], geometry: Geometry): boolean {
-    if (geometry.type === 'Polygon') {
-        // GeoJSON Polygons: first ring is exterior
-        return isPointInPolygon(point, geometry.coordinates[0]);
-    }
+function isPointInPolygon(point: Position, rings: Position[][]) {
+    const exterior = rings[0];
+    return Boolean(
+        exterior &&
+        isPointInRing(point, exterior) &&
+        rings.slice(1).every((hole) => !isPointInRing(point, hole))
+    );
+}
+
+function isPointInFeature(point: Position, geometry: Geometry): boolean {
+    if (geometry.type === 'Polygon') return isPointInPolygon(point, geometry.coordinates);
     if (geometry.type === 'MultiPolygon') {
-        return geometry.coordinates.some((polyCoords) => isPointInPolygon(point, polyCoords[0]));
+        return geometry.coordinates.some((polygon) => isPointInPolygon(point, polygon));
+    }
+    if (geometry.type === 'GeometryCollection') {
+        return geometry.geometries.some((item) => isPointInFeature(point, item));
     }
     return false;
 }
 
 // Coordinate parsing regex: "55.695, 26.435" or "55.695 26.435"
 const DECIMAL_COORD_REGEX = /^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/;
+const GRID_ID_REGEX = /^\d{1,3}[\/_]\d{1,3}$/;
 
 function parseDMS(dmsStr: string): number | null {
     // Matches: 55°41'42.0"N or 26°26'06.0"E
@@ -56,6 +84,17 @@ function parseDMS(dmsStr: string): number | null {
  * Compute matched IDs based on search query and data.
  * Pure function for deriving state.
  */
+export function isCoordinateSearchQuery(searchQuery: string) {
+    const query = searchQuery.trim();
+    if (DECIMAL_COORD_REGEX.test(query)) return true;
+    const dmsMatches = query.match(/(\d+°\s*\d+'\s*\d+(?:\.\d+)?"\s*[NSEW])/gi);
+    return dmsMatches?.length === 2;
+}
+
+export function isGridIdSearchQuery(searchQuery: string) {
+    return GRID_ID_REGEX.test(searchQuery.trim());
+}
+
 function computeMatchedIds(searchQuery: string, data: FeatureCollection | undefined): Set<string> {
     if (!data) return new Set();
 
@@ -99,12 +138,10 @@ function computeMatchedIds(searchQuery: string, data: FeatureCollection | undefi
     }
 
     if (point) {
-        // Found coordinates (Decimal or DMS)
         data.features.forEach((feature) => {
-            if (isPointInFeature(point, feature.geometry)) {
-                const props = feature.properties as { id: string };
-                if (props.id) matches.add(props.id);
-            }
+            if (!isPointInFeature(point, feature.geometry)) return;
+            const id = (feature.properties as { id?: unknown } | null)?.id;
+            if (typeof id === 'string') matches.add(id);
         });
     } else {
         // Text Search

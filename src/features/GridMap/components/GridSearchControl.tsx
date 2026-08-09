@@ -6,6 +6,7 @@ interface GridSearchControlProps {
     onChange: (value: string) => void;
     matchedCount?: number;
     totalCount?: number;
+    searchStatus: 'idle' | 'loading' | 'success' | 'error';
 }
 
 export function GridSearchControl({
@@ -13,6 +14,7 @@ export function GridSearchControl({
     onChange,
     matchedCount = 0,
     totalCount = 0,
+    searchStatus,
 }: GridSearchControlProps) {
     const { t } = useTranslation();
 
@@ -25,10 +27,12 @@ export function GridSearchControl({
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={t('search.gridPlaceholder')}
-                        className="w-full rounded border border-theme-brand/30 bg-panel-input px-3 py-1.5 text-sm text-panel-text placeholder:text-panel-subtle transition-colors focus:border-theme-brand focus:outline-none focus:ring-1 focus:ring-theme-brand/30"
+                        aria-label={t('search.gridSearchLabel')}
+                        className="w-full rounded border border-theme-brand/30 bg-panel-input px-3 py-1.5 pr-8 text-sm text-panel-text placeholder:text-panel-subtle transition-colors focus:border-theme-brand focus:outline-none focus:ring-1 focus:ring-theme-brand/30"
                     />
                     {value && (
                         <button
+                            type="button"
                             onClick={() => onChange('')}
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-panel-muted hover:text-panel-text"
                             aria-label={t('search.clearSearch')}
@@ -38,11 +42,19 @@ export function GridSearchControl({
                     )}
                 </div>
 
+                {searchStatus === 'error' && (
+                    <div className="rounded border border-red-500/35 bg-red-500/10 px-2.5 py-2 text-xs text-red-700 dark:text-red-300" role="alert">
+                        {t('search.geographicSearchError')}
+                    </div>
+                )}
+
                 <div className="flex justify-between px-1 text-xs">
                     <div className="text-panel-muted">{t('search.example')}</div>
                     {value && (
-                        <div className="text-theme-brand">
-                            {t('search.found')}: {matchedCount} / {totalCount}
+                        <div className="text-theme-brand" role="status">
+                            {searchStatus === 'loading'
+                                ? t('search.searching')
+                                : `${t('search.found')}: ${matchedCount} / ${totalCount}`}
                         </div>
                     )}
                 </div>

@@ -1,9 +1,10 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { MapLayerMouseEvent, MapRef } from '@vis.gl/react-maplibre';
 import type { FeatureCollection } from 'geojson';
 import gridData from '@/assets/grid.json';
-import { useGridSearch } from './useGridSearch';
+import { isCoordinateSearchQuery, isGridIdSearchQuery, useGridSearch } from './useGridSearch';
+import { useGeographicSearch } from './useGeographicSearch';
 
 const GRID_SOURCE_ID = 'lidar-grid';
 
@@ -21,7 +22,19 @@ export function useLithuaniaGrid(mapStyleKey: string) {
     const data = gridData as FeatureCollection;
 
     // Search Logic
-    const { searchQuery, setSearchQuery, matchedIds } = useGridSearch(data);
+    const localSearch = useGridSearch(data);
+    const isDirectGridSearch =
+        isCoordinateSearchQuery(localSearch.searchQuery) ||
+        isGridIdSearchQuery(localSearch.searchQuery);
+    const geographicSearch = useGeographicSearch(
+        localSearch.searchQuery,
+        !isDirectGridSearch
+    );
+    const matchedIds = useMemo(() => {
+        const combined = new Set(localSearch.matchedIds);
+        geographicSearch.matchedIds.forEach((id) => combined.add(id));
+        return combined;
+    }, [geographicSearch.matchedIds, localSearch.matchedIds]);
 
     // Map Interaction State
     const [tooltip, setTooltip] = useState<TooltipData | null>(null);
@@ -167,9 +180,10 @@ export function useLithuaniaGrid(mapStyleKey: string) {
         mapRef,
         tooltip,
         search: {
-            query: searchQuery,
-            setQuery: setSearchQuery,
+            query: localSearch.searchQuery,
+            setQuery: localSearch.setSearchQuery,
             matchedIds,
+            status: geographicSearch.status,
         },
         handlers: {
             onClick: handleClick,

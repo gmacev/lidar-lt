@@ -286,11 +286,14 @@
     },
     "search": {
         "coordinatePlaceholder": "54.687, 25.279",
-        "gridPlaceholder": "Ieškoti (ID, pavadinimas, koordinatės)...",
+        "gridPlaceholder": "Sektorius, vietovė arba koordinatės...",
+        "gridSearchLabel": "Ieškoti sektoriaus arba geografinio objekto",
         "go": "Eiti",
+        "searching": "Ieškoma…",
         "found": "Rasta",
-        "example": "Pvz: 35/71; Skuodas; 55.69, 26.43",
-        "clearSearch": "Išvalyti paiešką"
+        "example": "Pvz.: 35/71; Skuodas; 55.69, 26.43",
+        "clearSearch": "Išvalyti paiešką",
+        "geographicSearchError": "Nepavyko įkelti vietinės paieškos duomenų."
     },
     "grid": {
         "sectorId": "SEKTORIAUS ID"
