@@ -28,10 +28,7 @@ export function loadGeographicSearchIndex() {
     return indexPromise;
 }
 
-export function findGeographicSectorIds(
-    index: GeographicSearchEntry[],
-    normalizedQuery: string
-) {
+export function findGeographicSectorIds(index: GeographicSearchEntry[], normalizedQuery: string) {
     let low = 0;
     let high = index.length;
     while (low < high) {

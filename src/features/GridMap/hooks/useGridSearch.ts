@@ -58,7 +58,7 @@ function isPointInFeature(point: Position, geometry: Geometry): boolean {
 
 // Coordinate parsing regex: "55.695, 26.435" or "55.695 26.435"
 const DECIMAL_COORD_REGEX = /^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/;
-const GRID_ID_REGEX = /^\d{1,3}[\/_]\d{1,3}$/;
+const GRID_ID_REGEX = /^\d{1,3}[/_]\d{1,3}$/;
 
 function parseDMS(dmsStr: string): number | null {
     // Matches: 55°41'42.0"N or 26°26'06.0"E

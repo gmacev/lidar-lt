@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { MapLayerMouseEvent, MapRef } from '@vis.gl/react-maplibre';
 import type { FeatureCollection } from 'geojson';
@@ -26,15 +26,9 @@ export function useLithuaniaGrid(mapStyleKey: string) {
     const isDirectGridSearch =
         isCoordinateSearchQuery(localSearch.searchQuery) ||
         isGridIdSearchQuery(localSearch.searchQuery);
-    const geographicSearch = useGeographicSearch(
-        localSearch.searchQuery,
-        !isDirectGridSearch
-    );
-    const matchedIds = useMemo(() => {
-        const combined = new Set(localSearch.matchedIds);
-        geographicSearch.matchedIds.forEach((id) => combined.add(id));
-        return combined;
-    }, [geographicSearch.matchedIds, localSearch.matchedIds]);
+    const geographicSearch = useGeographicSearch(localSearch.searchQuery, !isDirectGridSearch);
+    const matchedIds = new Set(localSearch.matchedIds);
+    geographicSearch.matchedIds.forEach((id) => matchedIds.add(id));
 
     // Map Interaction State
     const [tooltip, setTooltip] = useState<TooltipData | null>(null);

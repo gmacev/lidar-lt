@@ -43,7 +43,10 @@ export function GridSearchControl({
                 </div>
 
                 {searchStatus === 'error' && (
-                    <div className="rounded border border-red-500/35 bg-red-500/10 px-2.5 py-2 text-xs text-red-700 dark:text-red-300" role="alert">
+                    <div
+                        className="rounded border border-red-500/35 bg-red-500/10 px-2.5 py-2 text-xs text-red-700 dark:text-red-300"
+                        role="alert"
+                    >
                         {t('search.geographicSearchError')}
                     </div>
                 )}
