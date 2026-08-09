@@ -312,13 +312,11 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
 
         requestScreenMarkerUpdateRef.current = () => updateScreenMarkers();
 
-        const handleRenderPassEnd = () => updateScreenMarkers(true);
         const handleCameraChanged = () => updateScreenMarkers(true);
 
         const detachViewer = () => {
             if (!viewer) return;
 
-            viewer.removeEventListener('render.pass.end', handleRenderPassEnd);
             viewer.removeEventListener('camera_changed', handleCameraChanged);
             resizeObserver?.disconnect();
             resizeObserver = null;
@@ -336,7 +334,6 @@ export function useMarkers({ viewerRef, markerParam, onSearchChange }: UseMarker
                 return;
             }
 
-            viewer.addEventListener('render.pass.end', handleRenderPassEnd);
             viewer.addEventListener('camera_changed', handleCameraChanged);
 
             resizeObserver = new ResizeObserver(() => updateScreenMarkers());

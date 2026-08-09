@@ -152,12 +152,10 @@ export function useProjectedViewerLabels({ labels, viewerRef }: UseProjectedView
         };
 
         requestUpdateRef.current = () => updateLabels();
-        const handleRenderPassEnd = () => updateLabels(true);
         const handleCameraChanged = () => updateLabels(true);
 
         const detach = () => {
             if (!viewer) return;
-            viewer.removeEventListener('render.pass.end', handleRenderPassEnd);
             viewer.removeEventListener('camera_changed', handleCameraChanged);
             resizeObserver?.disconnect();
             resizeObserver = null;
@@ -171,7 +169,6 @@ export function useProjectedViewerLabels({ labels, viewerRef }: UseProjectedView
             viewer = nextViewer;
             if (!viewer) return;
 
-            viewer.addEventListener('render.pass.end', handleRenderPassEnd);
             viewer.addEventListener('camera_changed', handleCameraChanged);
             resizeObserver = new ResizeObserver(() => updateLabels());
             resizeObserver.observe(viewer.renderer.domElement);

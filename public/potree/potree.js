@@ -58402,17 +58402,17 @@ void doClipping(){
 //
 
 void main() {
-	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0 );
-	vViewPosition = mvPosition.xyz;
-	gl_Position = projectionMatrix * mvPosition;
-	vLogDepth = log2(-mvPosition.z);
-
 	vec4 classificationColor = getClassification();
 	if(classificationColor.a == 0.0){
 		gl_Position = vec4(100.0, 100.0, 100.0, 0.0);
 		gl_PointSize = 0.0;
 		return;
 	}
+
+	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0 );
+	vViewPosition = mvPosition.xyz;
+	gl_Position = projectionMatrix * mvPosition;
+	vLogDepth = log2(-mvPosition.z);
 
 	//gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
 	//gl_PointSize = 5.0;
@@ -63901,14 +63901,40 @@ void main() {
 
 				shader = this.shaders.get(material);
 
-				//if(material.needsUpdate){
-				{
-					let [vs, fs] = [material.vertexShader, material.fragmentShader];
+				let [vs, fs] = [material.vertexShader, material.fragmentShader];
 
-					let numSnapshots = material.snapEnabled ? material.numSnapshots : 0;
-					let numClipBoxes = (material.clipBoxes && material.clipBoxes.length) ? material.clipBoxes.length : 0;
-					let numClipSpheres = (params.clipSpheres && params.clipSpheres.length) ? params.clipSpheres.length : 0;
-					let numClipPolygons = (material.clipPolygons && material.clipPolygons.length) ? material.clipPolygons.length : 0;
+				let numSnapshots = material.snapEnabled ? material.numSnapshots : 0;
+				let numClipBoxes = (material.clipBoxes && material.clipBoxes.length) ? material.clipBoxes.length : 0;
+				let numClipSpheres = (params.clipSpheres && params.clipSpheres.length) ? params.clipSpheres.length : 0;
+				let numClipPolygons = (material.clipPolygons && material.clipPolygons.length) ? material.clipPolygons.length : 0;
+				let hasGpsTime = false;
+				let hasReturnNumber = false;
+				let hasNumberOfReturns = false;
+				let hasPointSourceId = false;
+
+				if (octree.pcoGeometry.root.isLoaded()) {
+					let attributes = octree.pcoGeometry.root.geometry.attributes;
+					hasGpsTime = Boolean(attributes["gps-time"]);
+					hasReturnNumber = Boolean(attributes["return number"]);
+					hasNumberOfReturns = Boolean(attributes["number of returns"]);
+					hasPointSourceId = Boolean(attributes["source id"] || attributes["point source id"]);
+				}
+
+				let variant = shader.potreeVariant;
+				let variantChanged = !variant
+					|| variant.vs !== vs
+					|| variant.fs !== fs
+					|| variant.numShadowMaps !== shadowMaps.length
+					|| variant.numSnapshots !== numSnapshots
+					|| variant.numClipBoxes !== numClipBoxes
+					|| variant.numClipSpheres !== numClipSpheres
+					|| variant.numClipPolygons !== numClipPolygons
+					|| variant.hasGpsTime !== hasGpsTime
+					|| variant.hasReturnNumber !== hasReturnNumber
+					|| variant.hasNumberOfReturns !== hasNumberOfReturns
+					|| variant.hasPointSourceId !== hasPointSourceId;
+
+				if (variantChanged) {
 
 					let defines = [
 						`#define num_shadowmaps ${shadowMaps.length}`,
@@ -63919,25 +63945,17 @@ void main() {
 					];
 
 
-					if (octree.pcoGeometry.root.isLoaded()) {
-						let attributes = octree.pcoGeometry.root.geometry.attributes;
-
-						if (attributes["gps-time"]) {
-							defines.push("#define clip_gps_enabled");
-						}
-
-						if (attributes["return number"]) {
-							defines.push("#define clip_return_number_enabled");
-						}
-
-						if (attributes["number of returns"]) {
-							defines.push("#define clip_number_of_returns_enabled");
-						}
-
-						if (attributes["source id"] || attributes["point source id"]) {
-							defines.push("#define clip_point_source_id_enabled");
-						}
-
+					if (hasGpsTime) {
+						defines.push("#define clip_gps_enabled");
+					}
+					if (hasReturnNumber) {
+						defines.push("#define clip_return_number_enabled");
+					}
+					if (hasNumberOfReturns) {
+						defines.push("#define clip_number_of_returns_enabled");
+					}
+					if (hasPointSourceId) {
+						defines.push("#define clip_point_source_id_enabled");
 					}
 
 					let definesString = defines.join("\n");
@@ -63959,9 +63977,22 @@ void main() {
 
 
 					shader.update(vs, fs);
+					shader.potreeVariant = {
+						vs: material.vertexShader,
+						fs: material.fragmentShader,
+						numShadowMaps: shadowMaps.length,
+						numSnapshots,
+						numClipBoxes,
+						numClipSpheres,
+						numClipPolygons,
+						hasGpsTime,
+						hasReturnNumber,
+						hasNumberOfReturns,
+						hasPointSourceId,
+					};
 
-					material.needsUpdate = false;
 				}
+				material.needsUpdate = false;
 
 				for (let uniformName of Object.keys(material.uniforms)) {
 					let uniform = material.uniforms[uniformName];
