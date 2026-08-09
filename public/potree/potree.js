@@ -67232,7 +67232,13 @@ void main() {
 								bufferAttribute.normalized = true;
 								geometry.setAttribute('indices', bufferAttribute);
 							} else {
-								const bufferAttribute = new BufferAttribute(new Float32Array(buffer), 1);
+								let AttributeArray = Float32Array;
+								if (buffers[property].bufferType === "uint16") {
+									AttributeArray = Uint16Array;
+								} else if (buffers[property].bufferType === "uint8") {
+									AttributeArray = Uint8Array;
+								}
+								const bufferAttribute = new BufferAttribute(new AttributeArray(buffer), 1);
 
 								let batchAttribute = buffers[property].attribute;
 								bufferAttribute.potree = {
