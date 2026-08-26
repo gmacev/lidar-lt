@@ -64,7 +64,11 @@ interface UsePotreeResult extends PotreeState {
     recenterView: () => void;
 }
 
-type PotreeLoadErrorCode = 'metadata-not-found' | 'metadata-unavailable' | 'potree-unavailable';
+type PotreeLoadErrorCode =
+    | 'metadata-not-found'
+    | 'metadata-unavailable'
+    | 'potree-unavailable'
+    | 'webgl-context-lost';
 
 export interface PotreeLoadError {
     code: PotreeLoadErrorCode;
@@ -141,6 +145,9 @@ function removeSceneObject(value: unknown) {
 }
 
 function disposePointCloud(pointcloud: LoadPointCloudResult['pointcloud'], PotreeLib: Potree) {
+    pointcloud.pcoGeometry.disposed = true;
+    pointcloud.pcoGeometry.loader?.dispose();
+
     pointcloud.profileRequests?.forEach((request) => request.cancel());
     if (pointcloud.profileRequests) {
         pointcloud.profileRequests.length = 0;
@@ -192,8 +199,6 @@ function disposePointCloud(pointcloud: LoadPointCloudResult['pointcloud'], Potre
 }
 
 function disposeViewer(viewer: PotreeViewer, PotreeLib: Potree, container: HTMLElement) {
-    viewer.renderer.setAnimationLoop(null);
-
     viewer.scene.removeAllMeasurements();
 
     const annotations = [...viewer.scene.annotations.children];
@@ -212,7 +217,7 @@ function disposeViewer(viewer: PotreeViewer, PotreeLib: Potree, container: HTMLE
     disposeSceneObject(viewer.skybox?.scene, disposedObjects, disposedResources);
     disposeSceneObject(viewer.scene.scene, disposedObjects, disposedResources);
 
-    viewer.renderer.dispose();
+    viewer.dispose();
     viewer.renderer.domElement.remove();
     container.replaceChildren();
 }
@@ -267,6 +272,8 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<PotreeViewer | null>(null);
     const [state, setState] = useState<PotreeState>({ isLoading: true, error: null });
+    const [recoveryGeneration, setRecoveryGeneration] = useState(0);
+    const contextRecoveryAttemptsRef = useRef(0);
 
     // Destructure options to avoid dependency on the options object itself
     const { dataUrl, initialState, updateUrl } = options;
@@ -289,6 +296,10 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
         updateUrlRef.current = updateUrl;
         initialStateRef.current = initialState;
     }, [updateUrl, initialState]);
+
+    useEffect(() => {
+        contextRecoveryAttemptsRef.current = 0;
+    }, [dataUrl]);
 
     useEffect(() => {
         resolvedThemeRef.current = resolvedTheme;
@@ -418,6 +429,7 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
         let viewer: PotreeViewer | null = null;
         let intervalId: ReturnType<typeof setInterval> | null = null;
         let listenersAttached = false;
+        let contextLossHandler: (() => void) | null = null;
         const abortController = new AbortController();
         setState({ isLoading: true, error: null });
 
@@ -458,6 +470,27 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
             // Create Potree Viewer
             viewer = new PotreeLib.Viewer(container);
             viewerRef.current = viewer;
+
+            contextLossHandler = () => {
+                if (disposed) return;
+
+                if (contextRecoveryAttemptsRef.current >= 1) {
+                    viewer?.renderer.setAnimationLoop(null);
+                    setState({
+                        isLoading: false,
+                        error: {
+                            code: 'webgl-context-lost',
+                            message:
+                                'WebGL context was lost repeatedly. Reload the viewer to continue.',
+                        },
+                    });
+                    return;
+                }
+
+                contextRecoveryAttemptsRef.current += 1;
+                setRecoveryGeneration((generation) => generation + 1);
+            };
+            viewer.addEventListener('webgl_context_lost', contextLossHandler);
 
             // Configure viewer
             viewer.setFOV(PERFORMANCE_DEFAULTS.fov);
@@ -510,11 +543,14 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
                 container.removeEventListener('touchstart', markCameraInteraction);
             }
             if (viewer) {
+                if (contextLossHandler) {
+                    viewer.removeEventListener('webgl_context_lost', contextLossHandler);
+                }
                 disposeViewer(viewer, PotreeLib, container);
             }
             viewerRef.current = null;
         };
-    }, [dataUrl]);
+    }, [dataUrl, recoveryGeneration]);
 
     // Watch for background/skybox changes in URL state and update viewer
     useEffect(() => {

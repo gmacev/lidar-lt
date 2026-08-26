@@ -68,6 +68,10 @@ interface PointCloudOctreeGeometry {
     offset: Vector3;
     scale: Vector3;
     spacing: number;
+    disposed?: boolean;
+    loader?: {
+        dispose(): void;
+    };
 }
 
 /** Internal Potree geometry attribute structure */
@@ -303,6 +307,7 @@ export interface PotreeViewer {
     setRightView(): void;
     setCameraMode(mode: CameraMode): void;
     cameraMode: CameraMode;
+    dispose(): void;
 }
 
 // ============================================================================

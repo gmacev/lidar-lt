@@ -335,6 +335,10 @@ const MOCK_POTREE_SCRIPT = String.raw`
         dispose() {},
         setAnimationLoop() {},
       };
+      this.dispose = () => {
+        this.renderer.setAnimationLoop(null);
+        this.renderer.dispose();
+      };
       this.renderer.domElement.width = 800;
       this.renderer.domElement.height = 600;
       this.renderer.domElement.style.width = '100%';

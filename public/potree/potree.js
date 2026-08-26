@@ -66795,6 +66795,7 @@ void main() {
 			this.root = null;
 			this.pointAttributes = null;
 			this.loader = null;
+			this.disposed = false;
 		}
 
 	};
@@ -66856,7 +66857,7 @@ void main() {
 
 		load() {
 
-			if (Potree.webglContextLost) {
+			if (this.octreeGeometry.disposed || Potree.webglContextLost) {
 				return false;
 			}
 
@@ -67125,11 +67126,47 @@ void main() {
 
 		constructor(url) {
 			this.url = url;
+			this.disposed = false;
+			this.abortController = new AbortController();
 			this.hierarchyBuffer = null;
 			this.hierarchyPrefetchPromise = null;
 			this.hierarchyRangeRequests = 0;
 			this.hierarchyCacheHits = 0;
 			this.hierarchyPrefetchBytes = 0;
+		}
+
+		dispose() {
+			if (this.disposed) {
+				return;
+			}
+
+			this.disposed = true;
+			this.abortController.abort();
+			this.hierarchyBuffer = null;
+			this.hierarchyPrefetchPromise = null;
+
+			for (let [worker, activeLoad] of Potree.activeNodeWorkers) {
+				if (activeLoad.loader !== this) {
+					continue;
+				}
+
+				if (activeLoad.cancel) {
+					activeLoad.cancel();
+				}
+				worker.onmessage = null;
+				worker.onerror = null;
+				worker.onmessageerror = null;
+				worker.terminate();
+				Potree.activeNodeWorkers.delete(worker);
+
+				const wasLoading = activeLoad.node.loading;
+				activeLoad.node.loaded = false;
+				activeLoad.node.loading = false;
+				activeLoad.node._memoryRecoveryProbe = false;
+				if (wasLoading) {
+					Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+				}
+			}
 		}
 
 		scheduleHierarchyPrefetch(url) {
@@ -67148,7 +67185,10 @@ void main() {
 
 					for (let attempt = 0; attempt < 3; attempt++) {
 						try {
-							let response = await fetch(url, { priority: "low" });
+							let response = await fetch(url, {
+								priority: "low",
+								signal: this.abortController.signal,
+							});
 							if (response.status !== 200) {
 								throw new Error(`Expected 200 for hierarchy prefetch ${url}, received ${response.status}`);
 							}
@@ -67178,6 +67218,9 @@ void main() {
 							this.hierarchyPrefetchBytes = buffer.byteLength;
 							return;
 						} catch (error) {
+							if (this.disposed || (error && error.name === "AbortError")) {
+								return;
+							}
 							lastError = error;
 							if (attempt < 2) {
 								await new Promise(resolve => setTimeout(resolve, 150 * (attempt + 1)));
@@ -67192,6 +67235,10 @@ void main() {
 		}
 
 		async loadRangeBuffer(url, first, last, expectedByteSize, priority = "auto") {
+			if (this.disposed) {
+				throw new DOMException("Point cloud loader was disposed.", "AbortError");
+			}
+
 			const expectedLength = Number(expectedByteSize);
 			const rangeHeader = `bytes=${first}-${last}`;
 			let lastError = null;
@@ -67203,6 +67250,7 @@ void main() {
 							'Range': rangeHeader,
 						},
 						priority: priority,
+						signal: this.abortController.signal,
 					});
 
 					if (response.status !== 206) {
@@ -67216,6 +67264,9 @@ void main() {
 
 					return buffer;
 				} catch (e) {
+					if (this.disposed || (e && e.name === "AbortError")) {
+						throw e;
+					}
 					lastError = e;
 					if (attempt < 2) {
 						await new Promise(resolve => setTimeout(resolve, 150 * (attempt + 1)));
@@ -67228,7 +67279,7 @@ void main() {
 
 		async load(node) {
 
-			if (node.loaded || node.loading) {
+			if (this.disposed || node.octreeGeometry.disposed || node.loaded || node.loading) {
 				return;
 			}
 
@@ -67248,6 +67299,9 @@ void main() {
 				if (node.nodeType === 2) {
 					await this.loadHierarchy(node);
 				}
+				if (this.disposed || node.octreeGeometry.disposed) {
+					throw new DOMException("Point cloud loader was disposed.", "AbortError");
+				}
 
 				let { byteOffset, byteSize } = node;
 
@@ -67265,6 +67319,9 @@ void main() {
 				} else {
 					const priority = node.level <= 1 ? "high" : "auto";
 					buffer = await this.loadRangeBuffer(urlOctree, first, last, byteSize, priority);
+				}
+				if (this.disposed || node.octreeGeometry.disposed) {
+					throw new DOMException("Point cloud loader was disposed.", "AbortError");
 				}
 
 				if (this.metadata.encoding === "BROTLI") {
@@ -67292,6 +67349,7 @@ void main() {
 				};
 				Potree.activeNodeWorkers.set(worker, {
 					node: node,
+					loader: this,
 					workerPath: workerPath,
 					cancel: function () {
 						workerSettled = true;
@@ -67305,7 +67363,10 @@ void main() {
 						return;
 					}
 
-					if (workerSettled) {
+					if (workerSettled || node.octreeGeometry.disposed) {
+						if (!workerSettled) {
+							handleWorkerError(new DOMException("Point cloud loader was disposed.", "AbortError"));
+						}
 						return;
 					}
 
@@ -67399,6 +67460,11 @@ void main() {
 
 					node.loaded = false;
 					node.loading = false;
+					if (node.octreeGeometry.disposed || (error && error.name === "AbortError")) {
+						node._memoryRecoveryProbe = false;
+						Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+						return true;
+					}
 					node._loadFailures = (node._loadFailures || 0) + 1;
 					let memoryAllocationFailed = isMemoryAllocationFailure(error);
 
@@ -67471,6 +67537,10 @@ void main() {
 
 				node.loaded = false;
 				node.loading = false;
+				if (this.disposed || node.octreeGeometry.disposed || (e && e.name === "AbortError")) {
+					Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
+					return;
+				}
 				node._loadFailures = (node._loadFailures || 0) + 1;
 				Potree.numNodesLoading = Math.max(0, Potree.numNodesLoading - 1);
 
@@ -67609,6 +67679,9 @@ void main() {
 
 			this.hierarchyRangeRequests++;
 			let buffer = await this.loadRangeBuffer(hierarchyPath, first, last, hierarchyByteSize, "high");
+			if (this.disposed || node.octreeGeometry.disposed) {
+				return;
+			}
 			if (first === 0n) {
 				this.scheduleHierarchyPrefetch(hierarchyPath);
 			}
@@ -89373,6 +89446,9 @@ ENDSEC
 				this.compass = null;
 
 				this.skybox = null;
+				this._disposed = false;
+				this._onWebGLContextLost = null;
+				this._onWebGLContextRestored = null;
 				this.clock = new Clock();
 				this.background = null;
 				this.lightDirection = new Vector3();
@@ -89394,18 +89470,27 @@ ENDSEC
 
 				{
 					let canvas = this.renderer.domElement;
-					canvas.addEventListener("webglcontextlost", (e) => {
+					this._onWebGLContextLost = (e) => {
+						if (this._disposed) {
+							return;
+						}
 						e.preventDefault();
 						beginWebGLContextRecovery();
-					}, false);
-					canvas.addEventListener("webglcontextrestored", () => {
+						this.dispatchEvent({ type: "webgl_context_lost" });
+					};
+					this._onWebGLContextRestored = () => {
+						if (this._disposed) {
+							return;
+						}
 						if (this.pRenderer) {
 							this.pRenderer.resetContext();
 						}
 
 						Potree.webglContextLost = false;
 						console.warn("Potree WebGL context restored. Point loading will resume gradually.");
-					}, false);
+					};
+					canvas.addEventListener("webglcontextlost", this._onWebGLContextLost, false);
+					canvas.addEventListener("webglcontextrestored", this._onWebGLContextRestored, false);
 				}
 
 				{
@@ -89575,6 +89660,27 @@ ENDSEC
 			}
 
 			throw error;
+		}
+
+		dispose() {
+			if (this._disposed) {
+				return;
+			}
+
+			this._disposed = true;
+			this.renderer.setAnimationLoop(null);
+
+			const canvas = this.renderer.domElement;
+			if (this._onWebGLContextLost) {
+				canvas.removeEventListener("webglcontextlost", this._onWebGLContextLost, false);
+			}
+			if (this._onWebGLContextRestored) {
+				canvas.removeEventListener("webglcontextrestored", this._onWebGLContextRestored, false);
+			}
+
+			this.renderer.dispose();
+			this.renderer.forceContextLoss();
+			Potree.webglContextLost = false;
 		}
 
 		// ------------------------------------------------------------------------------------
