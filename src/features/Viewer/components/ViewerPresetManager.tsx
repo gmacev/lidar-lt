@@ -5,13 +5,17 @@ import { useViewerPresets } from '@/features/Viewer/hooks/useViewerPresets';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { pickViewerDisplaySettings } from '@/features/Viewer/utils/viewerDisplaySettings';
 import type {
-    ViewerPreset,
+    UserViewerPreset,
     ViewerPresetMutationError,
 } from '@/features/Viewer/utils/viewerPresetStorage';
+import type {
+    ApplicableViewerPreset,
+    PredefinedViewerPreset,
+} from '@/features/Viewer/utils/viewerPresetDefinitions';
 
 interface ViewerPresetManagerProps {
     currentState: ViewerState;
-    onLoadPreset: (preset: ViewerPreset) => void;
+    onLoadPreset: (preset: ApplicableViewerPreset) => void;
 }
 
 const PRESET_ERROR_KEYS: Record<ViewerPresetMutationError, string> = {
@@ -53,7 +57,8 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
     const { t } = useTranslation();
     const inputId = useId();
     const {
-        presets,
+        predefinedPresets,
+        userPresets,
         createPreset,
         renamePreset,
         updatePreset,
@@ -102,7 +107,7 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
         toast.success(t('presets.toasts.saved'), { description: result.preset.name });
     };
 
-    const handleLoadPreset = (preset: ViewerPreset) => {
+    const handleLoadPreset = (preset: UserViewerPreset) => {
         onLoadPreset(preset);
         setFormError(null);
         setPendingUpdatePresetId(null);
@@ -110,7 +115,15 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
         toast.success(t('presets.toasts.loaded'), { description: preset.name });
     };
 
-    const handleUpdatePreset = (preset: ViewerPreset) => {
+    const handleLoadPredefinedPreset = (preset: PredefinedViewerPreset) => {
+        onLoadPreset(preset);
+        setFormError(null);
+        setPendingUpdatePresetId(null);
+        setPendingDeletePresetId(null);
+        toast.success(t('presets.toasts.loaded'), { description: t(preset.nameKey) });
+    };
+
+    const handleUpdatePreset = (preset: UserViewerPreset) => {
         if (pendingUpdatePresetId !== preset.id) {
             setPendingUpdatePresetId(preset.id);
             setPendingDeletePresetId(null);
@@ -129,7 +142,7 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
         toast.success(t('presets.toasts.updated'), { description: result.preset.name });
     };
 
-    const startRename = (preset: ViewerPreset) => {
+    const startRename = (preset: UserViewerPreset) => {
         setEditingPresetId(preset.id);
         setEditingPresetName(preset.name);
         setPendingUpdatePresetId(null);
@@ -142,7 +155,7 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
         setEditingPresetName('');
     };
 
-    const commitRename = (preset: ViewerPreset) => {
+    const commitRename = (preset: UserViewerPreset) => {
         const result = renamePreset(preset.id, editingPresetName);
         if (!result.ok) {
             showMutationError(result.reason);
@@ -156,7 +169,10 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
         toast.success(t('presets.toasts.renamed'), { description: result.preset.name });
     };
 
-    const handleRenameKeyDown = (event: KeyboardEvent<HTMLInputElement>, preset: ViewerPreset) => {
+    const handleRenameKeyDown = (
+        event: KeyboardEvent<HTMLInputElement>,
+        preset: UserViewerPreset
+    ) => {
         if (event.key === 'Enter') {
             event.preventDefault();
             commitRename(preset);
@@ -169,7 +185,7 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
         }
     };
 
-    const handleDeletePreset = (preset: ViewerPreset) => {
+    const handleDeletePreset = (preset: UserViewerPreset) => {
         if (pendingDeletePresetId !== preset.id) {
             setPendingDeletePresetId(preset.id);
             setPendingUpdatePresetId(null);
@@ -189,8 +205,45 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
     };
 
     return (
-        <div className="flex flex-col gap-3">
-            <form className="flex flex-col gap-1.5" onSubmit={handleCreatePreset}>
+        <div className="flex flex-col gap-3" data-testid="viewer-preset-manager">
+            <div className="space-y-2" data-testid="viewer-predefined-presets">
+                {predefinedPresets.map((preset) => (
+                    <div
+                        key={preset.id}
+                        className="theme-predefined-preset-card rounded-md border border-neon-amber/35 bg-neon-amber/[0.07] p-2.5"
+                        data-testid={`viewer-predefined-preset-${preset.id}`}
+                    >
+                        <button
+                            type="button"
+                            className={`${primaryButtonClassName} float-right mb-1 ml-3`}
+                            onClick={() => handleLoadPredefinedPreset(preset)}
+                            aria-label={t('presets.actions.loadAria', {
+                                name: t(preset.nameKey),
+                            })}
+                        >
+                            {t('presets.actions.load')}
+                        </button>
+                        <div className="flex min-w-0 items-center gap-2">
+                            <span className="text-neon-amber" aria-hidden="true">
+                                <Icon name="sparkles" size={14} />
+                            </span>
+                            <p className="text-xs font-semibold text-white/95">
+                                {t(preset.nameKey)}
+                            </p>
+                        </div>
+                        <p className="mt-0.5 pl-[22px] text-[11px] leading-4 text-white/50">
+                            {t(preset.descriptionKey)}
+                        </p>
+                        <div className="clear-both" />
+                    </div>
+                ))}
+            </div>
+
+            <form
+                className="flex flex-col gap-1.5"
+                onSubmit={handleCreatePreset}
+                data-testid="viewer-preset-create-form"
+            >
                 <label htmlFor={inputId} className="sr-only">
                     {t('presets.nameLabel')}
                 </label>
@@ -218,13 +271,13 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
                 )}
             </form>
 
-            {presets.length === 0 ? (
+            {userPresets.length === 0 ? (
                 <p className="rounded border border-white/10 bg-black/20 px-3 py-2 text-xs leading-5 text-white/45">
                     {t('presets.empty')}
                 </p>
             ) : (
                 <div className="max-h-72 space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-                    {presets.map((preset) => {
+                    {userPresets.map((preset) => {
                         const isEditing = editingPresetId === preset.id;
                         const isConfirmingUpdate = pendingUpdatePresetId === preset.id;
                         const isConfirmingDelete = pendingDeletePresetId === preset.id;
@@ -234,6 +287,7 @@ export function ViewerPresetManager({ currentState, onLoadPreset }: ViewerPreset
                             <div
                                 key={preset.id}
                                 className="theme-preset-card rounded-md border border-white/10 bg-black/20 p-2"
+                                data-testid="viewer-user-preset"
                             >
                                 {isEditing ? (
                                     <div className="flex gap-1.5">

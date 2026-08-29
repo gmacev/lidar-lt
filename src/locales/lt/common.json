@@ -29,6 +29,12 @@
         "empty": "Išsaugotų rinkinių dar nėra.",
         "updatedAt": "Atnaujinta {{date}}",
         "renameAria": "Pervadinti rinkinį {{name}}",
+        "predefined": {
+            "terrainEnhancement": {
+                "name": "Reljefo išryškinimas",
+                "description": "Išryškina žemės paviršiaus formas paslėpdamas antžeminius objektus ir sustiprindamas šešėliavimą."
+            }
+        },
         "actions": {
             "load": "Įkelti",
             "loadAria": "Įkelti rinkinį {{name}}",

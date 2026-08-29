@@ -29,6 +29,12 @@
         "empty": "No presets saved yet.",
         "updatedAt": "Updated {{date}}",
         "renameAria": "Rename preset {{name}}",
+        "predefined": {
+            "terrainEnhancement": {
+                "name": "Terrain enhancement",
+                "description": "Emphasizes the shape of the ground by hiding above-ground objects and strengthening shading."
+            }
+        },
         "actions": {
             "load": "Load",
             "loadAria": "Load preset {{name}}",

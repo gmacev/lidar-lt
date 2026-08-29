@@ -13,7 +13,7 @@ import { CameraProjectionControl } from './CameraProjectionControl';
 import { FOVControl } from './FOVControl';
 import { FpsCounter } from './FpsCounter';
 import { ViewerPresetManager } from './ViewerPresetManager';
-import type { ViewerPreset } from '@/features/Viewer/utils/viewerPresetStorage';
+import type { ApplicableViewerPreset } from '@/features/Viewer/utils/viewerPresetDefinitions';
 import type { ReliefAzimuthCycleController } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
 
 interface ViewerSidebarProps {
@@ -23,7 +23,7 @@ interface ViewerSidebarProps {
     updateUrl: (state: Partial<ViewerState>) => void;
     onBack: () => void;
     onResetDefaults: () => void;
-    onLoadPreset: (preset: ViewerPreset) => void;
+    onLoadPreset: (preset: ApplicableViewerPreset) => void;
     reliefAzimuthCycle: ReliefAzimuthCycleController;
     onCollapsedChange: (collapsed: boolean) => void;
     resetKey: number;

@@ -24,7 +24,7 @@ const ViewerPresetCollectionSchema = z.object({
     presets: z.array(ViewerPresetSchema).max(VIEWER_PRESET_LIMIT),
 });
 
-export type ViewerPreset = z.infer<typeof ViewerPresetSchema>;
+export type UserViewerPreset = z.infer<typeof ViewerPresetSchema>;
 type ViewerPresetCollection = z.infer<typeof ViewerPresetCollectionSchema>;
 export type ViewerPresetMutationError =
     | 'empty-name'
@@ -34,7 +34,7 @@ export type ViewerPresetMutationError =
     | 'not-found';
 
 export type ViewerPresetMutationResult =
-    | { ok: true; preset: ViewerPreset }
+    | { ok: true; preset: UserViewerPreset }
     | { ok: false; reason: ViewerPresetMutationError };
 
 export type ViewerPresetDeleteResult = { ok: true } | { ok: false; reason: 'not-found' };
@@ -53,11 +53,11 @@ const viewerPresetStorage = createStorage({
 let viewerPresetSnapshot = readPresetSnapshot();
 const listeners = new Set<() => void>();
 
-function sortPresets(presets: ViewerPreset[]): ViewerPreset[] {
+function sortPresets(presets: UserViewerPreset[]): UserViewerPreset[] {
     return [...presets].sort((first, second) => second.updatedAt.localeCompare(first.updatedAt));
 }
 
-function readPresetSnapshot(): ViewerPreset[] {
+function readPresetSnapshot(): UserViewerPreset[] {
     return sortPresets(viewerPresetStorage.get().presets);
 }
 
@@ -67,7 +67,7 @@ function emitPresetChange() {
     }
 }
 
-function writePresetSnapshot(presets: ViewerPreset[]) {
+function writePresetSnapshot(presets: UserViewerPreset[]) {
     viewerPresetSnapshot = sortPresets(presets);
     viewerPresetStorage.set({
         version: 1,
@@ -80,7 +80,7 @@ function normalizePresetName(name: string): string {
     return name.trim();
 }
 
-function hasDuplicateName(presets: ViewerPreset[], name: string, excludedId?: string): boolean {
+function hasDuplicateName(presets: UserViewerPreset[], name: string, excludedId?: string): boolean {
     const normalizedName = name.toLocaleLowerCase();
 
     return presets.some(
@@ -91,7 +91,7 @@ function hasDuplicateName(presets: ViewerPreset[], name: string, excludedId?: st
 
 function validatePresetName(
     name: string,
-    presets: ViewerPreset[],
+    presets: UserViewerPreset[],
     excludedId?: string
 ): { ok: true; name: string } | { ok: false; reason: ViewerPresetMutationError } {
     const normalizedName = normalizePresetName(name);
@@ -124,7 +124,7 @@ export function subscribeViewerPresets(listener: () => void) {
     return () => listeners.delete(listener);
 }
 
-export function getViewerPresetSnapshot(): ViewerPreset[] {
+export function getViewerPresetSnapshot(): UserViewerPreset[] {
     return viewerPresetSnapshot;
 }
 
@@ -144,7 +144,7 @@ export function createViewerPreset(
     }
 
     const now = new Date().toISOString();
-    const preset: ViewerPreset = {
+    const preset: UserViewerPreset = {
         id: createPresetId(),
         name: validatedName.name,
         state: pickViewerDisplaySettings(state),
@@ -169,7 +169,7 @@ export function renameViewerPreset(id: string, name: string): ViewerPresetMutati
         return { ok: false, reason: validatedName.reason };
     }
 
-    const updatedPreset: ViewerPreset = {
+    const updatedPreset: UserViewerPreset = {
         ...preset,
         name: validatedName.name,
         updatedAt: new Date().toISOString(),
@@ -190,7 +190,7 @@ export function updateViewerPreset(
         return { ok: false, reason: 'not-found' };
     }
 
-    const updatedPreset: ViewerPreset = {
+    const updatedPreset: UserViewerPreset = {
         ...preset,
         state: pickViewerDisplaySettings(state),
         updatedAt: new Date().toISOString(),

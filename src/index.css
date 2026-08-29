@@ -220,6 +220,11 @@
     background-color: transparent;
 }
 
+:root[data-theme='light'] .theme-surface .theme-predefined-preset-card {
+    border-color: color-mix(in srgb, var(--viewer-brand) 34%, transparent);
+    background-color: color-mix(in srgb, var(--viewer-brand) 7%, transparent);
+}
+
 :root[data-theme='light'] .theme-corner-info,
 :root[data-theme='light'] .theme-surface .theme-map-status {
     color: #1e2329;

@@ -11,7 +11,7 @@ import {
     normalizePresetElevationRange,
     replaceViewerDisplaySettings,
 } from '@/features/Viewer/utils/viewerDisplaySettings';
-import type { ViewerPreset } from '@/features/Viewer/utils/viewerPresetStorage';
+import type { ApplicableViewerPreset } from '@/features/Viewer/utils/viewerPresetDefinitions';
 import type { KvrMatch } from '@/features/Viewer/utils/kvrClient';
 import { Route } from '@/routes/viewer.$cellId';
 
@@ -31,7 +31,7 @@ interface UseViewerNavigationActionsOptions {
 
 export interface ViewerNavigationActions {
     handleCenterKvrMatch: (match: KvrMatch) => void;
-    handleLoadPreset: (preset: ViewerPreset) => void;
+    handleLoadPreset: (preset: ApplicableViewerPreset) => void;
     handleRecenterView: () => void;
     handleResetDefaults: () => void;
     handleSectorNavigate: (sector: { id: string; name: string | null }) => void;
@@ -106,7 +106,7 @@ export function useViewerNavigationActions({
         });
     };
 
-    const handleLoadPreset = (preset: ViewerPreset) => {
+    const handleLoadPreset = (preset: ApplicableViewerPreset) => {
         cancelPendingUrlUpdate();
 
         const presetState = normalizePresetElevationRange(viewerRef.current, preset.state);

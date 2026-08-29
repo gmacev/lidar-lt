@@ -9,6 +9,7 @@ import {
     VIEWER_PRESET_LIMIT,
     VIEWER_PRESET_NAME_MAX_LENGTH,
 } from '@/features/Viewer/utils/viewerPresetStorage';
+import { PREDEFINED_VIEWER_PRESETS } from '@/features/Viewer/utils/viewerPresetDefinitions';
 
 export function useViewerPresets() {
     const presets = useSyncExternalStore(
@@ -18,7 +19,8 @@ export function useViewerPresets() {
     );
 
     return {
-        presets,
+        predefinedPresets: PREDEFINED_VIEWER_PRESETS,
+        userPresets: presets,
         createPreset: createViewerPreset,
         renamePreset: renameViewerPreset,
         updatePreset: updateViewerPreset,

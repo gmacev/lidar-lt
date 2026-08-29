@@ -88,6 +88,100 @@ test.describe('viewer sidebar settings', () => {
         await expectSearchParam(page, 'mns', '30');
     });
 
+    test('applies the built-in terrain preset without changing location or camera', async ({
+        page,
+    }) => {
+        const cameraParams = {
+            x: '581500',
+            y: '6060500',
+            z: '500',
+            yaw: '0.4',
+            pitch: '-1.2',
+            radius: '450',
+        };
+        const search = new URLSearchParams({
+            sectorName: 'VILNIUS (centras)',
+            ...cameraParams,
+            colorMode: 'intensity',
+            intensityMax: '25000',
+            edlEnabled: 'false',
+            reliefEnabled: 'false',
+            hiddenClasses: '[2]',
+            mapLabels: 'true',
+        });
+
+        await gotoMockedViewer(page, `/viewer/76_32?${search.toString()}`);
+
+        const predefinedCard = page.getByTestId('viewer-predefined-preset-terrain-enhancement');
+        const managerChildren = page.getByTestId('viewer-preset-manager').locator(':scope > *');
+
+        await expect(predefinedCard).toContainText('Terrain enhancement');
+        await expect(predefinedCard.getByRole('button')).toHaveCount(1);
+        await expect(
+            predefinedCard.getByRole('button', { name: /Terrain enhancement/i })
+        ).toHaveText('Load');
+        await expect(managerChildren.first()).toHaveAttribute(
+            'data-testid',
+            'viewer-predefined-presets'
+        );
+
+        await predefinedCard.getByRole('button', { name: /Terrain enhancement/i }).click();
+
+        await expectSearchParam(page, 'colorMode', 'elevation');
+        await expectSearchParam(page, 'ep', 'terrain');
+        await expectSearchParam(page, 'edlEnabled', 'true');
+        await expectSearchParam(page, 'edlStrength', '10');
+        await expectSearchParam(page, 'edlRadius', '2');
+        await expectSearchParam(page, 'reliefEnabled', 'true');
+        await expectSearchParam(page, 'reliefStrength', '2.5');
+        await expectSearchParam(page, 'reliefRadius', '1');
+        await expectSearchParam(page, 'reliefAzimuth', '315');
+        await expectSearchParam(page, 'ps', '2.5');
+        await expectSearchParam(page, 'psm', 'adaptive');
+        await expectSearchParam(page, 'mns', '5');
+        await expectSearchParam(page, 'psh', 'circle');
+        await expectSearchParam(page, 'zScale', '1');
+        await expectSearchParam(page, 'pb', '8000000');
+        await expectSearchParam(page, 'fov', '60');
+        await expectSearchParam(page, 'hiddenClasses', '[7,5,6,4,3,0]');
+        await expectSearchParam(page, 'mapLabels', 'false');
+        await expectNoSearchParam(page, 'intensityMax');
+
+        await expect(page).toHaveURL(/\/viewer\/76_32/);
+        await expectSearchParam(page, 'sectorName', 'VILNIUS (centras)');
+        for (const [key, value] of Object.entries(cameraParams)) {
+            await expectSearchParam(page, key, value);
+        }
+
+        await expect(page.getByTestId('viewer-classification-2')).toBeChecked();
+        await expect(page.getByTestId('viewer-classification-3')).not.toBeChecked();
+        await expect(page.getByTestId('viewer-edl-strength')).toHaveValue('10');
+        await expect(page.getByTestId('viewer-relief-strength')).toHaveValue('2.5');
+
+        await page.getByPlaceholder('Preset name').fill('My preset');
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
+        await expect(page.getByTestId('viewer-user-preset')).toContainText('My preset');
+        await expect(managerChildren.first()).toHaveAttribute(
+            'data-testid',
+            'viewer-predefined-presets'
+        );
+
+        const storedPresets = await page.evaluate(() =>
+            localStorage.getItem('lidar:viewer-presets:v1')
+        );
+        expect(storedPresets).toContain('"name":"My preset"');
+        expect(storedPresets).not.toContain('terrain-enhancement');
+    });
+
+    test('localizes the built-in terrain preset in Lithuanian', async ({ page }) => {
+        await page.addInitScript(() => localStorage.setItem('i18nextLng', 'lt'));
+        await gotoMockedViewer(page);
+
+        const predefinedCard = page.getByTestId('viewer-predefined-preset-terrain-enhancement');
+        await expect(predefinedCard).toContainText('Reljefo išryškinimas');
+        await expect(predefinedCard.getByRole('button')).toHaveText('Įkelti');
+    });
+
     test('cycles automatic hillshade azimuth rotation on one button', async ({ page }) => {
         await gotoMockedViewer(page);
 
