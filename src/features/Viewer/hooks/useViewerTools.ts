@@ -148,7 +148,7 @@ export interface ViewerProfilePanelModel {
     width: number;
 }
 
-export interface ViewerCursorState {
+interface ViewerCursorState {
     isAnnotationPlacing: boolean;
     isKvrInspecting: boolean;
 }

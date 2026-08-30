@@ -370,11 +370,7 @@ export interface Profile {
 }
 
 type ProfileEventType =
-    | 'marker_added'
-    | 'marker_removed'
-    | 'marker_moved'
-    | 'marker_dropped'
-    | 'width_changed';
+    'marker_added' | 'marker_removed' | 'marker_moved' | 'marker_dropped' | 'width_changed';
 
 interface ProfileEvent {
     type: ProfileEventType;

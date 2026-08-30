@@ -4,8 +4,7 @@ import type { PotreeViewer } from '@/common/types/potree';
 export type ViewerLabelTone = 'neutral' | 'water' | 'accent';
 export type ViewerLabelEmphasis = 'primary' | 'secondary' | 'tertiary';
 type ViewerLabelPosition =
-    | readonly [x: number, y: number]
-    | readonly [x: number, y: number, z: number];
+    readonly [x: number, y: number] | readonly [x: number, y: number, z: number];
 
 export interface ViewerLabel {
     id: string;

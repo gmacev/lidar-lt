@@ -1,8 +1,5 @@
 export type KvrMatchType =
-    | 'object-territory'
-    | 'physical-protection-zone'
-    | 'visual-protection-zone'
-    | 'nearby-object';
+    'object-territory' | 'physical-protection-zone' | 'visual-protection-zone' | 'nearby-object';
 
 export const KVR_MATCH_ORDER: KvrMatchType[] = [
     'object-territory',

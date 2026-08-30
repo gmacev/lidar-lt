@@ -4,14 +4,7 @@ import gridData from '@/assets/grid.json';
 import { GlassPanel, Icon, Popover, type IconName } from '@/common/components';
 
 type Direction =
-    | 'north'
-    | 'northEast'
-    | 'east'
-    | 'southEast'
-    | 'south'
-    | 'southWest'
-    | 'west'
-    | 'northWest';
+    'north' | 'northEast' | 'east' | 'southEast' | 'south' | 'southWest' | 'west' | 'northWest';
 
 interface Sector {
     id: string;

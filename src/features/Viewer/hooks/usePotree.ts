@@ -65,10 +65,7 @@ interface UsePotreeResult extends PotreeState {
 }
 
 type PotreeLoadErrorCode =
-    | 'metadata-not-found'
-    | 'metadata-unavailable'
-    | 'potree-unavailable'
-    | 'webgl-context-lost';
+    'metadata-not-found' | 'metadata-unavailable' | 'potree-unavailable' | 'webgl-context-lost';
 
 export interface PotreeLoadError {
     code: PotreeLoadErrorCode;

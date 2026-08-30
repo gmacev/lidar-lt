@@ -27,15 +27,10 @@ const ViewerPresetCollectionSchema = z.object({
 export type UserViewerPreset = z.infer<typeof ViewerPresetSchema>;
 type ViewerPresetCollection = z.infer<typeof ViewerPresetCollectionSchema>;
 export type ViewerPresetMutationError =
-    | 'empty-name'
-    | 'name-too-long'
-    | 'duplicate-name'
-    | 'limit-reached'
-    | 'not-found';
+    'empty-name' | 'name-too-long' | 'duplicate-name' | 'limit-reached' | 'not-found';
 
 export type ViewerPresetMutationResult =
-    | { ok: true; preset: UserViewerPreset }
-    | { ok: false; reason: ViewerPresetMutationError };
+    { ok: true; preset: UserViewerPreset } | { ok: false; reason: ViewerPresetMutationError };
 
 export type ViewerPresetDeleteResult = { ok: true } | { ok: false; reason: 'not-found' };
 
