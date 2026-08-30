@@ -291,7 +291,7 @@
         "unnamed": "Unnamed object"
     },
     "search": {
-        "coordinatePlaceholder": "54.687, 25.279",
+        "coordinatePlaceholder": "Coordinates",
         "gridPlaceholder": "Sector, place, or coordinates...",
         "gridSearchLabel": "Search for a sector or geographic object",
         "go": "Go",

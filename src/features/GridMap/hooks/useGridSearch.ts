@@ -1,5 +1,10 @@
 import { useState } from 'react';
 import type { FeatureCollection, Geometry, Position } from 'geojson';
+import {
+    lks94ToWgs84,
+    parseCoordinateInput,
+    type ParsedCoordinates,
+} from '@/common/utils/coordinates';
 
 const GEOMETRY_EPSILON = 1e-10;
 
@@ -56,39 +61,14 @@ function isPointInFeature(point: Position, geometry: Geometry): boolean {
     return false;
 }
 
-// Coordinate parsing regex: "55.695, 26.435" or "55.695 26.435"
-const DECIMAL_COORD_REGEX = /^(-?\d+(\.\d+)?)[,\s]+(-?\d+(\.\d+)?)$/;
 const GRID_ID_REGEX = /^\d{1,3}[/_]\d{1,3}$/;
-
-function parseDMS(dmsStr: string): number | null {
-    // Matches: 55°41'42.0"N or 26°26'06.0"E
-    const regex = /(\d+)°\s*(\d+)'\s*(\d+(?:\.\d+)?)"\s*([NSEW])/i;
-    const match = dmsStr.match(regex);
-    if (!match) return null;
-
-    const degrees = parseFloat(match[1]);
-    const minutes = parseFloat(match[2]);
-    const seconds = parseFloat(match[3]);
-    const direction = match[4].toUpperCase();
-
-    let decimal = degrees + minutes / 60 + seconds / 3600;
-
-    if (direction === 'S' || direction === 'W') {
-        decimal = -decimal;
-    }
-
-    return decimal;
-}
 
 /**
  * Compute matched IDs based on search query and data.
  * Pure function for deriving state.
  */
 export function isCoordinateSearchQuery(searchQuery: string) {
-    const query = searchQuery.trim();
-    if (DECIMAL_COORD_REGEX.test(query)) return true;
-    const dmsMatches = query.match(/(\d+°\s*\d+'\s*\d+(?:\.\d+)?"\s*[NSEW])/gi);
-    return dmsMatches?.length === 2;
+    return parseCoordinateInput(searchQuery) !== null;
 }
 
 export function isGridIdSearchQuery(searchQuery: string) {
@@ -103,39 +83,12 @@ function computeMatchedIds(searchQuery: string, data: FeatureCollection | undefi
 
     const matches = new Set<string>();
 
-    // 1. Check for decimal coordinates
-    const decimalMatch = query.match(DECIMAL_COORD_REGEX);
-
-    let point: [number, number] | null = null;
-
-    if (decimalMatch) {
-        const lat = parseFloat(decimalMatch[1]);
-        const lon = parseFloat(decimalMatch[3]);
-        point = [lon, lat];
-    } else {
-        // 2. Check for DMS coordinates
-        const regex = /(\d+°\s*\d+'\s*\d+(?:\.\d+)?"\s*[NSEW])/gi;
-        const dmsMatches = query.match(regex);
-
-        if (dmsMatches && dmsMatches.length === 2) {
-            const c1 = parseDMS(dmsMatches[0]);
-            const c2 = parseDMS(dmsMatches[1]);
-
-            if (c1 !== null && c2 !== null) {
-                const isLat = (str: string) => /[NS]/i.test(str);
-
-                let lat = c1;
-                let lon = c2;
-
-                if (isLat(dmsMatches[1]) && !isLat(dmsMatches[0])) {
-                    lat = c2;
-                    lon = c1;
-                }
-
-                point = [lon, lat];
-            }
-        }
-    }
+    const parsedCoordinates: ParsedCoordinates | null = parseCoordinateInput(query);
+    const wgs84Coordinates =
+        parsedCoordinates?.type === 'lks94' ? lks94ToWgs84(parsedCoordinates) : parsedCoordinates;
+    const point: [number, number] | null = wgs84Coordinates
+        ? [wgs84Coordinates.longitude, wgs84Coordinates.latitude]
+        : null;
 
     if (point) {
         data.features.forEach((feature) => {
