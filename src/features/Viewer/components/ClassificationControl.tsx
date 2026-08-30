@@ -2,6 +2,7 @@ import { useState, useEffect, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { refreshAutoElevationRange } from '@/features/Viewer/config';
 import { CLASSIFICATION_DISPLAY_ORDER } from '@/features/Viewer/utils/viewerDisplaySettings';
 
 interface ClassificationControlProps {
@@ -70,6 +71,8 @@ export function ClassificationControl({
                 viewer.setClassificationVisibility(1, shouldBeVisible);
             }
         });
+
+        viewer.scene.pointclouds.forEach(refreshAutoElevationRange);
     }, [viewerRef, hiddenClasses]);
 
     const toggleClassification = (id: number) => {

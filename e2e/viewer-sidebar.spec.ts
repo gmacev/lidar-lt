@@ -88,6 +88,22 @@ test.describe('viewer sidebar settings', () => {
         await expectSearchParam(page, 'mns', '30');
     });
 
+    test('fits the automatic elevation range to visible classifications', async ({ page }) => {
+        await gotoMockedViewer(page);
+
+        const rangeMax = page.getByTestId('viewer-elevation-range-max');
+        await expect(rangeMax).toBeVisible();
+        await expect
+            .poll(async () => parseFloat((await rangeMax.textContent()) ?? ''))
+            .toBeGreaterThan(200);
+
+        await page.getByTestId('viewer-classification-6').uncheck();
+
+        await expect
+            .poll(async () => parseFloat((await rangeMax.textContent()) ?? ''))
+            .toBeLessThan(180);
+    });
+
     test('applies the built-in terrain preset without changing location or camera', async ({
         page,
     }) => {

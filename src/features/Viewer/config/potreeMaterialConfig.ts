@@ -102,6 +102,10 @@ export function setManualElevationRange(pointcloud: PointCloud, range: [number, 
     pointcloud.material.needsUpdate = true;
 }
 
+export function refreshAutoElevationRange(pointcloud: PointCloud): void {
+    refineElevationRangeFromData(pointcloud);
+}
+
 export function getAutoElevationRange(pointcloud: PointCloud): [number, number] | null {
     return (pointcloud as PointCloudWithBaseRange)._autoElevationRange ?? null;
 }
@@ -169,8 +173,12 @@ function refineElevationRangeFromData(pointcloud: PointCloud, applyToMaterial = 
             // Ensure world matrix is up to date for transformation
             pointcloud.updateMatrixWorld(true);
 
-            // Extract World Z values, excluding classified noise points from color scaling.
-            const positions = sampleElevationsWithTransform(geometry, pointcloud.matrixWorld);
+            // Extract World Z values from classifications that are actually visible.
+            const positions = sampleElevationsWithTransform(
+                geometry,
+                pointcloud.matrixWorld,
+                pointcloud.material.classification
+            );
 
             if (positions && positions.length > 0) {
                 const displayRange = calculateRobustRange(positions);
@@ -217,11 +225,12 @@ function refineElevationRangeFromData(pointcloud: PointCloud, applyToMaterial = 
 
 /**
  * Extracts Z positions from geometry and transforms them to World Space
- * Uses striding for performance on large buffers.
+ * Uses striding for performance on large buffers and ignores hidden classifications.
  */
 function sampleElevationsWithTransform(
     geometry: PotreeGeometry,
-    matrixWorld: import('three').Matrix4
+    matrixWorld: import('three').Matrix4,
+    classificationVisibility: PointCloud['material']['classification']
 ): Float32Array | null {
     const attributes = geometry.attributes;
     if (!attributes || !attributes.position) return null;
@@ -248,8 +257,13 @@ function sampleElevationsWithTransform(
 
     let outIdx = 0;
     for (let i = 0; i < count; i += step) {
-        if (classifications && NOISE_CLASSIFICATIONS.has(classifications[i])) {
-            continue;
+        if (classifications) {
+            const classificationId = classifications[i];
+            const isVisible = classificationVisibility[classificationId]?.visible !== false;
+
+            if (!isVisible || NOISE_CLASSIFICATIONS.has(classificationId)) {
+                continue;
+            }
         }
 
         const x = array[i * stride];

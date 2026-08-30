@@ -246,7 +246,7 @@ const MOCK_POTREE_SCRIPT = String.raw`
       581750, 6060750, 180,
       582000, 6061000, 226,
     ]);
-    const classificationArray = new Uint8Array([2, 2, 2, 2, 2]);
+    const classificationArray = new Uint8Array([2, 2, 2, 2, 6]);
     const geometry = {
       attributes: {
         position: { array: positionArray, count: 5, itemSize: 3 },

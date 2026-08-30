@@ -522,7 +522,9 @@ export function ColorModeControl({ viewerRef, initialState, updateUrl }: ColorMo
                                     (elevationRange.range[0] + elevationRange.range[1]) / 2
                                 )}
                             </span>
-                            <span>{formatElevation(elevationRange.range[1])}</span>
+                            <span data-testid="viewer-elevation-range-max">
+                                {formatElevation(elevationRange.range[1])}
+                            </span>
                         </div>
                     </div>
 
