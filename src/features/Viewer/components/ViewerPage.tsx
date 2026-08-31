@@ -11,7 +11,6 @@ import { useSourceManifest } from '@/features/Viewer/hooks/useSourceManifest';
 import { useKvrViewerLabels } from '@/features/Viewer/hooks/useKvrViewerLabels';
 import { useReliefAzimuthCycle } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
 import type { Projection, ViewerState } from '@/features/Viewer/config/viewerConfig';
-import { VIEWER_CAPABILITIES } from '@/features/Viewer/config/viewerCapabilities';
 import {
     getViewerDataUrl,
     getViewerSourceManifestUrl,
@@ -42,8 +41,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const [isSourceAttributionVisible, setIsSourceAttributionVisible] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(isMobile);
     const urlState = useViewerUrlState({ cellId, initialState });
-    const orthophotoCompareEnabled =
-        VIEWER_CAPABILITIES.orthophotoCompare && initialState.orthophotoCompare === true;
+    const orthophotoCompareEnabled = initialState.orthophotoCompare === true;
     const [projection, setProjection] = useState<Projection>(
         initialState.projection ?? 'PERSPECTIVE'
     );
@@ -202,7 +200,6 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                 kvr={tools.kvr}
                 markers={tools.markers}
                 mapLabelsEnabled={mapLabelsEnabled}
-                orthophotoCompareAvailable={VIEWER_CAPABILITIES.orthophotoCompare}
                 orthophotoCompareEnabled={orthophotoCompareEnabled}
                 onOrthophotoCompareChange={handleOrthophotoCompareChange}
                 navigation={navigation}

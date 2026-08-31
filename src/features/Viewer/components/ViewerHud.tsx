@@ -31,7 +31,6 @@ interface ViewerHudProps {
     kvr: ViewerKvrToolModel;
     markers: ViewerMarkersModel;
     mapLabelsEnabled: boolean;
-    orthophotoCompareAvailable: boolean;
     orthophotoCompareEnabled: boolean;
     onOrthophotoCompareChange: (enabled: boolean) => void;
     navigation: ViewerNavigationActions;
@@ -61,7 +60,6 @@ export function ViewerHud({
     kvr,
     markers,
     mapLabelsEnabled,
-    orthophotoCompareAvailable,
     orthophotoCompareEnabled,
     onOrthophotoCompareChange,
     navigation,
@@ -189,12 +187,10 @@ export function ViewerHud({
                                         updateUrl({ mapLabels: enabled ? true : undefined })
                                     }
                                 />
-                                {orthophotoCompareAvailable && (
-                                    <OrthophotoCompareButton
-                                        enabled={orthophotoCompareEnabled}
-                                        onChange={onOrthophotoCompareChange}
-                                    />
-                                )}
+                                <OrthophotoCompareButton
+                                    enabled={orthophotoCompareEnabled}
+                                    onChange={onOrthophotoCompareChange}
+                                />
                                 <GoogleMapsButton viewerRef={viewerRef} />
                                 <KvrInspectButton
                                     focusRequest={kvr.focusRequest}

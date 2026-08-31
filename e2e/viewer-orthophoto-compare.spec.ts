@@ -14,7 +14,9 @@ test.describe('viewer orthophoto comparison', () => {
     }) => {
         let orthophotoRequests = 0;
         page.on('request', (request) => {
-            if (request.url().includes('/geoportal/ort-recent')) orthophotoRequests += 1;
+            if (request.url().includes('/arcgis/rest/services/NZT/ORT_recent/MapServer')) {
+                orthophotoRequests += 1;
+            }
         });
         await gotoMockedViewer(page);
 

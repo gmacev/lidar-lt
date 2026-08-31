@@ -1,6 +1,5 @@
-// Viewer code only knows this app-local path. Dev uses Vite's proxy; production can map the
-// same path in Caddy after provider permission is finalized.
-const ORTHOPHOTO_PROVIDER_BASE_URL = '/geoportal/ort-recent';
+const ORTHOPHOTO_PROVIDER_BASE_URL =
+    'https://www.geoportal.lt/arcgis/rest/services/NZT/ORT_recent/MapServer';
 
 export interface OrthophotoLod {
     level: number;

@@ -30,17 +30,6 @@ export default defineConfig({
     // Allow access from other devices on the network
     server: {
         host: true,
-        proxy: {
-            '/geoportal/ort-recent': {
-                target: 'https://www.geoportal.lt',
-                changeOrigin: true,
-                rewrite: (requestPath) =>
-                    requestPath.replace(
-                        /^\/geoportal\/ort-recent/,
-                        '/arcgis/rest/services/NZT/ORT_recent/MapServer'
-                    ),
-            },
-        },
     },
 
     build: {

@@ -511,7 +511,7 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
     const orthophotoMode = options.orthophoto ?? 'ok';
     let orthophotoTileRequest = 0;
 
-    await page.route('**/geoportal/ort-recent**', async (route) => {
+    await page.route('**/arcgis/rest/services/NZT/ORT_recent/MapServer**', async (route) => {
         if (orthophotoMode === 'unavailable') {
             await route.fulfill({ status: 503, body: '' });
             return;
