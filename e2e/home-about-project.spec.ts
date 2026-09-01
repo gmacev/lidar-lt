@@ -23,4 +23,22 @@ test.describe('about the project modal', () => {
         await page.keyboard.press('Escape');
         await expect(dialog).toBeHidden();
     });
+
+    test('uses the institutions’ official English names', async ({ page }) => {
+        await page.addInitScript(() => localStorage.setItem('i18nextLng', 'en'));
+        await page.goto('/');
+
+        await page.getByRole('button', { name: 'About the project' }).click();
+
+        const dialog = page.getByRole('dialog', { name: 'About the project' });
+        await expect(dialog).toContainText(
+            'Airborne laser scanning of Lithuania is coordinated by the National Land Service.'
+        );
+        await expect(dialog).toContainText(
+            'The data is distributed by the Construction Sector Development Agency.'
+        );
+        await expect(dialog).toContainText(
+            'Department of Cartography and Geoinformatics at the Institute of Geosciences'
+        );
+    });
 });

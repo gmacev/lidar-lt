@@ -17,7 +17,7 @@
             "description": "This open-source application was developed in 2025–2026 to view Lithuania's airborne laser scanning (LiDAR) data in 3D.",
             "originPrefix": "The project began as the author's personal initiative to make the open data published by ",
             "originSuffix": " convenient to explore in a web browser.",
-            "dataResponsibility": "Lithuania's national airborne laser scanning is commissioned by the National Land Service. The data is distributed by the Construction Sector Development Agency.",
+            "dataResponsibility": "Airborne laser scanning of Lithuania is coordinated by the National Land Service. The data is distributed by the Construction Sector Development Agency.",
             "hosting": "Since September 1, 2026, Vilnius University has hosted the application and the current LiDAR data it uses. Lecturers and students from the Department of Cartography and Geoinformatics at the Institute of Geosciences plan to contribute to the application's development, promote wider use of open LiDAR data, evaluate the data, and help improve its quality.",
             "authorLabel": "Project author:",
             "projectCodeLabel": "Project code:"
