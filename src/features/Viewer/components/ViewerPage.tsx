@@ -151,7 +151,10 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     };
 
     return (
-        <div data-testid="viewer-page" className="relative h-dvh w-screen bg-void-black">
+        <div
+            data-testid="viewer-page"
+            className="potree-viewer relative h-dvh w-screen bg-void-black"
+        >
             <div
                 ref={containerRef}
                 data-testid="viewer-container"

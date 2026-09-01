@@ -187,7 +187,10 @@
 	background-color: var(--bg-dark-color);
 }
 
-a:hover, a:visited, a:link, a:active{
+.potree-viewer a:hover,
+.potree-viewer a:visited,
+.potree-viewer a:link,
+.potree-viewer a:active{
 	color: 				#ccccff;
 	text-decoration: 	none;
 }

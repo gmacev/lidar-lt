@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { gotoMockedViewer } from './support/viewer';
 
 test.describe('about the project modal', () => {
     test('shows the Lithuanian project credits and external links', async ({ page }) => {
@@ -40,5 +41,27 @@ test.describe('about the project modal', () => {
         await expect(dialog).toContainText(
             'Department of Cartography and Geoinformatics at the Institute of Geosciences'
         );
+    });
+
+    test('keeps dark footer links on the theme color after returning from a sector', async ({
+        page,
+    }) => {
+        await page.addInitScript(() => {
+            localStorage.setItem('i18nextLng', 'lt');
+            localStorage.setItem('lidar:theme', 'dark');
+        });
+        await gotoMockedViewer(page);
+
+        await page.getByTestId('viewer-back').click();
+
+        const aboutColor = await page
+            .getByRole('button', { name: 'Apie projektą' })
+            .evaluate((element) => getComputedStyle(element).color);
+        const footerLinkColors = await page
+            .locator('footer a')
+            .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).color));
+
+        expect(footerLinkColors).not.toHaveLength(0);
+        expect(footerLinkColors.every((color) => color === aboutColor)).toBe(true);
     });
 });
