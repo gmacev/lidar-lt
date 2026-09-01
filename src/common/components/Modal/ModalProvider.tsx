@@ -65,6 +65,8 @@ export function ModalProvider({ children }: ModalProviderProps) {
                     title={resolvedTitle}
                     closeOnBackdrop={modalState.config.closeOnBackdrop}
                     closeOnEscape={modalState.config.closeOnEscape}
+                    size={modalState.config.size}
+                    closeLabel={t('common.close')}
                 >
                     <modalState.config.component onClose={closeModal} onConfirm={handleConfirm} />
                 </Modal>

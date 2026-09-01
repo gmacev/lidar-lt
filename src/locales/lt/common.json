@@ -10,7 +10,18 @@
         "subtitle": "Pasirinkite sektorių peržiūrai",
         "dataSource": "Duomenų šaltinis:",
         "mapDataFrom": "duomenys iš",
-        "sourceCode": "Atvirasis kodas GitHub"
+        "sourceCode": "Atvirasis kodas GitHub",
+        "aboutProject": "Apie projektą",
+        "about": {
+            "title": "Apie projektą",
+            "description": "Tai 2025–2026 m. sukurta atvirojo kodo aplikacija, skirta peržiūrėti Lietuvos lazerinio skenavimo (LiDAR) duomenis 3D aplinkoje.",
+            "originPrefix": "Projektas pradėtas kaip asmeninė autoriaus iniciatyva, siekiant ",
+            "originSuffix": " skelbiamus atvirus duomenis patogiai peržiūrėti interneto naršyklėje.",
+            "dataResponsibility": "Lietuvos teritorijos lazerinio skenavimo darbus organizuoja Nacionalinė žemės tarnyba. Duomenis platina VšĮ Statybos sektoriaus vystymo agentūra.",
+            "hosting": "Vilniaus universitetas nuo 2026 m. rugsėjo 1 d. teikia prieglobą šiai aplikacijai ir jos naudojamiems aktualiems LiDAR duomenims. Geomokslų instituto Kartografijos ir geoinformatikos katedros dėstytojai ir studentai planuoja įsitraukti į aplikacijos plėtrą, skatinti kuo platesnį atvirų LiDAR duomenų naudojimą, vertinti duomenis ir siekti geresnės jų kokybės.",
+            "authorLabel": "Projekto autorius:",
+            "projectCodeLabel": "Projekto kodas:"
+        }
     },
     "theme": {
         "switchToLight": "Įjungti šviesią temą",
@@ -344,6 +355,7 @@
     },
     "common": {
         "cancel": "Atšaukti",
+        "close": "Uždaryti langą",
         "confirm": "Patvirtinti",
         "dismissNotification": "Uždaryti pranešimą",
         "notifications": "Pranešimai"

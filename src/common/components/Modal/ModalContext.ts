@@ -22,6 +22,8 @@ export interface ModalConfig<T> {
     closeOnBackdrop?: boolean;
     /** Whether escape key closes (default: true) */
     closeOnEscape?: boolean;
+    /** Width of the modal content (default: default) */
+    size?: 'default' | 'wide';
 }
 
 export interface ModalContextValue {

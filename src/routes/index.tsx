@@ -1,7 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { SEOHead } from '@/common/components';
-import { GridVisualizer } from '@/features/GridMap';
+import { useModal } from '@/common/hooks';
+import { AboutProjectModal, GridVisualizer } from '@/features/GridMap';
 
 const footerLinkClassName =
     'theme-grid-footer-link text-theme-brand/85 underline-offset-2 transition-colors hover:text-theme-brand focus-visible:text-theme-brand focus-visible:underline focus-visible:outline-none';
@@ -12,6 +13,15 @@ export const Route = createFileRoute('/')({
 
 function HomePage() {
     const { t } = useTranslation();
+    const { openModal } = useModal();
+
+    const handleOpenAbout = () => {
+        void openModal<void>({
+            component: AboutProjectModal,
+            titleKey: 'home.about.title',
+            size: 'wide',
+        });
+    };
 
     return (
         <>
@@ -70,6 +80,14 @@ function HomePage() {
                     >
                         OpenStreetMap
                     </a>{' '}
+                    ·{' '}
+                    <button
+                        type="button"
+                        onClick={handleOpenAbout}
+                        className={`${footerLinkClassName} cursor-pointer`}
+                    >
+                        {t('home.aboutProject')}
+                    </button>{' '}
                     ·{' '}
                     <a
                         href="https://github.com/gmacev/lidar-lt"

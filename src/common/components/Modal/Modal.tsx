@@ -11,6 +11,10 @@ interface ModalProps {
     closeOnBackdrop?: boolean;
     /** Whether pressing Escape closes the modal (default: true) */
     closeOnEscape?: boolean;
+    /** Width of the modal content (default: default) */
+    size?: 'default' | 'wide';
+    /** Accessible label for the close button */
+    closeLabel?: string;
 }
 
 /**
@@ -23,6 +27,8 @@ export function Modal({
     title,
     closeOnBackdrop = true,
     closeOnEscape = true,
+    size = 'default',
+    closeLabel = 'Close modal',
 }: ModalProps) {
     // Handle escape key
     useEffect(() => {
@@ -70,7 +76,7 @@ export function Modal({
 
             {/* Modal container */}
             <div
-                className="theme-surface relative z-10 w-full max-w-md rounded-xl border border-white/10 bg-void-black/95 shadow-2xl"
+                className={`theme-surface relative z-10 flex max-h-[calc(100vh-2rem)] w-full flex-col rounded-xl border border-white/10 bg-void-black/95 shadow-2xl ${size === 'wide' ? 'max-w-2xl' : 'max-w-md'}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -82,7 +88,7 @@ export function Modal({
                         <button
                             onClick={onClose}
                             className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition-all hover:bg-white/10 hover:text-white"
-                            aria-label="Close modal"
+                            aria-label={closeLabel}
                         >
                             <Icon name="close" size={14} strokeWidth={2} />
                         </button>
@@ -90,7 +96,7 @@ export function Modal({
                 )}
 
                 {/* Content */}
-                <div className={title ? '' : 'pt-5'}>{children}</div>
+                <div className={`min-h-0 overflow-y-auto ${title ? '' : 'pt-5'}`}>{children}</div>
             </div>
         </div>
     );

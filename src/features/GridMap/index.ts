@@ -1,1 +1,1 @@
-export { GridVisualizer } from './components';
+export { AboutProjectModal, GridVisualizer } from './components';
