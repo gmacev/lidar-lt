@@ -1,4 +1,6 @@
-export const EPT_BASE_URL = import.meta.env.VITE_EPT_BASE_URL;
+export const EPT_BASE_URL = import.meta.env.DEV
+    ? '/lt-lidar-data'
+    : import.meta.env.VITE_EPT_BASE_URL;
 
 export function getViewerDataUrl(cellId: string) {
     return `${EPT_BASE_URL}/${cellId}/potree_output/metadata.json`;

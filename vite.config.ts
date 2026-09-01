@@ -30,6 +30,12 @@ export default defineConfig({
     // Allow access from other devices on the network
     server: {
         host: true,
+        proxy: {
+            '/lt-lidar-data': {
+                target: 'https://lidar.chgf.vu.lt',
+                changeOrigin: true,
+            },
+        },
     },
 
     build: {
