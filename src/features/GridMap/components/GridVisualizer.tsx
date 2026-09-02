@@ -118,6 +118,7 @@ export function GridVisualizer() {
                     zoom: 6,
                 }}
                 zoomSnap={1}
+                maxZoom={GEOPORTAL_MAX_MAP_ZOOM}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle={EMPTY_MAP_STYLE}
                 interactiveLayerIds={['grid-fill']}

@@ -4,40 +4,36 @@ import {
     GEOPORTAL_LOGICAL_TILE_SIZE,
     GEOPORTAL_MAX_MAP_ZOOM,
     GEOPORTAL_MIN_MAP_ZOOM,
-    buildGeoportalTileUrl,
+    buildGeoportalTileUrls,
     transformGeoportalDarkPixels,
 } from '../src/features/GridMap/utils/geoportalTiles';
 
 test.describe('Geoportal basemap tile mapping', () => {
-    test('builds a native 512 px export in Web Mercator for a MapLibre tile', () => {
-        const tileUrl = buildGeoportalTileUrl({ zoom: 7, x: 72, y: 40 });
-        expect(tileUrl).not.toBeNull();
+    test('builds four native child-tile URLs for a 512 px MapLibre tile', () => {
+        const tileUrls = buildGeoportalTileUrls({ zoom: 7, x: 72, y: 40 });
 
-        const url = new URL(tileUrl ?? '');
-        expect(url.pathname).toBe(
-            '/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/export'
-        );
-        const bounds = url.searchParams.get('bbox')?.split(',').map(Number);
-        expect(bounds).toHaveLength(4);
-        expect(bounds?.[0]).toBeCloseTo(2_504_688.5428, 3);
-        expect(bounds?.[1]).toBeCloseTo(7_200_979.5607, 3);
-        expect(bounds?.[2]).toBeCloseTo(2_817_774.6107, 3);
-        expect(bounds?.[3]).toBeCloseTo(7_514_065.6285, 3);
-        expect(url.searchParams.get('bboxSR')).toBe('3857');
-        expect(url.searchParams.get('imageSR')).toBe('3857');
-        expect(url.searchParams.get('size')).toBe(
-            `${GEOPORTAL_IMAGE_SIZE},${GEOPORTAL_IMAGE_SIZE}`
-        );
+        expect(tileUrls).toEqual([
+            'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile/2/80/144',
+            'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile/2/80/145',
+            'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile/2/81/144',
+            'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile/2/81/145',
+        ]);
         expect(GEOPORTAL_IMAGE_SIZE / GEOPORTAL_LOGICAL_TILE_SIZE).toBe(2);
-        expect(url.searchParams.get('f')).toBe('image');
+
+        const highestDetailTiles = buildGeoportalTileUrls({
+            zoom: GEOPORTAL_MAX_MAP_ZOOM,
+            x: 74_274,
+            y: 41_457,
+        });
+        expect(highestDetailTiles?.[0]).toContain('/tile/12/82914/148548');
     });
 
     test('rejects tile coordinates outside the supported map range', () => {
-        expect(buildGeoportalTileUrl({ zoom: GEOPORTAL_MIN_MAP_ZOOM - 1, x: 0, y: 0 })).toBeNull();
-        expect(buildGeoportalTileUrl({ zoom: GEOPORTAL_MAX_MAP_ZOOM + 1, x: 0, y: 0 })).toBeNull();
-        expect(buildGeoportalTileUrl({ zoom: 6.5, x: 0, y: 0 })).toBeNull();
-        expect(buildGeoportalTileUrl({ zoom: 7, x: 128, y: 0 })).toBeNull();
-        expect(buildGeoportalTileUrl({ zoom: 7, x: 0, y: -1 })).toBeNull();
+        expect(buildGeoportalTileUrls({ zoom: GEOPORTAL_MIN_MAP_ZOOM - 1, x: 0, y: 0 })).toBeNull();
+        expect(buildGeoportalTileUrls({ zoom: GEOPORTAL_MAX_MAP_ZOOM + 1, x: 0, y: 0 })).toBeNull();
+        expect(buildGeoportalTileUrls({ zoom: 6.5, x: 0, y: 0 })).toBeNull();
+        expect(buildGeoportalTileUrls({ zoom: 7, x: 128, y: 0 })).toBeNull();
+        expect(buildGeoportalTileUrls({ zoom: 7, x: 0, y: -1 })).toBeNull();
     });
 
     test('creates a subdued dark palette while retaining semantic chroma and alpha', () => {

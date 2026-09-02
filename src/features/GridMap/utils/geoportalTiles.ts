@@ -2,13 +2,14 @@ import maplibregl, { type AddProtocolAction } from 'maplibre-gl';
 
 const GEOPORTAL_PROTOCOL = 'geoportal';
 const GEOPORTAL_TILE_BASE_URL =
-    'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/export';
-const WEB_MERCATOR_HALF_WORLD = 20_037_508.342789244;
+    'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile';
 
 export const GEOPORTAL_MIN_MAP_ZOOM = 6;
-export const GEOPORTAL_MAX_MAP_ZOOM = 18;
+export const GEOPORTAL_MAX_MAP_ZOOM = 17;
 export const GEOPORTAL_LOGICAL_TILE_SIZE = 256;
 export const GEOPORTAL_IMAGE_SIZE = 512;
+
+const GEOPORTAL_NATIVE_TILE_SIZE = 256;
 
 const DARK_TILE_CACHE_LIMIT = 96;
 const DARK_TILE_JPEG_QUALITY = 0.94;
@@ -39,7 +40,7 @@ interface DecodedTile {
 const darkTileCache = new Map<string, ArrayBuffer>();
 let protocolRegistered = false;
 
-export function buildGeoportalTileUrl({ zoom, x, y }: GeoportalTileCoordinates): string | null {
+export function buildGeoportalTileUrls({ zoom, x, y }: GeoportalTileCoordinates): string[] | null {
     const tileCount = 2 ** zoom;
     if (
         !Number.isInteger(zoom) ||
@@ -55,23 +56,19 @@ export function buildGeoportalTileUrl({ zoom, x, y }: GeoportalTileCoordinates):
         return null;
     }
 
-    const worldSize = WEB_MERCATOR_HALF_WORLD * 2;
-    const tileSpan = worldSize / tileCount;
-    const minX = -WEB_MERCATOR_HALF_WORLD + x * tileSpan;
-    const maxX = minX + tileSpan;
-    const maxY = WEB_MERCATOR_HALF_WORLD - y * tileSpan;
-    const minY = maxY - tileSpan;
-    const parameters = new URLSearchParams({
-        bbox: `${minX},${minY},${maxX},${maxY}`,
-        bboxSR: '3857',
-        imageSR: '3857',
-        size: `${GEOPORTAL_IMAGE_SIZE},${GEOPORTAL_IMAGE_SIZE}`,
-        format: 'jpg',
-        transparent: 'false',
-        f: 'image',
-    });
+    // Geoportal cache level 0 corresponds to Web Mercator zoom 6. Fetching the
+    // next cache level supplies four native 256 px tiles for one logical MapLibre
+    // tile, preserving 2x density without asking the server to export an image.
+    const serviceLevel = zoom - GEOPORTAL_MIN_MAP_ZOOM + 1;
+    const firstColumn = x * 2;
+    const firstRow = y * 2;
 
-    return `${GEOPORTAL_TILE_BASE_URL}?${parameters.toString()}`;
+    return [
+        `${GEOPORTAL_TILE_BASE_URL}/${serviceLevel}/${firstRow}/${firstColumn}`,
+        `${GEOPORTAL_TILE_BASE_URL}/${serviceLevel}/${firstRow}/${firstColumn + 1}`,
+        `${GEOPORTAL_TILE_BASE_URL}/${serviceLevel}/${firstRow + 1}/${firstColumn}`,
+        `${GEOPORTAL_TILE_BASE_URL}/${serviceLevel}/${firstRow + 1}/${firstColumn + 1}`,
+    ];
 }
 
 export function getGeoportalTileTemplate(theme: GeoportalTheme): string {
@@ -110,8 +107,8 @@ const loadGeoportalTile: AddProtocolAction = async (request, abortController) =>
         throw new Error(`Unsupported Geoportal tile URL: ${request.url}`);
     }
 
-    const sourceUrl = buildGeoportalTileUrl(parsedRequest);
-    if (!sourceUrl) {
+    const sourceUrls = buildGeoportalTileUrls(parsedRequest);
+    if (!sourceUrls) {
         throw new Error(`Geoportal tile is outside the supported cache: ${request.url}`);
     }
 
@@ -121,36 +118,44 @@ const loadGeoportalTile: AddProtocolAction = async (request, abortController) =>
         if (cachedTile) return { data: cachedTile.slice(0) };
     }
 
-    const response = await fetch(sourceUrl, {
-        signal: abortController.signal,
-        cache: 'default',
-    });
+    const responses = await Promise.all(
+        sourceUrls.map((sourceUrl) =>
+            fetch(sourceUrl, {
+                signal: abortController.signal,
+                cache: 'default',
+            })
+        )
+    );
 
-    if (!response.ok) {
-        throw new Error(`Geoportal tile returned HTTP ${response.status}`);
+    for (const response of responses) {
+        if (!response.ok) {
+            throw new Error(`Geoportal tile returned HTTP ${response.status}`);
+        }
     }
 
-    const originalTile = await response.arrayBuffer();
+    const originalTiles = await Promise.all(responses.map((response) => response.arrayBuffer()));
+    const composedTile = await createComposedTile(
+        originalTiles,
+        parsedRequest.theme,
+        abortController.signal
+    );
+    const [firstResponse] = responses;
     const responseMetadata = {
-        cacheControl: response.headers.get('cache-control'),
-        expires: response.headers.get('expires'),
+        cacheControl: firstResponse?.headers.get('cache-control'),
+        expires: firstResponse?.headers.get('expires'),
     };
 
     if (parsedRequest.theme === 'light') {
-        return { data: originalTile, ...responseMetadata };
+        return { data: composedTile, ...responseMetadata };
     }
 
-    try {
-        const darkTile = await createDarkTile(originalTile, abortController.signal);
-        cacheDarkTile(cacheKey, darkTile.slice(0));
-        return { data: darkTile, ...responseMetadata };
-    } catch {
-        throwIfAborted(abortController.signal);
-        return { data: originalTile, ...responseMetadata };
-    }
+    cacheDarkTile(cacheKey, composedTile.slice(0));
+    return { data: composedTile, ...responseMetadata };
 };
 
-function parseProtocolUrl(url: string) {
+function parseProtocolUrl(
+    url: string
+): (GeoportalTileCoordinates & { theme: GeoportalTheme }) | null {
     const match = /^geoportal:\/\/(light|dark)\/(\d+)\/(\d+)\/(\d+)$/.exec(url);
     if (!match) return null;
 
@@ -164,10 +169,14 @@ function parseProtocolUrl(url: string) {
     return { theme, zoom, x, y };
 }
 
-async function createDarkTile(originalTile: ArrayBuffer, signal: AbortSignal) {
+async function createComposedTile(
+    originalTiles: ArrayBuffer[],
+    theme: GeoportalTheme,
+    signal: AbortSignal
+) {
     throwIfAborted(signal);
 
-    const decodedTile = await decodeTile(new Blob([originalTile], { type: 'image/jpeg' }), signal);
+    const decodedTiles = await decodeTiles(originalTiles, signal);
 
     try {
         throwIfAborted(signal);
@@ -178,17 +187,53 @@ async function createDarkTile(originalTile: ArrayBuffer, signal: AbortSignal) {
         const context = canvas.getContext('2d', { willReadFrequently: true });
         if (!context) throw new Error('Canvas 2D is unavailable');
 
-        context.drawImage(decodedTile.image, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        transformGeoportalDarkPixels(imageData.data);
-        context.putImageData(imageData, 0, 0);
+        decodedTiles.forEach((tile, index) => {
+            const offsetX = (index % 2) * GEOPORTAL_NATIVE_TILE_SIZE;
+            const offsetY = Math.floor(index / 2) * GEOPORTAL_NATIVE_TILE_SIZE;
+            context.drawImage(
+                tile.image,
+                offsetX,
+                offsetY,
+                GEOPORTAL_NATIVE_TILE_SIZE,
+                GEOPORTAL_NATIVE_TILE_SIZE
+            );
+        });
 
-        const transformedBlob = await canvasToBlob(canvas, signal);
+        if (theme === 'dark') {
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            transformGeoportalDarkPixels(imageData.data);
+            context.putImageData(imageData, 0, 0);
+        }
+
+        const transformedBlob = await canvasToBlob(
+            canvas,
+            signal,
+            theme === 'light' ? 'image/png' : 'image/jpeg'
+        );
         throwIfAborted(signal);
         return transformedBlob.arrayBuffer();
     } finally {
-        decodedTile.release();
+        decodedTiles.forEach((tile) => tile.release());
     }
+}
+
+async function decodeTiles(originalTiles: ArrayBuffer[], signal: AbortSignal) {
+    const results = await Promise.allSettled(
+        originalTiles.map((tile) => decodeTile(new Blob([tile], { type: 'image/jpeg' }), signal))
+    );
+    const decodedTiles = results.flatMap((result) =>
+        result.status === 'fulfilled' ? [result.value] : []
+    );
+    const failedResult = results.find((result) => result.status === 'rejected');
+
+    if (failedResult) {
+        decodedTiles.forEach((tile) => tile.release());
+        throw new Error('Geoportal child tile could not be decoded', {
+            cause: failedResult.reason,
+        });
+    }
+
+    return decodedTiles;
 }
 
 async function decodeTile(blob: Blob, signal: AbortSignal): Promise<DecodedTile> {
@@ -241,7 +286,11 @@ function decodeTileWithImageElement(blob: Blob, signal: AbortSignal): Promise<De
     });
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement, signal: AbortSignal): Promise<Blob> {
+function canvasToBlob(
+    canvas: HTMLCanvasElement,
+    signal: AbortSignal,
+    type: 'image/jpeg' | 'image/png'
+): Promise<Blob> {
     return new Promise((resolve, reject) => {
         canvas.toBlob(
             (blob) => {
@@ -250,10 +299,10 @@ function canvasToBlob(canvas: HTMLCanvasElement, signal: AbortSignal): Promise<B
                 } else if (blob) {
                     resolve(blob);
                 } else {
-                    reject(new Error('Geoportal dark tile could not be encoded'));
+                    reject(new Error('Geoportal tile could not be encoded'));
                 }
             },
-            'image/jpeg',
+            type,
             DARK_TILE_JPEG_QUALITY
         );
     });
