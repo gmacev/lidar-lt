@@ -53,7 +53,7 @@ function HomePage() {
                 </main>
 
                 <footer className="theme-grid-chrome shrink-0 border-t border-panel-border p-2 text-center text-xs text-panel-muted">
-                    {t('home.dataSource')}{' '}
+                    Žemėlapis:{' '}
                     <a
                         href="https://www.geoportal.lt/"
                         target="_blank"
@@ -62,41 +62,14 @@ function HomePage() {
                     >
                         geoportal.lt
                     </a>{' '}
-                    ·{' '}
-                    <a
-                        href="https://openfreemap.org/"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={footerLinkClassName}
-                    >
-                        OpenFreeMap
-                    </a>{' '}
-                    © OpenMapTiles {t('home.mapDataFrom')}{' '}
-                    <a
-                        href="https://www.openstreetmap.org/copyright"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={footerLinkClassName}
-                    >
-                        OpenStreetMap
-                    </a>{' '}
-                    ·{' '}
+                    © Aplinkos ministerija, © SSVA, 2026 ·{' '}
                     <button
                         type="button"
                         onClick={handleOpenAbout}
                         className={`${footerLinkClassName} cursor-pointer`}
                     >
                         {t('home.aboutProject')}
-                    </button>{' '}
-                    ·{' '}
-                    <a
-                        href="https://github.com/gmacev/lidar-lt"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={footerLinkClassName}
-                    >
-                        {t('home.sourceCode')}
-                    </a>
+                    </button>
                 </footer>
             </div>
         </>

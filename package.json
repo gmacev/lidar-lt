@@ -31,8 +31,6 @@
         "dev": "vite",
         "build": "tsc -b && vite build && npm run sitemap",
         "sitemap": "npx tsx scripts/generate-sitemap.ts",
-        "generate:map-style": "tsx scripts/generate-map-style.ts",
-        "generate:light-map-style": "tsx scripts/generate-light-map-style.ts",
         "optimize:grid": "tsx scripts/optimize-grid.ts",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",

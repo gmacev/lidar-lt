@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import Map, { Source, Layer, type LayerProps } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTranslation } from 'react-i18next';
@@ -7,60 +6,21 @@ import { GridSearchControl } from './GridSearchControl';
 import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
 import { ThemeSwitcher } from '@/common/components/ThemeSwitcher';
 import { useTheme } from '@/common/theme';
+import {
+    GEOPORTAL_MAX_MAP_ZOOM,
+    GEOPORTAL_MIN_MAP_ZOOM,
+    GEOPORTAL_LOGICAL_TILE_SIZE,
+    getGeoportalTileTemplate,
+} from '@/features/GridMap/utils/geoportalTiles';
 
 const GRID_SOURCE_ID = 'lidar-grid';
-const MAP_STYLE_URLS = {
-    light: '/styles/liberty-light.json',
-    dark: '/styles/liberty-dark.json',
-} as const;
-
-const getMapLabelExpression = (language: string) =>
-    language.startsWith('en')
-        ? ['coalesce', ['get', 'name_en'], ['get', 'name:latin'], ['get', 'name']]
-        : ['coalesce', ['get', 'name:lt'], ['get', 'name_lt'], ['get', 'name']];
+const GEOPORTAL_SOURCE_ID = 'geoportal-basemap';
+const EMPTY_MAP_STYLE = { version: 8 as const, sources: {}, layers: [] };
 
 export function GridVisualizer() {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const { resolvedTheme } = useTheme();
     const { data, mapRef, tooltip, search, handlers } = useLithuaniaGrid(resolvedTheme);
-
-    useEffect(() => {
-        const map = mapRef.current?.getMap();
-        if (!map) return;
-
-        const applyLabelLanguage = () => {
-            const style = map.getStyle();
-            const layers = style.layers ?? [];
-            const labelExpression = getMapLabelExpression(i18n.resolvedLanguage ?? i18n.language);
-
-            for (const layer of layers) {
-                if (layer.type !== 'symbol') continue;
-
-                const textField = layer.layout?.['text-field'];
-                if (!textField) continue;
-
-                const textFieldJson = JSON.stringify(textField);
-                const isNameLabel =
-                    textFieldJson.includes('"name"') ||
-                    textFieldJson.includes('"name_en"') ||
-                    textFieldJson.includes('"name:latin"');
-
-                if (isNameLabel) {
-                    map.setLayoutProperty(layer.id, 'text-field', labelExpression);
-                }
-            }
-        };
-
-        if (map.isStyleLoaded()) {
-            applyLabelLanguage();
-        }
-
-        map.on('styledata', applyLabelLanguage);
-
-        return () => {
-            map.off('styledata', applyLabelLanguage);
-        };
-    }, [i18n.language, i18n.resolvedLanguage, mapRef]);
 
     // Dynamic layer styles using feature state for hover
     const fillLayer: LayerProps = {
@@ -155,16 +115,35 @@ export function GridVisualizer() {
                 initialViewState={{
                     longitude: 23.8813,
                     latitude: 55.1694,
-                    zoom: 6.5,
+                    zoom: 6,
                 }}
+                zoomSnap={1}
                 style={{ width: '100%', height: '100%' }}
-                mapStyle={MAP_STYLE_URLS[resolvedTheme]}
+                mapStyle={EMPTY_MAP_STYLE}
                 interactiveLayerIds={['grid-fill']}
                 onClick={handlers.onClick}
                 onMouseMove={handlers.onMouseMove}
                 onMouseLeave={handlers.onMouseLeave}
                 attributionControl={false}
             >
+                <Layer
+                    id="map-background"
+                    type="background"
+                    paint={{
+                        'background-color': resolvedTheme === 'light' ? '#e8e7df' : '#151b1e',
+                    }}
+                />
+                <Source
+                    id={GEOPORTAL_SOURCE_ID}
+                    type="raster"
+                    tiles={[getGeoportalTileTemplate(resolvedTheme)]}
+                    tileSize={GEOPORTAL_LOGICAL_TILE_SIZE}
+                    minzoom={GEOPORTAL_MIN_MAP_ZOOM}
+                    maxzoom={GEOPORTAL_MAX_MAP_ZOOM}
+                    attribution="Žemėlapis: geoportal.lt © Aplinkos ministerija, © SSVA, 2026"
+                >
+                    <Layer id="geoportal-basemap-layer" type="raster" />
+                </Source>
                 <Source id={GRID_SOURCE_ID} type="geojson" data={data} promoteId="id">
                     <Layer {...fillLayer} />
                     <Layer {...lineCasingLayer} />
