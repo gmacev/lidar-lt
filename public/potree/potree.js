@@ -58852,8 +58852,8 @@ Shaders["normalize_and_edl.fs"] = `
 // https://github.com/cloudcompare/trunk/tree/master/plugins/qEDL/shaders/EDL
 //
 
-precision mediump float;
-precision mediump int;
+precision highp float;
+precision highp int;
 
 uniform sampler2D uWeightMap;
 uniform sampler2D uEDLMap;
@@ -58873,7 +58873,13 @@ uniform vec3 reliefViewUp;
 uniform vec2 reliefProjectionScale;
 uniform float reliefPerspective;
 
-varying vec2 vUv;
+const float EDL_SLOPE_COMPENSATION_SCALE = 0.90625;
+
+vec2 edlSampleUv(vec2 pixelOffset){
+	// Nearest-filtered depth lookups must land on stable texel centers.
+	vec2 samplePixel = floor(gl_FragCoord.xy + pixelOffset) + vec2(0.5);
+	return samplePixel / vec2(screenWidth, screenHeight);
+}
 
 float depthResponseNormalization(float depth){
 	if(reliefPerspective > 0.5 || depth == 0.0){
@@ -58888,15 +58894,15 @@ float depthResponseNormalization(float depth){
 }
 
 float response(float depth, float radiusScale, float slopeCompensation, float boundaryWeight){
-	vec2 uvRadius = (radius * radiusScale) / vec2(screenWidth, screenHeight);
+	float pixelRadius = radius * radiusScale;
 	
 	float sum = 0.0;
 	
 	for(int i = 0; i < NEIGHBOUR_COUNT / 2; i++){
-		float depthA = texture2D(uEDLMap, vUv + uvRadius * neighbours[i]).a;
+		float depthA = texture2D(uEDLMap, edlSampleUv(pixelRadius * neighbours[i])).a;
 		float depthB = texture2D(
 			uEDLMap,
-			vUv + uvRadius * neighbours[i + NEIGHBOUR_COUNT / 2]
+			edlSampleUv(pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2])
 		).a;
 		bool validA = depthA != 0.0;
 		bool validB = depthB != 0.0;
@@ -58930,9 +58936,9 @@ float response(float depth, float radiusScale, float slopeCompensation, float bo
 }
 
 float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale){
-	vec2 uvOffset = reliefRadius * radiusScale * direction / vec2(screenWidth, screenHeight);
-	vec2 centerNdc = vUv * 2.0 - 1.0;
-	vec2 neighborNdc = (vUv + uvOffset) * 2.0 - 1.0;
+	vec2 pixelOffset = reliefRadius * radiusScale * direction;
+	vec2 centerNdc = edlSampleUv(vec2(0.0)) * 2.0 - 1.0;
+	vec2 neighborNdc = edlSampleUv(pixelOffset) * 2.0 - 1.0;
 	float linearDepth = exp2(centerDepth);
 
 	if(reliefPerspective > 0.5){
@@ -58959,15 +58965,15 @@ float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale)
 }
 
 vec2 reliefGradient(float depth, float radiusScale){
-	vec2 uvRadius = reliefRadius * radiusScale / vec2(screenWidth, screenHeight);
-	float tl = texture2D(uEDLMap, vUv + uvRadius * vec2(-1.0, 1.0)).a;
-	float t = texture2D(uEDLMap, vUv + uvRadius * vec2(0.0, 1.0)).a;
-	float tr = texture2D(uEDLMap, vUv + uvRadius * vec2(1.0, 1.0)).a;
-	float l = texture2D(uEDLMap, vUv + uvRadius * vec2(-1.0, 0.0)).a;
-	float r = texture2D(uEDLMap, vUv + uvRadius * vec2(1.0, 0.0)).a;
-	float bl = texture2D(uEDLMap, vUv + uvRadius * vec2(-1.0, -1.0)).a;
-	float b = texture2D(uEDLMap, vUv + uvRadius * vec2(0.0, -1.0)).a;
-	float br = texture2D(uEDLMap, vUv + uvRadius * vec2(1.0, -1.0)).a;
+	float pixelRadius = reliefRadius * radiusScale;
+	float tl = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(-1.0, 1.0))).a;
+	float t = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(0.0, 1.0))).a;
+	float tr = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(1.0, 1.0))).a;
+	float l = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(-1.0, 0.0))).a;
+	float r = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(1.0, 0.0))).a;
+	float bl = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(-1.0, -1.0))).a;
+	float b = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(0.0, -1.0))).a;
+	float br = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(1.0, -1.0))).a;
 	bool validTl = tl != 0.0;
 	bool validT = t != 0.0;
 	bool validTr = tr != 0.0;
@@ -59028,10 +59034,11 @@ float reliefShade(float depth){
 
 void main() {
 
-	float edlDepth = texture2D(uEDLMap, vUv).a;
-	float fineResponse = response(edlDepth, 1.0, edlSlopeCompensation, 1.0);
+	float edlDepth = texture2D(uEDLMap, edlSampleUv(vec2(0.0))).a;
+	float edlCompensation = EDL_SLOPE_COMPENSATION_SCALE * edlSlopeCompensation;
+	float fineResponse = response(edlDepth, 1.0, edlCompensation, 1.0);
 	float res = fineResponse;
-	if(edlSlopeCompensation > 0.0){
+	if(edlCompensation > 0.0){
 		// Curvature grows with radius squared, while isolated depth jumps do not.
 		// Normalize two wider rings by radius squared so coherent broad relief is
 		// retained without turning sparse distant samples into dark patches.
@@ -59042,10 +59049,10 @@ void main() {
 		float broadResponse = min(midResponse, coarseResponse);
 		broadResponse = min(broadResponse, 2.0 * fineResponse);
 		float tiltedResponse = 0.3 * fineResponse + 1.15 * broadResponse;
-		res = mix(fineResponse, tiltedResponse, edlSlopeCompensation);
+		res = mix(fineResponse, tiltedResponse, edlCompensation);
 	}
 	res *= depthResponseNormalization(edlDepth);
-	float minimumShade = 0.15 * edlSlopeCompensation;
+	float minimumShade = 0.15 * edlCompensation;
 	float effectiveStrength = edlStrength;
 	float shade = minimumShade + (1.0 - minimumShade) * exp(-res * 300.0 * effectiveStrength);
 	float relief = 1.0;
@@ -59053,12 +59060,12 @@ void main() {
 		relief = reliefShade(edlDepth);
 	}
 
-	float depth = texture2D(uDepthMap, vUv).r;
+	float depth = texture2D(uDepthMap, edlSampleUv(vec2(0.0))).r;
 	if(depth >= 1.0 && res == 0.0){
 		discard;
 	}
 	
-	vec4 color = texture2D(uWeightMap, vUv); 
+	vec4 color = texture2D(uWeightMap, edlSampleUv(vec2(0.0)));
 	color = color / color.w;
 	color = color * shade * relief;
 
@@ -59095,8 +59102,8 @@ Shaders["edl.fs"] = `
 // https://github.com/cloudcompare/trunk/tree/master/plugins/qEDL/shaders/EDL
 //
 
-precision mediump float;
-precision mediump int;
+precision highp float;
+precision highp int;
 
 uniform float screenWidth;
 uniform float screenHeight;
@@ -59113,6 +59120,8 @@ uniform vec2 reliefProjectionScale;
 uniform float reliefPerspective;
 uniform float opacity;
 
+const float EDL_SLOPE_COMPENSATION_SCALE = 0.90625;
+
 uniform float uNear;
 uniform float uFar;
 
@@ -59121,7 +59130,11 @@ uniform mat4 uProj;
 uniform sampler2D uEDLColor;
 uniform sampler2D uEDLDepth;
 
-varying vec2 vUv;
+vec2 edlSampleUv(vec2 pixelOffset){
+	// Nearest-filtered depth lookups must land on stable texel centers.
+	vec2 samplePixel = floor(gl_FragCoord.xy + pixelOffset) + vec2(0.5);
+	return samplePixel / vec2(screenWidth, screenHeight);
+}
 
 float depthResponseNormalization(float depth){
 	if(reliefPerspective > 0.5 || depth == 0.0){
@@ -59136,15 +59149,15 @@ float depthResponseNormalization(float depth){
 }
 
 float response(float depth, float radiusScale, float slopeCompensation, float boundaryWeight){
-	vec2 uvRadius = (radius * radiusScale) / vec2(screenWidth, screenHeight);
+	float pixelRadius = radius * radiusScale;
 	
 	float sum = 0.0;
 	
 	for(int i = 0; i < NEIGHBOUR_COUNT / 2; i++){
-		float depthA = texture2D(uEDLColor, vUv + uvRadius * neighbours[i]).a;
+		float depthA = texture2D(uEDLColor, edlSampleUv(pixelRadius * neighbours[i])).a;
 		float depthB = texture2D(
 			uEDLColor,
-			vUv + uvRadius * neighbours[i + NEIGHBOUR_COUNT / 2]
+			edlSampleUv(pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2])
 		).a;
 		depthA = (depthA == 1.0) ? 0.0 : depthA;
 		depthB = (depthB == 1.0) ? 0.0 : depthB;
@@ -59180,9 +59193,9 @@ float response(float depth, float radiusScale, float slopeCompensation, float bo
 }
 
 float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale){
-	vec2 uvOffset = reliefRadius * radiusScale * direction / vec2(screenWidth, screenHeight);
-	vec2 centerNdc = vUv * 2.0 - 1.0;
-	vec2 neighborNdc = (vUv + uvOffset) * 2.0 - 1.0;
+	vec2 pixelOffset = reliefRadius * radiusScale * direction;
+	vec2 centerNdc = edlSampleUv(vec2(0.0)) * 2.0 - 1.0;
+	vec2 neighborNdc = edlSampleUv(pixelOffset) * 2.0 - 1.0;
 	float linearDepth = exp2(centerDepth);
 
 	if(reliefPerspective > 0.5){
@@ -59209,15 +59222,15 @@ float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale)
 }
 
 vec2 reliefGradient(float depth, float radiusScale){
-	vec2 uvRadius = reliefRadius * radiusScale / vec2(screenWidth, screenHeight);
-	float tl = texture2D(uEDLColor, vUv + uvRadius * vec2(-1.0, 1.0)).a;
-	float t = texture2D(uEDLColor, vUv + uvRadius * vec2(0.0, 1.0)).a;
-	float tr = texture2D(uEDLColor, vUv + uvRadius * vec2(1.0, 1.0)).a;
-	float l = texture2D(uEDLColor, vUv + uvRadius * vec2(-1.0, 0.0)).a;
-	float r = texture2D(uEDLColor, vUv + uvRadius * vec2(1.0, 0.0)).a;
-	float bl = texture2D(uEDLColor, vUv + uvRadius * vec2(-1.0, -1.0)).a;
-	float b = texture2D(uEDLColor, vUv + uvRadius * vec2(0.0, -1.0)).a;
-	float br = texture2D(uEDLColor, vUv + uvRadius * vec2(1.0, -1.0)).a;
+	float pixelRadius = reliefRadius * radiusScale;
+	float tl = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(-1.0, 1.0))).a;
+	float t = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(0.0, 1.0))).a;
+	float tr = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(1.0, 1.0))).a;
+	float l = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(-1.0, 0.0))).a;
+	float r = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(1.0, 0.0))).a;
+	float bl = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(-1.0, -1.0))).a;
+	float b = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(0.0, -1.0))).a;
+	float br = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(1.0, -1.0))).a;
 
 	tl = (tl == 1.0) ? 0.0 : tl;
 	t = (t == 1.0) ? 0.0 : t;
@@ -59286,13 +59299,14 @@ float reliefShade(float depth){
 }
 
 void main(){
-	vec4 cEDL = texture2D(uEDLColor, vUv);
+	vec4 cEDL = texture2D(uEDLColor, edlSampleUv(vec2(0.0)));
 	
 	float depth = cEDL.a;
 	depth = (depth == 1.0) ? 0.0 : depth;
-	float fineResponse = response(depth, 1.0, edlSlopeCompensation, 1.0);
+	float edlCompensation = EDL_SLOPE_COMPENSATION_SCALE * edlSlopeCompensation;
+	float fineResponse = response(depth, 1.0, edlCompensation, 1.0);
 	float res = fineResponse;
-	if(edlSlopeCompensation > 0.0){
+	if(edlCompensation > 0.0){
 		// Curvature grows with radius squared, while isolated depth jumps do not.
 		// Normalize two wider rings by radius squared so coherent broad relief is
 		// retained without turning sparse distant samples into dark patches.
@@ -59303,10 +59317,10 @@ void main(){
 		float broadResponse = min(midResponse, coarseResponse);
 		broadResponse = min(broadResponse, 2.0 * fineResponse);
 		float tiltedResponse = 0.3 * fineResponse + 1.15 * broadResponse;
-		res = mix(fineResponse, tiltedResponse, edlSlopeCompensation);
+		res = mix(fineResponse, tiltedResponse, edlCompensation);
 	}
 	res *= depthResponseNormalization(depth);
-	float minimumShade = 0.15 * edlSlopeCompensation;
+	float minimumShade = 0.15 * edlCompensation;
 	float effectiveStrength = edlStrength;
 	float shade = minimumShade + (1.0 - minimumShade) * exp(-res * 300.0 * effectiveStrength);
 	float relief = 1.0;
