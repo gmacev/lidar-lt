@@ -57676,6 +57676,9 @@ uniform mat4 uShadowProj[num_shadowmaps];
 
 varying vec3	vColor;
 varying float	vLogDepth;
+#if defined(use_edl)
+varying float vEdlGround;
+#endif
 varying vec3	vViewPosition;
 varying float 	vRadius;
 varying float 	vPointSize;
@@ -58413,6 +58416,9 @@ void main() {
 	vViewPosition = mvPosition.xyz;
 	gl_Position = projectionMatrix * mvPosition;
 	vLogDepth = log2(-mvPosition.z);
+	#if defined(use_edl)
+		vEdlGround = classification == 2.0 ? 1.0 : 0.0;
+	#endif
 
 	//gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
 	//gl_PointSize = 5.0;
@@ -58559,11 +58565,46 @@ uniform float uScreenHeight;
 
 varying vec3	vColor;
 varying float	vLogDepth;
+#if defined(use_edl)
+varying float vEdlGround;
+#endif
 varying vec3	vViewPosition;
 varying float	vRadius;
 varying float 	vPointSize;
 varying vec3 	vPosition;
 
+
+#if defined(use_edl)
+float edlPointDepth(){
+	// Ground points represent a terrain patch, not a camera-facing depth step.
+	// Extend each ground sample horizontally across its sprite for shading only;
+	// geometry, visibility, picking and non-ground points keep their real depth.
+	vec3 up = viewMatrix[2].xyz;
+	float horizonWeight = smoothstep(0.05, 0.2, abs(up.z));
+	// Keep the original top-down value exactly, including vertex-stage rounding.
+	if(vEdlGround < 0.5 || horizonWeight == 0.0 || length(up.xy) < 0.0001){
+		return vLogDepth;
+	}
+	vec4 centerClip = projectionMatrix * vec4(vViewPosition, 1.0);
+	vec2 centerNdc = centerClip.xy / centerClip.w;
+	vec2 sampleNdc = (gl_FragCoord.xy / vec2(uScreenWidth, uScreenHeight)) * 2.0 - 1.0;
+	vec2 projectionScale = vec2(projectionMatrix[0][0], projectionMatrix[1][1]);
+	float linearDepth = -vViewPosition.z;
+	if(projectionMatrix[3][3] == 0.0){
+		vec3 centerRay = vec3(centerNdc / projectionScale, -1.0);
+		vec3 sampleRay = vec3(sampleNdc / projectionScale, -1.0);
+		float denominator = dot(up, sampleRay);
+		horizonWeight *= smoothstep(0.05, 0.2, abs(denominator));
+		if(horizonWeight == 0.0){
+			return vLogDepth;
+		}
+		linearDepth *= dot(up, centerRay) / denominator;
+	}else{
+		linearDepth += dot(up.xy, (sampleNdc - centerNdc) / projectionScale) / up.z;
+	}
+	return linearDepth > 0.0 ? mix(vLogDepth, log2(linearDepth), horizonWeight) : vLogDepth;
+}
+#endif
 
 float specularStrength = 1.0;
 
@@ -58609,12 +58650,12 @@ void main() {
 		#endif
 		
 		#if defined(use_edl)
-			gl_FragColor.a = vLogDepth;
+			gl_FragColor.a = edlPointDepth();
 		#endif
 		
 	#else
 		#if defined(use_edl)
-			gl_FragColor.a = vLogDepth;
+			gl_FragColor.a = edlPointDepth();
 		#endif
 	#endif
 
