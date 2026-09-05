@@ -7,6 +7,7 @@ interface GridSearchControlProps {
     matchedCount?: number;
     totalCount?: number;
     searchStatus: 'idle' | 'loading' | 'success' | 'error';
+    className?: string;
 }
 
 export function GridSearchControl({
@@ -15,11 +16,14 @@ export function GridSearchControl({
     matchedCount = 0,
     totalCount = 0,
     searchStatus,
+    className = '',
 }: GridSearchControlProps) {
     const { t } = useTranslation();
 
     return (
-        <div className="absolute left-2 right-20 top-2 z-10 sm:left-4 sm:right-auto sm:top-4 sm:w-80">
+        <div
+            className={`absolute inset-x-2 bottom-2 z-10 sm:bottom-auto sm:left-4 sm:right-auto sm:top-4 sm:w-80 ${className}`}
+        >
             <GlassPanel variant="themed" className="flex flex-col gap-2">
                 <div className="relative">
                     <input

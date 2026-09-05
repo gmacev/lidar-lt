@@ -96,6 +96,8 @@ export function GridVisualizer() {
 
     return (
         <div className="grid-map relative h-full w-full">
+            {/* Search: full-width bottom sheet above the footer on mobile,
+                top-left panel on sm+ screens. */}
             <GridSearchControl
                 value={search.query}
                 onChange={search.setQuery}
