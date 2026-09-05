@@ -38,7 +38,7 @@ test.describe('viewer map labels', () => {
         );
 
         await page.getByTestId('viewer-ui-toggle').click();
-        await expect(page.getByTestId('viewer-map-attribution')).toBeVisible();
+        await expect(page.getByTestId('viewer-map-attribution')).toBeHidden();
         await expect(page.getByTestId('viewer-map-labels')).toContainText('Vilnius');
 
         await page.getByTestId('viewer-ui-toggle').click();

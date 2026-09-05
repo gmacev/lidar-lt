@@ -38,7 +38,8 @@ export function ViewerCornerInfo({
     const { t } = useTranslation();
     const dateRange = formatDateRange(manifest?.sourceFileDateRange);
     const showSourceDetails = (uiVisible || orthophotoCompareEnabled) && Boolean(dateRange);
-    const isVisible = showSourceDetails || mapLabelsEnabled;
+    const showMapAttribution = uiVisible && mapLabelsEnabled;
+    const isVisible = showSourceDetails || showMapAttribution;
 
     useEffect(() => {
         onVisibleChange?.(isVisible);
@@ -61,12 +62,12 @@ export function ViewerCornerInfo({
                     <SourceAttribution dateRange={dateRange!} />
                 </span>
             )}
-            {showSourceDetails && mapLabelsEnabled && (
+            {showSourceDetails && showMapAttribution && (
                 <span aria-hidden="true" className="hidden text-white/35 sm:inline">
                     {'\u00b7'}
                 </span>
             )}
-            {mapLabelsEnabled && (
+            {showMapAttribution && (
                 <span
                     data-testid="viewer-map-attribution"
                     className="inline-flex min-w-0 items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap"
