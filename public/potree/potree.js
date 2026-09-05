@@ -57676,6 +57676,9 @@ uniform mat4 uShadowProj[num_shadowmaps];
 
 varying vec3	vColor;
 varying float	vLogDepth;
+#if defined(use_edl)
+varying float vEdlGround;
+#endif
 varying vec3	vViewPosition;
 varying float 	vRadius;
 varying float 	vPointSize;
@@ -58413,6 +58416,9 @@ void main() {
 	vViewPosition = mvPosition.xyz;
 	gl_Position = projectionMatrix * mvPosition;
 	vLogDepth = log2(-mvPosition.z);
+	#if defined(use_edl)
+		vEdlGround = classification == 2.0 ? 1.0 : 0.0;
+	#endif
 
 	//gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
 	//gl_PointSize = 5.0;
@@ -58559,11 +58565,48 @@ uniform float uScreenHeight;
 
 varying vec3	vColor;
 varying float	vLogDepth;
+#if defined(use_edl)
+varying float vEdlGround;
+#endif
 varying vec3	vViewPosition;
 varying float	vRadius;
 varying float 	vPointSize;
 varying vec3 	vPosition;
 
+
+#if defined(use_edl)
+float edlPointDepth(){
+	// Ground points represent a terrain patch, not a camera-facing depth step.
+	// Extend each ground sample horizontally across its sprite for shading only;
+	// geometry, visibility, picking and non-ground points keep their real depth.
+	vec3 up = viewMatrix[2].xyz;
+	// Keep the original top-down value exactly, including vertex-stage rounding.
+	if(vEdlGround < 0.5 || length(up.xy) < 0.0001){
+		return vLogDepth;
+	}
+	vec4 centerClip = projectionMatrix * vec4(vViewPosition, 1.0);
+	vec2 centerNdc = centerClip.xy / centerClip.w;
+	vec2 sampleNdc = (gl_FragCoord.xy / vec2(uScreenWidth, uScreenHeight)) * 2.0 - 1.0;
+	vec2 projectionScale = vec2(projectionMatrix[0][0], projectionMatrix[1][1]);
+	float linearDepth = -vViewPosition.z;
+	if(projectionMatrix[3][3] == 0.0){
+		vec3 centerRay = vec3(centerNdc / projectionScale, -1.0);
+		vec3 sampleRay = vec3(sampleNdc / projectionScale, -1.0);
+		float denominator = dot(up, sampleRay);
+		// Guard only the actual ray/plane singularity, not the camera angle.
+		if(abs(denominator) < 0.000001){
+			return vLogDepth;
+		}
+		linearDepth *= dot(up, centerRay) / denominator;
+	}else{
+		if(abs(up.z) < 0.000001){
+			return vLogDepth;
+		}
+		linearDepth += dot(up.xy, (sampleNdc - centerNdc) / projectionScale) / up.z;
+	}
+	return linearDepth > 0.0 ? log2(linearDepth) : vLogDepth;
+}
+#endif
 
 float specularStrength = 1.0;
 
@@ -58609,12 +58652,12 @@ void main() {
 		#endif
 		
 		#if defined(use_edl)
-			gl_FragColor.a = vLogDepth;
+			gl_FragColor.a = edlPointDepth();
 		#endif
 		
 	#else
 		#if defined(use_edl)
-			gl_FragColor.a = vLogDepth;
+			gl_FragColor.a = edlPointDepth();
 		#endif
 	#endif
 
@@ -58868,12 +58911,10 @@ uniform float edlSlopeCompensation;
 uniform float reliefStrength;
 uniform float reliefRadius;
 uniform float reliefEnabled;
-uniform vec2 reliefLightDirection;
+uniform vec3 reliefLightDirection;
 uniform vec3 reliefViewUp;
 uniform vec2 reliefProjectionScale;
 uniform float reliefPerspective;
-
-const float EDL_SLOPE_COMPENSATION_SCALE = 0.90625;
 
 vec2 edlSampleUv(vec2 pixelOffset){
 	// Nearest-filtered depth lookups must land on stable texel centers.
@@ -58893,8 +58934,33 @@ float depthResponseNormalization(float depth){
 	return max(0.0001, exp2(depth) * abs(reliefProjectionScale.x));
 }
 
-float response(float depth, float radiusScale, float slopeCompensation, float boundaryWeight){
-	float pixelRadius = radius * radiusScale;
+vec3 reliefViewPosition(float depth, vec2 pixelOffset){
+	vec2 ndc = edlSampleUv(pixelOffset) * 2.0 - 1.0;
+	float linearDepth = exp2(depth);
+	vec2 xy = ndc / reliefProjectionScale;
+	return vec3(reliefPerspective > 0.5 ? xy * linearDepth : xy, -linearDepth);
+}
+
+float reliefPixelFootprint(float depth){
+	float footprint = 2.0 / (screenHeight * abs(reliefProjectionScale.y));
+	return reliefPerspective > 0.5 ? footprint * exp2(depth) : footprint;
+}
+
+vec2 terrainResponseSample(float depth, float sampleDepth, vec2 pixelOffset){
+	if(length(reliefViewUp.xy) < 0.0001){
+		return vec2(depth - sampleDepth, 1.0);
+	}
+	vec3 offset = reliefViewPosition(sampleDepth, pixelOffset) - reliefViewPosition(depth, vec2(0.0));
+	float height = dot(reliefViewUp, offset);
+	vec3 groundOffset = offset - height * reliefViewUp;
+	float footprint = reliefPixelFootprint(depth) * length(pixelOffset);
+	float stretch = max(1.0, length(groundOffset) / max(0.000001, footprint));
+	float virtualDepth = max(0.000001, exp2(depth) - height);
+	return vec2(depth - log2(virtualDepth), stretch);
+}
+
+float response(float depth){
+	float pixelRadius = radius;
 	
 	float sum = 0.0;
 	
@@ -58907,29 +58973,23 @@ float response(float depth, float radiusScale, float slopeCompensation, float bo
 		bool validA = depthA != 0.0;
 		bool validB = depthB != 0.0;
 		float originalResponse = 0.0;
-		float compensatedResponse = 0.0;
 
 		if(depth == 0.0){
 			originalResponse = (validA ? 100.0 : 0.0) + (validB ? 100.0 : 0.0);
-			compensatedResponse = originalResponse;
 		}else if(validA && validB){
 			originalResponse = max(0.0, depth - depthA) + max(0.0, depth - depthB);
-			float nearDifference = max(depth - depthA, depth - depthB);
-			float linearSlope = 0.5 * abs(depthA - depthB);
-			compensatedResponse = 2.0 * max(0.0, nearDifference - linearSlope);
+			if(length(reliefViewUp.xy) >= 0.0001){
+				vec2 a = terrainResponseSample(depth, depthA, pixelRadius * neighbours[i]);
+				vec2 b = terrainResponseSample(depth, depthB, pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2]);
+				originalResponse = max(0.0, a.x / a.y) + max(0.0, b.x / b.y);
+			}
 		}else if(validA){
 			originalResponse = max(0.0, depth - depthA);
-			compensatedResponse = originalResponse;
 		}else if(validB){
 			originalResponse = max(0.0, depth - depthB);
-			compensatedResponse = originalResponse;
-		}
-		if(depth == 0.0 || validA != validB){
-			originalResponse *= boundaryWeight;
-			compensatedResponse *= boundaryWeight;
 		}
 
-		sum += mix(originalResponse, compensatedResponse, slopeCompensation);
+		sum += originalResponse;
 	}
 	
 	return sum / float(NEIGHBOUR_COUNT);
@@ -58964,7 +59024,19 @@ float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale)
 	return neighborDepth > 0.0 ? log2(neighborDepth) : centerDepth;
 }
 
-vec2 reliefGradient(float depth, float radiusScale){
+// Fit a local height gradient using real horizontal distances. This avoids
+// mistaking foreshortened screen-depth differences for steeper terrain.
+void accumulateReliefSlope(float depth, float sampleDepth, vec2 pixelOffset, float weight,
+	vec3 groundX, vec3 groundY, inout vec3 covariance, inout vec2 moments){
+	vec3 offset = reliefViewPosition(sampleDepth, pixelOffset) - reliefViewPosition(depth, vec2(0.0));
+	float height = dot(reliefViewUp, offset);
+	vec2 ground = vec2(dot(offset, groundX), dot(offset, groundY));
+	float difference = log2(max(0.000001, exp2(depth) - height)) - depth;
+	covariance += weight * vec3(ground.x * ground.x, ground.x * ground.y, ground.y * ground.y);
+	moments += weight * ground * difference;
+}
+
+vec3 reliefGradient(float depth, float radiusScale){
 	float pixelRadius = reliefRadius * radiusScale;
 	float tl = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(-1.0, 1.0))).a;
 	float t = texture2D(uEDLMap, edlSampleUv(pixelRadius * vec2(0.0, 1.0))).a;
@@ -58982,6 +59054,33 @@ vec2 reliefGradient(float depth, float radiusScale){
 	bool validBl = bl != 0.0;
 	bool validB = b != 0.0;
 	bool validBr = br != 0.0;
+
+	if(length(reliefViewUp.xy) >= 0.0001){
+		vec3 groundX = vec3(1.0, 0.0, 0.0) - reliefViewUp.x * reliefViewUp;
+		if(length(groundX) < 0.0001){
+			groundX = vec3(0.0, 1.0, 0.0) - reliefViewUp.y * reliefViewUp;
+		}
+		groundX = normalize(groundX);
+		vec3 groundY = normalize(cross(reliefViewUp, groundX));
+		vec3 covariance = vec3(0.0);
+		vec2 moments = vec2(0.0);
+		if(validTl) accumulateReliefSlope(depth, tl, pixelRadius * vec2(-1.0, 1.0), 1.0, groundX, groundY, covariance, moments);
+		if(validT) accumulateReliefSlope(depth, t, pixelRadius * vec2(0.0, 1.0), 2.0, groundX, groundY, covariance, moments);
+		if(validTr) accumulateReliefSlope(depth, tr, pixelRadius * vec2(1.0, 1.0), 1.0, groundX, groundY, covariance, moments);
+		if(validL) accumulateReliefSlope(depth, l, pixelRadius * vec2(-1.0, 0.0), 2.0, groundX, groundY, covariance, moments);
+		if(validR) accumulateReliefSlope(depth, r, pixelRadius * vec2(1.0, 0.0), 2.0, groundX, groundY, covariance, moments);
+		if(validBl) accumulateReliefSlope(depth, bl, pixelRadius * vec2(-1.0, -1.0), 1.0, groundX, groundY, covariance, moments);
+		if(validB) accumulateReliefSlope(depth, b, pixelRadius * vec2(0.0, -1.0), 2.0, groundX, groundY, covariance, moments);
+		if(validBr) accumulateReliefSlope(depth, br, pixelRadius * vec2(1.0, -1.0), 1.0, groundX, groundY, covariance, moments);
+		float determinant = covariance.x * covariance.z - covariance.y * covariance.y;
+		if(determinant <= 0.000001 * max(covariance.x * covariance.z, 0.000000000001)){
+			return vec3(0.0);
+		}
+		vec2 slope = vec2(covariance.z * moments.x - covariance.y * moments.y,
+			covariance.x * moments.y - covariance.y * moments.x) / determinant;
+		return 8.0 * reliefRadius * reliefPixelFootprint(depth) * (slope.x * groundX + slope.y * groundY);
+	}
+
 
 	tl = validTl ? tl : depth;
 	t = validT ? t : depth;
@@ -59008,7 +59107,7 @@ vec2 reliefGradient(float depth, float radiusScale){
 		(referenceTr + 2.0 * referenceR + referenceBr) - (referenceTl + 2.0 * referenceL + referenceBl),
 		(referenceTl + 2.0 * referenceT + referenceTr) - (referenceBl + 2.0 * referenceB + referenceBr)
 	);
-	return (gradient - referenceGradient) / radiusScale;
+	return vec3((gradient - referenceGradient) / radiusScale, 0.0);
 }
 
 float reliefShade(float depth){
@@ -59016,12 +59115,12 @@ float reliefShade(float depth){
 		return 1.0;
 	}
 
-	vec2 fineGradient = reliefGradient(depth, 1.0);
-	vec2 gradient = fineGradient;
+	vec3 fineGradient = reliefGradient(depth, 1.0);
+	vec3 gradient = fineGradient;
 	if(edlSlopeCompensation > 0.0){
-		vec2 midGradient = reliefGradient(depth, 1.5);
-		vec2 coarseGradient = reliefGradient(depth, 2.0);
-		vec2 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
+		vec3 midGradient = reliefGradient(depth, 1.5);
+		vec3 coarseGradient = reliefGradient(depth, 2.0);
+		vec3 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
 		gradient = mix(fineGradient, smoothGradient, 0.65 * edlSlopeCompensation);
 	}
 	gradient *= depthResponseNormalization(depth);
@@ -59035,26 +59134,10 @@ float reliefShade(float depth){
 void main() {
 
 	float edlDepth = texture2D(uEDLMap, edlSampleUv(vec2(0.0))).a;
-	float edlCompensation = EDL_SLOPE_COMPENSATION_SCALE * edlSlopeCompensation;
-	float fineResponse = response(edlDepth, 1.0, edlCompensation, 1.0);
-	float res = fineResponse;
-	if(edlCompensation > 0.0){
-		// Curvature grows with radius squared, while isolated depth jumps do not.
-		// Normalize two wider rings by radius squared so coherent broad relief is
-		// retained without turning sparse distant samples into dark patches.
-		float midResponse = response(edlDepth, 1.75, 1.0, 0.0) / 3.0625;
-		float coarseResponse = response(edlDepth, 2.75, 1.0, 0.0) / 7.5625;
-		// A distant ring crossing an object boundary creates a response at only
-		// one scale. Coherent relief remains present across all three scales.
-		float broadResponse = min(midResponse, coarseResponse);
-		broadResponse = min(broadResponse, 2.0 * fineResponse);
-		float tiltedResponse = 0.3 * fineResponse + 1.15 * broadResponse;
-		res = mix(fineResponse, tiltedResponse, edlCompensation);
-	}
-	res *= depthResponseNormalization(edlDepth);
-	float minimumShade = 0.15 * edlCompensation;
-	float effectiveStrength = edlStrength;
-	float shade = minimumShade + (1.0 - minimumShade) * exp(-res * 300.0 * effectiveStrength);
+	// Terrain-space sampling already corrects projection distortion. Further
+	// angle-based slope suppression or a brightness floor would wash out EDL.
+	float res = response(edlDepth) * depthResponseNormalization(edlDepth);
+	float shade = exp(-res * 300.0 * edlStrength);
 	float relief = 1.0;
 	if(reliefEnabled > 0.5){
 		relief = reliefShade(edlDepth);
@@ -59114,13 +59197,11 @@ uniform float edlSlopeCompensation;
 uniform float reliefStrength;
 uniform float reliefRadius;
 uniform float reliefEnabled;
-uniform vec2 reliefLightDirection;
+uniform vec3 reliefLightDirection;
 uniform vec3 reliefViewUp;
 uniform vec2 reliefProjectionScale;
 uniform float reliefPerspective;
 uniform float opacity;
-
-const float EDL_SLOPE_COMPENSATION_SCALE = 0.90625;
 
 uniform float uNear;
 uniform float uFar;
@@ -59148,8 +59229,33 @@ float depthResponseNormalization(float depth){
 	return max(0.0001, exp2(depth) * abs(reliefProjectionScale.x));
 }
 
-float response(float depth, float radiusScale, float slopeCompensation, float boundaryWeight){
-	float pixelRadius = radius * radiusScale;
+vec3 reliefViewPosition(float depth, vec2 pixelOffset){
+	vec2 ndc = edlSampleUv(pixelOffset) * 2.0 - 1.0;
+	float linearDepth = exp2(depth);
+	vec2 xy = ndc / reliefProjectionScale;
+	return vec3(reliefPerspective > 0.5 ? xy * linearDepth : xy, -linearDepth);
+}
+
+float reliefPixelFootprint(float depth){
+	float footprint = 2.0 / (screenHeight * abs(reliefProjectionScale.y));
+	return reliefPerspective > 0.5 ? footprint * exp2(depth) : footprint;
+}
+
+vec2 terrainResponseSample(float depth, float sampleDepth, vec2 pixelOffset){
+	if(length(reliefViewUp.xy) < 0.0001){
+		return vec2(depth - sampleDepth, 1.0);
+	}
+	vec3 offset = reliefViewPosition(sampleDepth, pixelOffset) - reliefViewPosition(depth, vec2(0.0));
+	float height = dot(reliefViewUp, offset);
+	vec3 groundOffset = offset - height * reliefViewUp;
+	float footprint = reliefPixelFootprint(depth) * length(pixelOffset);
+	float stretch = max(1.0, length(groundOffset) / max(0.000001, footprint));
+	float virtualDepth = max(0.000001, exp2(depth) - height);
+	return vec2(depth - log2(virtualDepth), stretch);
+}
+
+float response(float depth){
+	float pixelRadius = radius;
 	
 	float sum = 0.0;
 	
@@ -59164,29 +59270,23 @@ float response(float depth, float radiusScale, float slopeCompensation, float bo
 		bool validA = depthA != 0.0;
 		bool validB = depthB != 0.0;
 		float originalResponse = 0.0;
-		float compensatedResponse = 0.0;
 
 		if(depth == 0.0){
 			originalResponse = (validA ? 100.0 : 0.0) + (validB ? 100.0 : 0.0);
-			compensatedResponse = originalResponse;
 		}else if(validA && validB){
 			originalResponse = max(0.0, depth - depthA) + max(0.0, depth - depthB);
-			float nearDifference = max(depth - depthA, depth - depthB);
-			float linearSlope = 0.5 * abs(depthA - depthB);
-			compensatedResponse = 2.0 * max(0.0, nearDifference - linearSlope);
+			if(length(reliefViewUp.xy) >= 0.0001){
+				vec2 a = terrainResponseSample(depth, depthA, pixelRadius * neighbours[i]);
+				vec2 b = terrainResponseSample(depth, depthB, pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2]);
+				originalResponse = max(0.0, a.x / a.y) + max(0.0, b.x / b.y);
+			}
 		}else if(validA){
 			originalResponse = max(0.0, depth - depthA);
-			compensatedResponse = originalResponse;
 		}else if(validB){
 			originalResponse = max(0.0, depth - depthB);
-			compensatedResponse = originalResponse;
-		}
-		if(depth == 0.0 || validA != validB){
-			originalResponse *= boundaryWeight;
-			compensatedResponse *= boundaryWeight;
 		}
 
-		sum += mix(originalResponse, compensatedResponse, slopeCompensation);
+		sum += originalResponse;
 	}
 	
 	return sum / float(NEIGHBOUR_COUNT);
@@ -59221,7 +59321,19 @@ float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale)
 	return neighborDepth > 0.0 ? log2(neighborDepth) : centerDepth;
 }
 
-vec2 reliefGradient(float depth, float radiusScale){
+// Fit a local height gradient using real horizontal distances. This avoids
+// mistaking foreshortened screen-depth differences for steeper terrain.
+void accumulateReliefSlope(float depth, float sampleDepth, vec2 pixelOffset, float weight,
+	vec3 groundX, vec3 groundY, inout vec3 covariance, inout vec2 moments){
+	vec3 offset = reliefViewPosition(sampleDepth, pixelOffset) - reliefViewPosition(depth, vec2(0.0));
+	float height = dot(reliefViewUp, offset);
+	vec2 ground = vec2(dot(offset, groundX), dot(offset, groundY));
+	float difference = log2(max(0.000001, exp2(depth) - height)) - depth;
+	covariance += weight * vec3(ground.x * ground.x, ground.x * ground.y, ground.y * ground.y);
+	moments += weight * ground * difference;
+}
+
+vec3 reliefGradient(float depth, float radiusScale){
 	float pixelRadius = reliefRadius * radiusScale;
 	float tl = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(-1.0, 1.0))).a;
 	float t = texture2D(uEDLColor, edlSampleUv(pixelRadius * vec2(0.0, 1.0))).a;
@@ -59249,6 +59361,33 @@ vec2 reliefGradient(float depth, float radiusScale){
 	bool validB = b != 0.0;
 	bool validBr = br != 0.0;
 
+	if(length(reliefViewUp.xy) >= 0.0001){
+		vec3 groundX = vec3(1.0, 0.0, 0.0) - reliefViewUp.x * reliefViewUp;
+		if(length(groundX) < 0.0001){
+			groundX = vec3(0.0, 1.0, 0.0) - reliefViewUp.y * reliefViewUp;
+		}
+		groundX = normalize(groundX);
+		vec3 groundY = normalize(cross(reliefViewUp, groundX));
+		vec3 covariance = vec3(0.0);
+		vec2 moments = vec2(0.0);
+		if(validTl) accumulateReliefSlope(depth, tl, pixelRadius * vec2(-1.0, 1.0), 1.0, groundX, groundY, covariance, moments);
+		if(validT) accumulateReliefSlope(depth, t, pixelRadius * vec2(0.0, 1.0), 2.0, groundX, groundY, covariance, moments);
+		if(validTr) accumulateReliefSlope(depth, tr, pixelRadius * vec2(1.0, 1.0), 1.0, groundX, groundY, covariance, moments);
+		if(validL) accumulateReliefSlope(depth, l, pixelRadius * vec2(-1.0, 0.0), 2.0, groundX, groundY, covariance, moments);
+		if(validR) accumulateReliefSlope(depth, r, pixelRadius * vec2(1.0, 0.0), 2.0, groundX, groundY, covariance, moments);
+		if(validBl) accumulateReliefSlope(depth, bl, pixelRadius * vec2(-1.0, -1.0), 1.0, groundX, groundY, covariance, moments);
+		if(validB) accumulateReliefSlope(depth, b, pixelRadius * vec2(0.0, -1.0), 2.0, groundX, groundY, covariance, moments);
+		if(validBr) accumulateReliefSlope(depth, br, pixelRadius * vec2(1.0, -1.0), 1.0, groundX, groundY, covariance, moments);
+		float determinant = covariance.x * covariance.z - covariance.y * covariance.y;
+		if(determinant <= 0.000001 * max(covariance.x * covariance.z, 0.000000000001)){
+			return vec3(0.0);
+		}
+		vec2 slope = vec2(covariance.z * moments.x - covariance.y * moments.y,
+			covariance.x * moments.y - covariance.y * moments.x) / determinant;
+		return 8.0 * reliefRadius * reliefPixelFootprint(depth) * (slope.x * groundX + slope.y * groundY);
+	}
+
+
 	tl = validTl ? tl : depth;
 	t = validT ? t : depth;
 	tr = validTr ? tr : depth;
@@ -59274,7 +59413,7 @@ vec2 reliefGradient(float depth, float radiusScale){
 		(referenceTr + 2.0 * referenceR + referenceBr) - (referenceTl + 2.0 * referenceL + referenceBl),
 		(referenceTl + 2.0 * referenceT + referenceTr) - (referenceBl + 2.0 * referenceB + referenceBr)
 	);
-	return (gradient - referenceGradient) / radiusScale;
+	return vec3((gradient - referenceGradient) / radiusScale, 0.0);
 }
 
 float reliefShade(float depth){
@@ -59282,12 +59421,12 @@ float reliefShade(float depth){
 		return 1.0;
 	}
 
-	vec2 fineGradient = reliefGradient(depth, 1.0);
-	vec2 gradient = fineGradient;
+	vec3 fineGradient = reliefGradient(depth, 1.0);
+	vec3 gradient = fineGradient;
 	if(edlSlopeCompensation > 0.0){
-		vec2 midGradient = reliefGradient(depth, 1.5);
-		vec2 coarseGradient = reliefGradient(depth, 2.0);
-		vec2 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
+		vec3 midGradient = reliefGradient(depth, 1.5);
+		vec3 coarseGradient = reliefGradient(depth, 2.0);
+		vec3 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
 		gradient = mix(fineGradient, smoothGradient, 0.65 * edlSlopeCompensation);
 	}
 	gradient *= depthResponseNormalization(depth);
@@ -59303,26 +59442,10 @@ void main(){
 	
 	float depth = cEDL.a;
 	depth = (depth == 1.0) ? 0.0 : depth;
-	float edlCompensation = EDL_SLOPE_COMPENSATION_SCALE * edlSlopeCompensation;
-	float fineResponse = response(depth, 1.0, edlCompensation, 1.0);
-	float res = fineResponse;
-	if(edlCompensation > 0.0){
-		// Curvature grows with radius squared, while isolated depth jumps do not.
-		// Normalize two wider rings by radius squared so coherent broad relief is
-		// retained without turning sparse distant samples into dark patches.
-		float midResponse = response(depth, 1.75, 1.0, 0.0) / 3.0625;
-		float coarseResponse = response(depth, 2.75, 1.0, 0.0) / 7.5625;
-		// A distant ring crossing an object boundary creates a response at only
-		// one scale. Coherent relief remains present across all three scales.
-		float broadResponse = min(midResponse, coarseResponse);
-		broadResponse = min(broadResponse, 2.0 * fineResponse);
-		float tiltedResponse = 0.3 * fineResponse + 1.15 * broadResponse;
-		res = mix(fineResponse, tiltedResponse, edlCompensation);
-	}
-	res *= depthResponseNormalization(depth);
-	float minimumShade = 0.15 * edlCompensation;
-	float effectiveStrength = edlStrength;
-	float shade = minimumShade + (1.0 - minimumShade) * exp(-res * 300.0 * effectiveStrength);
+	// Terrain-space sampling already corrects projection distortion. Further
+	// angle-based slope suppression or a brightness floor would wash out EDL.
+	float res = response(depth) * depthResponseNormalization(depth);
+	float shade = exp(-res * 300.0 * edlStrength);
 	float relief = 1.0;
 	if(reliefEnabled > 0.5){
 		relief = reliefShade(depth);
@@ -65961,19 +66084,13 @@ void main() {
 		const worldX = Math.sin(radians);
 		const worldY = Math.cos(radians);
 		const elements = camera.matrixWorld.elements;
-		let screenX = worldX * elements[0] + worldY * elements[1];
-		let screenY = worldX * elements[4] + worldY * elements[5];
-		const length = Math.sqrt(screenX * screenX + screenY * screenY);
-
-		if (length > 0.0001) {
-			screenX /= length;
-			screenY /= length;
-		} else {
-			screenX = -0.55;
-			screenY = 0.85;
-		}
-
-		uniform.value.set(screenX, screenY);
+		// Keep the full world-horizontal light vector in view coordinates. Its
+		// screen projection collapses near the horizon and loses the azimuth.
+		uniform.value.set(
+			worldX * elements[0] + worldY * elements[1],
+			worldX * elements[4] + worldY * elements[5],
+			worldX * elements[8] + worldY * elements[9]
+		);
 	}
 
 	function setReliefCameraParameters(uniforms, camera) {
@@ -66013,7 +66130,7 @@ void main() {
 				reliefStrength: { type: 'f', value: 1.0 },
 				reliefRadius: { type: 'f', value: 1.0 },
 				reliefEnabled: { type: 'f', value: 0.0 },
-				reliefLightDirection: { type: 'v2', value: new Vector2(-0.55, 0.85) },
+				reliefLightDirection: { type: 'v3', value: new Vector3(-0.55, 0.85, 0) },
 				reliefViewUp: { type: 'v3', value: new Vector3(0, 0, 1) },
 				reliefProjectionScale: { type: 'v2', value: new Vector2(1, 1) },
 				reliefPerspective: { type: 'f', value: 1.0 },
@@ -66092,7 +66209,7 @@ void main() {
 				reliefStrength: { type: 'f', value: 1.0 },
 				reliefRadius: { type: 'f', value: 1.0 },
 				reliefEnabled: { type: 'f', value: 0.0 },
-				reliefLightDirection: { type: 'v2', value: new Vector2(-0.55, 0.85) },
+				reliefLightDirection: { type: 'v3', value: new Vector3(-0.55, 0.85, 0) },
 				reliefViewUp: { type: 'v3', value: new Vector3(0, 0, 1) },
 				reliefProjectionScale: { type: 'v2', value: new Vector2(1, 1) },
 				reliefPerspective: { type: 'f', value: 1.0 },
