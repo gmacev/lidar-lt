@@ -94,7 +94,8 @@ export function ViewerHud({
                                         ? 'bottom-[3.25rem]'
                                         : 'bottom-[calc(clamp(240px,34dvh,360px)+0.5rem)]'
                                     : isSourceAttributionVisible
-                                      ? 'bottom-7 xl:bottom-4'
+                                      ? // Source bar is hidden on small screens, so only offset on sm+
+                                        'bottom-2 sm:bottom-7 xl:bottom-4'
                                       : 'bottom-2 xl:bottom-4'
                             }`}
                         >
@@ -164,7 +165,8 @@ export function ViewerHud({
                                         ? 'bottom-[3.25rem]'
                                         : 'bottom-[calc(clamp(240px,34dvh,360px)+0.5rem)]'
                                     : isSourceAttributionVisible
-                                      ? 'bottom-10'
+                                      ? // Source bar is hidden on small screens, so only offset on sm+
+                                        'bottom-2 sm:bottom-10'
                                       : 'bottom-2'
                             }`}
                         >

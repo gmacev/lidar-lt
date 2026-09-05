@@ -26,8 +26,8 @@ test.describe('viewer responsive layout', () => {
         await expect(page.getByTestId('viewer-sidebar')).toHaveAttribute('data-collapsed', 'true');
         await expect(page.getByTestId('viewer-tool-distance')).toHaveCount(0);
         await expect(page.getByTestId('viewer-tool-area')).toHaveCount(0);
-        await expect(page.getByTestId('viewer-tool-flood')).toBeVisible();
-        await expect(page.getByTestId('viewer-tool-annotations')).toBeVisible();
+        await expect(page.getByTestId('viewer-tool-flood')).toHaveCount(0);
+        await expect(page.getByTestId('viewer-tool-annotations')).toHaveCount(0);
     });
 
     test('UI hide and show toggles HUD visibility', async ({ page }) => {

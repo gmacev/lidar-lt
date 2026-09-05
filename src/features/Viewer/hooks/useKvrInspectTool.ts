@@ -43,6 +43,10 @@ const initialInspectState: KvrInspectState = {
     status: 'idle',
 };
 
+// Taps (not orbit drags) trigger inspection on touch screens.
+const TAP_MAX_DISTANCE_PX = 12;
+const TAP_MAX_DURATION_MS = 600;
+
 function roundCoordinate(value: number) {
     return Number(value.toFixed(3));
 }
@@ -191,20 +195,18 @@ export function useKvrInspectTool({
         let frameId = 0;
         let rendererElement: HTMLCanvasElement | null = null;
         let previousCursor = '';
+        let touchStart: { x: number; y: number; time: number } | null = null;
 
-        const handleMouseDown = (event: MouseEvent) => {
+        const inspectAt = (clientX: number, clientY: number) => {
             const viewer = viewerRef.current;
-            if (!viewer || !rendererElement || !isPlainLeftClick(event)) return;
+            if (!viewer || !rendererElement) return;
 
             const rect = rendererElement.getBoundingClientRect();
             const coordinate = getPickedCoordinate(viewer, {
-                x: event.clientX - rect.left,
-                y: event.clientY - rect.top,
+                x: clientX - rect.left,
+                y: clientY - rect.top,
             });
 
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
             setIsInspecting(false);
             setIsPopoverOpen(true);
 
@@ -221,6 +223,50 @@ export function useKvrInspectTool({
             void runInspection(coordinate);
         };
 
+        const handleMouseDown = (event: MouseEvent) => {
+            const viewer = viewerRef.current;
+            if (!viewer || !rendererElement || !isPlainLeftClick(event)) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            inspectAt(event.clientX, event.clientY);
+        };
+
+        // Touch screens never fire mousedown here: Potree preventDefaults
+        // touchstart/touchend, which suppresses compatibility mouse events.
+        // Detect single-finger taps instead; drags keep orbiting the camera.
+        const handleTouchStart = (event: TouchEvent) => {
+            touchStart =
+                event.touches.length === 1
+                    ? {
+                          x: event.changedTouches[0].clientX,
+                          y: event.changedTouches[0].clientY,
+                          time: performance.now(),
+                      }
+                    : null;
+        };
+
+        const handleTouchEnd = (event: TouchEvent) => {
+            const start = touchStart;
+            touchStart = null;
+            if (!start) return;
+            if (event.touches.length !== 0 || event.changedTouches.length !== 1) return;
+
+            const touch = event.changedTouches[0];
+            const distance = Math.hypot(touch.clientX - start.x, touch.clientY - start.y);
+            const duration = performance.now() - start.time;
+            if (distance > TAP_MAX_DISTANCE_PX || duration > TAP_MAX_DURATION_MS) return;
+
+            // No stopPropagation: Potree must still see touchend to finish its
+            // drag state cleanly.
+            inspectAt(touch.clientX, touch.clientY);
+        };
+
+        const handleTouchCancel = () => {
+            touchStart = null;
+        };
+
         const setRendererElement = (nextRendererElement: HTMLCanvasElement | null) => {
             if (rendererElement === nextRendererElement) return;
 
@@ -228,6 +274,9 @@ export function useKvrInspectTool({
                 rendererElement.removeEventListener('mousedown', handleMouseDown, {
                     capture: true,
                 });
+                rendererElement.removeEventListener('touchstart', handleTouchStart);
+                rendererElement.removeEventListener('touchend', handleTouchEnd);
+                rendererElement.removeEventListener('touchcancel', handleTouchCancel);
                 rendererElement.style.cursor = previousCursor;
             }
 
@@ -236,6 +285,13 @@ export function useKvrInspectTool({
 
             if (rendererElement) {
                 rendererElement.addEventListener('mousedown', handleMouseDown, { capture: true });
+                rendererElement.addEventListener('touchstart', handleTouchStart, {
+                    passive: true,
+                });
+                rendererElement.addEventListener('touchend', handleTouchEnd, {
+                    passive: true,
+                });
+                rendererElement.addEventListener('touchcancel', handleTouchCancel);
                 rendererElement.style.cursor = 'help';
             }
         };

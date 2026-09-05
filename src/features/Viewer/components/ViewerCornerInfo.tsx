@@ -48,26 +48,28 @@ export function ViewerCornerInfo({
 
     return (
         <div
-            className={`theme-surface theme-corner-info flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-x-2 gap-y-1 rounded-tl-sm border border-b-0 border-r-0 border-white/10 bg-void-black/65 px-1 py-0.5 text-[10px] font-medium leading-none text-white/70 ${className}`}
+            className={`theme-surface theme-corner-info flex max-w-[calc(100vw-1rem)] items-center gap-x-2 gap-y-1 overflow-hidden rounded-tl-sm border border-b-0 border-r-0 border-white/10 bg-void-black/65 px-1 py-0.5 text-[10px] font-medium leading-none text-white/70 ${className}`}
         >
             {showSourceDetails && (
-                <>
+                // Scale bar, coordinates and LiDAR source are desktop-only:
+                // hidden on small screens to avoid crowding the bottom bar.
+                <span className="hidden items-center gap-x-2 sm:contents">
                     <ViewerMapStatus viewerRef={viewerRef} />
                     <span aria-hidden="true" className="text-white/35">
                         {'\u00b7'}
                     </span>
                     <SourceAttribution dateRange={dateRange!} />
-                </>
+                </span>
             )}
             {showSourceDetails && mapLabelsEnabled && (
-                <span aria-hidden="true" className="text-white/35">
+                <span aria-hidden="true" className="hidden text-white/35 sm:inline">
                     {'\u00b7'}
                 </span>
             )}
             {mapLabelsEnabled && (
                 <span
                     data-testid="viewer-map-attribution"
-                    className="inline-flex items-center gap-1 whitespace-nowrap"
+                    className="inline-flex min-w-0 items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap"
                 >
                     <a
                         href="https://openfreemap.org/"

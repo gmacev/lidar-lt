@@ -348,6 +348,16 @@ const MOCK_POTREE_SCRIPT = String.raw`
       context.fillRect(0, 0, 800, 600);
       container.appendChild(this.renderer.domElement);
 
+      // Mirror production Potree: it preventDefaults touch events, which
+      // suppresses the compatibility mouse events mobile browsers would
+      // otherwise synthesize. Touch tools must handle touch events directly.
+      this.renderer.domElement.addEventListener('touchstart', (event) =>
+        event.preventDefault()
+      );
+      this.renderer.domElement.addEventListener('touchend', (event) =>
+        event.preventDefault()
+      );
+
       const camera = new window.THREE.PerspectiveCamera(60, 4 / 3, 0.1, 10000000);
       camera.position.set(581500, 6060500, 1300);
       camera.up.set(0, 1, 0);

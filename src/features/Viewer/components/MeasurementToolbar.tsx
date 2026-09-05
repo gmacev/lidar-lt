@@ -73,6 +73,10 @@ export function MeasurementToolbar({ className = '', tools }: MeasurementToolbar
               })`
             : undefined;
 
+    // All toolbar tools (measurements, flood simulation, annotations) require
+    // precise pointer input - hidden on touch/mobile devices.
+    if (isTouch) return null;
+
     return (
         <div data-testid="viewer-measurement-toolbar" className={`relative ${className}`}>
             <div
@@ -84,44 +88,38 @@ export function MeasurementToolbar({ className = '', tools }: MeasurementToolbar
                 }}
             >
                 <div ref={contentRef} className="flex flex-col items-end gap-1 pb-3">
-                    {/* Measurement tools only shown on non-touch devices */}
-                    {!isTouch && (
-                        <>
-                            <DistanceMeasurement
-                                onClick={tools.distance.onToggle}
-                                isActive={tools.distance.isMeasuring}
-                                totalDistance={tools.distance.totalDistance}
-                            />
-                            <AreaMeasurement
-                                onClick={tools.area.onToggle}
-                                isActive={tools.area.isMeasuring}
-                                totalArea={tools.area.totalArea}
-                            />
-                            <VolumeMeasurement
-                                onClick={tools.volume.onToggle}
-                                isActive={tools.volume.isMeasuring}
-                                totalVolume={tools.volume.totalVolume}
-                            />
-                            <CircleMeasurement
-                                onClick={tools.circle.onToggle}
-                                isActive={tools.circle.isMeasuring}
-                            />
-                            <AngleMeasurement
-                                onClick={tools.angle.onToggle}
-                                isActive={tools.angle.isMeasuring}
-                            />
-                            <AzimuthMeasurement
-                                onClick={tools.azimuth.onToggle}
-                                isActive={tools.azimuth.isMeasuring}
-                            />
-                            <HeightProfileMeasurement
-                                onClick={tools.profile.onToggle}
-                                isActive={tools.profile.isMeasuring}
-                            />
-                        </>
-                    )}
+                    <DistanceMeasurement
+                        onClick={tools.distance.onToggle}
+                        isActive={tools.distance.isMeasuring}
+                        totalDistance={tools.distance.totalDistance}
+                    />
+                    <AreaMeasurement
+                        onClick={tools.area.onToggle}
+                        isActive={tools.area.isMeasuring}
+                        totalArea={tools.area.totalArea}
+                    />
+                    <VolumeMeasurement
+                        onClick={tools.volume.onToggle}
+                        isActive={tools.volume.isMeasuring}
+                        totalVolume={tools.volume.totalVolume}
+                    />
+                    <CircleMeasurement
+                        onClick={tools.circle.onToggle}
+                        isActive={tools.circle.isMeasuring}
+                    />
+                    <AngleMeasurement
+                        onClick={tools.angle.onToggle}
+                        isActive={tools.angle.isMeasuring}
+                    />
+                    <AzimuthMeasurement
+                        onClick={tools.azimuth.onToggle}
+                        isActive={tools.azimuth.isMeasuring}
+                    />
+                    <HeightProfileMeasurement
+                        onClick={tools.profile.onToggle}
+                        isActive={tools.profile.isMeasuring}
+                    />
 
-                    {/* Flood simulation works on all devices */}
                     <FloodSimulationTool
                         isActive={tools.flood.isActive}
                         waterLevel={tools.flood.waterLevel}
@@ -134,7 +132,7 @@ export function MeasurementToolbar({ className = '', tools }: MeasurementToolbar
                         onReset={tools.flood.onReset}
                     />
 
-                    {/* Annotation tool works on all devices */}
+                    {/* Annotation tool */}
                     <AnnotationTool
                         annotations={tools.annotations.annotations}
                         isPanelOpen={tools.annotations.isPanelOpen}

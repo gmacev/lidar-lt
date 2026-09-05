@@ -82,6 +82,22 @@ test.describe('viewer KVR labels', () => {
         await page.getByTestId('viewer-tool-annotations').click();
         await expect(page.getByTestId('viewer-kvr-labels')).toHaveCount(0);
     });
+
+    test.describe('touch input', () => {
+        test.use({ hasTouch: true });
+
+        test('tap on the point cloud runs the inspection', async ({ page }) => {
+            await gotoMockedViewer(page);
+
+            await page.getByTestId('viewer-tool-kvr').click();
+            await page
+                .getByTestId('viewer-container')
+                .locator('canvas')
+                .tap({ position: { x: 400, y: 300 } });
+            await expect(page.getByTestId('viewer-kvr-popover')).toBeVisible();
+            await expect(page.getByTestId('viewer-kvr-labels')).toBeVisible();
+        });
+    });
 });
 
 async function runKvrInspection(page: import('@playwright/test').Page) {
