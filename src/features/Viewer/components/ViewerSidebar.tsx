@@ -32,7 +32,7 @@ interface ViewerSidebarProps {
     onProjectionChange: (projection: Projection) => void;
 }
 
-import { isMobile } from '@/common/utils/screenSize';
+import { isMobile, isTouchDevice } from '@/common/utils/screenSize';
 
 /**
  * Unified floating sidebar containing all viewer controls.
@@ -75,8 +75,29 @@ export function ViewerSidebar({
                 isCollapsed ? '-translate-x-full' : 'translate-x-0'
             }`}
         >
-            <div className="absolute left-[calc(100%+8px)] top-2">
+            <div className="absolute left-[calc(100%+8px)] top-2 flex w-56 flex-col items-start gap-1">
                 <FpsCounter />
+                {isTouchDevice() && (
+                    <div
+                        data-testid="viewer-mobile-notice"
+                        role="note"
+                        className="pointer-events-none flex items-start gap-2 rounded-lg border border-amber-400/30 bg-black/70 p-2 backdrop-blur-sm"
+                    >
+                        <Icon
+                            name="warningTriangle"
+                            size={16}
+                            className="mt-px shrink-0 text-amber-300"
+                        />
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                            <p className="text-[11px] font-bold leading-tight text-amber-200">
+                                {t('viewer.mobileNoticeTitle')}
+                            </p>
+                            <p className="text-[10px] leading-snug text-white/65">
+                                {t('viewer.mobileNoticeBody')}
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="flex w-80 flex-col border-r border-white/10 bg-glass-bg">

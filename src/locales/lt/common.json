@@ -204,6 +204,8 @@
         },
         "back": "Atgal",
         "resetDefaults": "Atstatyti",
+        "mobileNoticeTitle": "Ribotos galimybės mobiliuosiuose",
+        "mobileNoticeBody": "3D peržiūra sukurta kompiuteriui. Kai kuris funkcionalumas gali neveikti ar būti nepasiekiamas.",
         "controls": "Valdymas",
         "controlLeftClick": "🖱️ Kairysis: Slinkti",
         "controlRightClick": "🖱️ Dešinysis: Sukti",
