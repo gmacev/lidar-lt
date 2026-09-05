@@ -30,6 +30,8 @@ test.describe('viewer responsive layout', () => {
         await expect(page.getByTestId('viewer-tool-flood')).toHaveCount(0);
         await expect(page.getByTestId('viewer-tool-annotations')).toHaveCount(0);
         await expect(page.getByTestId('viewer-mobile-notice')).toBeVisible();
+        await page.getByTestId('viewer-mobile-notice-close').click();
+        await expect(page.getByTestId('viewer-mobile-notice')).toBeHidden();
     });
 
     test('UI hide and show toggles HUD visibility', async ({ page }) => {

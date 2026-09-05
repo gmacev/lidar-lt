@@ -206,6 +206,7 @@
         "resetDefaults": "Atstatyti",
         "mobileNoticeTitle": "Ribotos galimybės mobiliuosiuose",
         "mobileNoticeBody": "3D peržiūra sukurta kompiuteriui. Kai kuris funkcionalumas gali neveikti ar būti nepasiekiamas.",
+        "mobileNoticeDismiss": "Uždaryti pranešimą",
         "controls": "Valdymas",
         "controlLeftClick": "🖱️ Kairysis: Slinkti",
         "controlRightClick": "🖱️ Dešinysis: Sukti",

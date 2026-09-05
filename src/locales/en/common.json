@@ -206,6 +206,7 @@
         "resetDefaults": "Defaults",
         "mobileNoticeTitle": "Limited experience on mobile",
         "mobileNoticeBody": "The 3D viewer is built for desktop. Some functionality may not work or may be unavailable.",
+        "mobileNoticeDismiss": "Dismiss notice",
         "controls": "Controls",
         "controlLeftClick": "🖱️ Left click: Pan",
         "controlRightClick": "🖱️ Right click: Rotate",

@@ -12,6 +12,7 @@ import type {
     ViewerToolbarTools,
 } from '@/features/Viewer/hooks/useViewerTools';
 import { MeasurementToolbar } from './MeasurementToolbar';
+import { ViewerMobileNotice } from './ViewerMobileNotice';
 import { ViewerSidebar } from './ViewerSidebar';
 import { Compass } from './Compass';
 import { CoordinateSearchControl } from './CoordinateSearchControl';
@@ -208,6 +209,9 @@ export function ViewerHud({
                             </div>
                         </div>
                     )}
+
+                    {/* Touch-only limited-experience notice - viewport-pinned */}
+                    {!isLoading && !hasError && <ViewerMobileNotice />}
 
                     {/* Unified Sidebar - handles its own positioning */}
                     {!isLoading && !hasError && (
