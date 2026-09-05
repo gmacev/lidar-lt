@@ -26,7 +26,7 @@ function HomePage() {
     return (
         <>
             <SEOHead title={t('seo.homeTitle')} description={t('seo.homeDescription')} path="/" />
-            <div className="flex h-screen flex-col overflow-hidden bg-app-bg text-panel-text">
+            <div className="flex h-dvh flex-col overflow-hidden bg-app-bg text-panel-text">
                 <header className="theme-grid-chrome flex shrink-0 justify-center border-b border-panel-border p-4">
                     <div className="flex max-w-full items-center justify-center gap-3 sm:gap-4">
                         <img

@@ -545,12 +545,17 @@ html,
 body,
 #root {
     min-height: 100vh;
+    min-height: 100dvh;
     background-color: var(--color-void-black);
     color: white;
     font-family:
         system-ui,
         -apple-system,
         sans-serif;
+    /* App is viewport-locked: never let the document itself scroll or
+       rubber-band. On mobile this prevents the stuck scroll offset left
+       behind after the on-screen keyboard closes. */
+    overscroll-behavior: none;
 }
 
 * {

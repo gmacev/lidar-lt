@@ -22,7 +22,7 @@ export function GridSearchControl({
 
     return (
         <div
-            className={`absolute inset-x-2 bottom-2 z-10 sm:bottom-auto sm:left-4 sm:right-auto sm:top-4 sm:w-80 ${className}`}
+            className={`absolute inset-x-2 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-10 sm:bottom-auto sm:left-4 sm:right-auto sm:top-4 sm:w-80 ${className}`}
         >
             <GlassPanel variant="themed" className="flex flex-col gap-2">
                 <div className="relative">
