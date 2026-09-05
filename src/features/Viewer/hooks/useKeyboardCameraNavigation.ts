@@ -25,6 +25,7 @@ const NAVIGATION_KEYS = new Set([
 const MOVEMENT_SPEED_PER_RADIUS = 0.6;
 const ROTATION_SPEED_RADIANS = Math.PI / 6;
 const FAST_SPEED_MULTIPLIER = 2;
+const SLOW_SPEED_MULTIPLIER = 0.5;
 const MINIMUM_REFERENCE_RADIUS = 10;
 const MAXIMUM_FRAME_SECONDS = 0.05;
 
@@ -43,6 +44,13 @@ function hasAnyKey(pressedKeys: Set<string>, keys: Set<string>) {
     }
 
     return false;
+}
+
+function getSpeedMultiplier(event: KeyboardEvent) {
+    const fast = event.shiftKey ? FAST_SPEED_MULTIPLIER : 1;
+    const slow = event.ctrlKey ? SLOW_SPEED_MULTIPLIER : 1;
+
+    return fast * slow;
 }
 
 function orbitView(view: PotreeScene['view'], rotationRadians: number) {
@@ -64,7 +72,7 @@ function orbitView(view: PotreeScene['view'], rotationRadians: number) {
 /**
  * Navigates the Potree camera while Arrow, WASD, Q, or E keys are held.
  * Movement follows the current camera heading, rotation orbits the current pivot,
- * and holding Shift doubles both speeds.
+ * holding Shift doubles both speeds and holding Ctrl halves both speeds.
  */
 export function useKeyboardCameraNavigation({
     enabled = true,
@@ -156,12 +164,11 @@ export function useKeyboardCameraNavigation({
         };
 
         const handleKeyDown = (event: KeyboardEvent) => {
-            speedMultiplier = event.shiftKey ? FAST_SPEED_MULTIPLIER : 1;
+            speedMultiplier = getSpeedMultiplier(event);
 
             if (
                 !NAVIGATION_KEYS.has(event.code) ||
                 event.altKey ||
-                event.ctrlKey ||
                 event.metaKey ||
                 isInteractiveTarget(event.target)
             ) {
@@ -180,7 +187,7 @@ export function useKeyboardCameraNavigation({
         };
 
         const handleKeyUp = (event: KeyboardEvent) => {
-            speedMultiplier = event.shiftKey ? FAST_SPEED_MULTIPLIER : 1;
+            speedMultiplier = getSpeedMultiplier(event);
             if (!NAVIGATION_KEYS.has(event.code)) return;
 
             pressedKeys.delete(event.code);
