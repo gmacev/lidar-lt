@@ -5,6 +5,7 @@ import {
     parseCoordinateInput,
     type ParsedCoordinates,
 } from '@/common/utils/coordinates';
+import { normalizeGeographicName } from '@/features/GridMap/services/geographicSearchIndex';
 
 const GEOMETRY_EPSILON = 1e-10;
 
@@ -97,14 +98,17 @@ function computeMatchedIds(searchQuery: string, data: FeatureCollection | undefi
             if (typeof id === 'string') matches.add(id);
         });
     } else {
-        // Text Search
         const lowerQuery = query.toLowerCase().replace(/_/g, '/');
+        const tokens = normalizeGeographicName(query).split(' ').filter(Boolean);
         data.features.forEach((feature) => {
             const props = feature.properties as { id: string; name: string | null };
-            if (
-                props.id.toLowerCase().includes(lowerQuery) ||
-                props.name?.toLowerCase().includes(lowerQuery)
-            ) {
+            if (props.id.toLowerCase().includes(lowerQuery)) {
+                matches.add(props.id);
+                return;
+            }
+            if (tokens.length === 0 || !props.name) return;
+            const normalizedName = normalizeGeographicName(props.name);
+            if (tokens.every((token) => normalizedName.includes(token))) {
                 matches.add(props.id);
             }
         });
