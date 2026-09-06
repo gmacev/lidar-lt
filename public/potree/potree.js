@@ -58959,10 +58959,14 @@ vec2 terrainResponseSample(float depth, float sampleDepth, vec2 pixelOffset){
 	return vec2(depth - log2(virtualDepth), stretch);
 }
 
-float response(float depth){
-	float pixelRadius = radius;
+vec2 terrainResponse(float depth, float pixelRadius){
+	// Track absolute height variation as well as one-sided EDL. A zero EDL
+	// response alone can describe a real peak, not just a flat sprite interior.
+	// Track absolute height variation as well as one-sided EDL. A zero EDL
+	// response alone can describe a real peak, not just a flat sprite interior.
 	
 	float sum = 0.0;
+	float variation = 0.0;
 	
 	for(int i = 0; i < NEIGHBOUR_COUNT / 2; i++){
 		float depthA = texture2D(uEDLMap, edlSampleUv(pixelRadius * neighbours[i])).a;
@@ -58973,6 +58977,7 @@ float response(float depth){
 		bool validA = depthA != 0.0;
 		bool validB = depthB != 0.0;
 		float originalResponse = 0.0;
+		if(!validA || !validB) variation = 1.0;
 
 		if(depth == 0.0){
 			originalResponse = (validA ? 100.0 : 0.0) + (validB ? 100.0 : 0.0);
@@ -58982,6 +58987,7 @@ float response(float depth){
 				vec2 a = terrainResponseSample(depth, depthA, pixelRadius * neighbours[i]);
 				vec2 b = terrainResponseSample(depth, depthB, pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2]);
 				originalResponse = max(0.0, a.x / a.y) + max(0.0, b.x / b.y);
+				variation += abs(a.x) + abs(b.x);
 			}
 		}else if(validA){
 			originalResponse = max(0.0, depth - depthA);
@@ -58992,7 +58998,21 @@ float response(float depth){
 		sum += originalResponse;
 	}
 	
-	return sum / float(NEIGHBOUR_COUNT);
+	return vec2(sum / float(NEIGHBOUR_COUNT), variation);
+}
+
+float response(float depth){
+	vec2 fine = terrainResponse(depth, radius);
+	// Borrow a radius-normalized response only where the inner ring has no
+	// terrain evidence. The correction vanishes continuously towards top-down.
+	if(depth != 0.0 && reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && fine.y < 0.00001){
+		vec2 support = terrainResponse(depth, 2.0 * radius);
+		if(support.y < 1.0){
+			float weight = dot(reliefViewUp.xy, reliefViewUp.xy) * (1.0 - smoothstep(0.0, 0.00001, fine.y));
+			fine.x = mix(fine.x, 0.5 * support.x, weight);
+		}
+	}
+	return fine.x;
 }
 
 float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale){
@@ -59122,6 +59142,15 @@ float reliefShade(float depth){
 		vec3 coarseGradient = reliefGradient(depth, 2.0);
 		vec3 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
 		gradient = mix(fineGradient, smoothGradient, 0.65 * edlSlopeCompensation);
+	}
+	// Recover slope evidence when the small kernel stays inside a flat sprite.
+	if(reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && length(gradient) < 0.00001){
+		float variation = terrainResponse(depth, 2.0 * reliefRadius).y;
+		if(variation < 0.00001){
+			vec3 support = reliefGradient(depth, 4.0);
+			float weight = dot(reliefViewUp.xy, reliefViewUp.xy) * (1.0 - smoothstep(0.0, 0.00001, variation));
+			gradient = mix(gradient, support, weight);
+		}
 	}
 	gradient *= depthResponseNormalization(depth);
 	float amount = dot(gradient, normalize(reliefLightDirection)) * 220.0 * reliefStrength;
@@ -59254,10 +59283,10 @@ vec2 terrainResponseSample(float depth, float sampleDepth, vec2 pixelOffset){
 	return vec2(depth - log2(virtualDepth), stretch);
 }
 
-float response(float depth){
-	float pixelRadius = radius;
+vec2 terrainResponse(float depth, float pixelRadius){
 	
 	float sum = 0.0;
+	float variation = 0.0;
 	
 	for(int i = 0; i < NEIGHBOUR_COUNT / 2; i++){
 		float depthA = texture2D(uEDLColor, edlSampleUv(pixelRadius * neighbours[i])).a;
@@ -59270,6 +59299,7 @@ float response(float depth){
 		bool validA = depthA != 0.0;
 		bool validB = depthB != 0.0;
 		float originalResponse = 0.0;
+		if(!validA || !validB) variation = 1.0;
 
 		if(depth == 0.0){
 			originalResponse = (validA ? 100.0 : 0.0) + (validB ? 100.0 : 0.0);
@@ -59279,6 +59309,7 @@ float response(float depth){
 				vec2 a = terrainResponseSample(depth, depthA, pixelRadius * neighbours[i]);
 				vec2 b = terrainResponseSample(depth, depthB, pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2]);
 				originalResponse = max(0.0, a.x / a.y) + max(0.0, b.x / b.y);
+				variation += abs(a.x) + abs(b.x);
 			}
 		}else if(validA){
 			originalResponse = max(0.0, depth - depthA);
@@ -59289,7 +59320,21 @@ float response(float depth){
 		sum += originalResponse;
 	}
 	
-	return sum / float(NEIGHBOUR_COUNT);
+	return vec2(sum / float(NEIGHBOUR_COUNT), variation);
+}
+
+float response(float depth){
+	vec2 fine = terrainResponse(depth, radius);
+	// Borrow a radius-normalized response only where the inner ring has no
+	// terrain evidence. The correction vanishes continuously towards top-down.
+	if(depth != 0.0 && reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && fine.y < 0.00001){
+		vec2 support = terrainResponse(depth, 2.0 * radius);
+		if(support.y < 1.0){
+			float weight = dot(reliefViewUp.xy, reliefViewUp.xy) * (1.0 - smoothstep(0.0, 0.00001, fine.y));
+			fine.x = mix(fine.x, 0.5 * support.x, weight);
+		}
+	}
+	return fine.x;
 }
 
 float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale){
@@ -59428,6 +59473,15 @@ float reliefShade(float depth){
 		vec3 coarseGradient = reliefGradient(depth, 2.0);
 		vec3 smoothGradient = 0.55 * fineGradient + 0.3 * midGradient + 0.15 * coarseGradient;
 		gradient = mix(fineGradient, smoothGradient, 0.65 * edlSlopeCompensation);
+	}
+	// Recover slope evidence when the small kernel stays inside a flat sprite.
+	if(reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && length(gradient) < 0.00001){
+		float variation = terrainResponse(depth, 2.0 * reliefRadius).y;
+		if(variation < 0.00001){
+			vec3 support = reliefGradient(depth, 4.0);
+			float weight = dot(reliefViewUp.xy, reliefViewUp.xy) * (1.0 - smoothstep(0.0, 0.00001, variation));
+			gradient = mix(gradient, support, weight);
+		}
 	}
 	gradient *= depthResponseNormalization(depth);
 	float amount = dot(gradient, normalize(reliefLightDirection)) * 220.0 * reliefStrength;
