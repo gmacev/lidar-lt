@@ -228,9 +228,16 @@
         "errorDescription": "Nepavyko įkelti OpenStreetMap pavadinimų. Išjunkite ir vėl įjunkite sluoksnį."
     },
     "orthophotoCompare": {
-        "toggle": "Palyginti su naujausiu ortofoto",
+        "toggle": "Palyginti su ortofoto",
         "sliderLabel": "Ortofoto palyginimo padėtis",
         "projectionChanged": "Kamera perjungta į ortografinę projekciją",
+        "pickerTitle": "Ortofoto laikotarpis",
+        "periodYear": "Ortofoto {{range}}",
+        "loading": "Ieškomi šį sektorių dengiantys ortofoto laikotarpiai…",
+        "empty": "Šio sektoriaus nedengia joks ortofoto laikotarpis.",
+        "disable": "Išjungti",
+        "close": "Uždaryti",
+        "retry": "Bandyti dar kartą",
         "errorTitle": "Ortofoto nepasiekiamas",
         "errorDescription": "Nepavyko įkelti Geoportal ortofoto vaizdų. Išjunkite ir vėl įjunkite palyginimą."
     },

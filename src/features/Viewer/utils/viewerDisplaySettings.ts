@@ -60,6 +60,8 @@ const VIEWER_DISPLAY_SETTING_KEYS = [
     'fov',
     'hiddenClasses',
     'mapLabels',
+    'orthophotoCompare',
+    'orthoYear',
 ] as const satisfies readonly (keyof ViewerState)[];
 
 const viewerDisplaySettingsPick = {
@@ -86,6 +88,8 @@ const viewerDisplaySettingsPick = {
     fov: true,
     hiddenClasses: true,
     mapLabels: true,
+    orthophotoCompare: true,
+    orthoYear: true,
 } as const;
 
 export const ViewerDisplaySettingsSchema = ViewerStateSchema.pick(viewerDisplaySettingsPick);

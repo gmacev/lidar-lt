@@ -41,6 +41,7 @@ export const PREDEFINED_VIEWER_PRESETS: readonly PredefinedViewerPreset[] = [
             fov: 60,
             hiddenClasses: [7, 5, 6, 4, 3, 0],
             mapLabels: false,
+            orthophotoCompare: false,
         },
     }),
 ];

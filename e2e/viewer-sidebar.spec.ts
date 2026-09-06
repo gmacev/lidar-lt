@@ -124,9 +124,12 @@ test.describe('viewer sidebar settings', () => {
             reliefEnabled: 'false',
             hiddenClasses: '[2]',
             mapLabels: 'true',
+            orthophotoCompare: 'true',
+            orthoYear: '2021-2023',
         });
 
         await gotoMockedViewer(page, `/viewer/76_32?${search.toString()}`);
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toBeVisible();
 
         const predefinedCard = page.getByTestId('viewer-predefined-preset-terrain-enhancement');
         const managerChildren = page.getByTestId('viewer-preset-manager').locator(':scope > *');
@@ -161,7 +164,10 @@ test.describe('viewer sidebar settings', () => {
         await expectSearchParam(page, 'fov', '60');
         await expectSearchParam(page, 'hiddenClasses', '[7,5,6,4,3,0]');
         await expectSearchParam(page, 'mapLabels', 'false');
+        await expectSearchParam(page, 'orthophotoCompare', 'false');
+        await expectNoSearchParam(page, 'orthoYear');
         await expectNoSearchParam(page, 'intensityMax');
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveCount(0);
 
         await expect(page).toHaveURL(/\/viewer\/76_32/);
         await expectSearchParam(page, 'sectorName', 'VILNIUS (centras)');
@@ -187,6 +193,37 @@ test.describe('viewer sidebar settings', () => {
         );
         expect(storedPresets).toContain('"name":"My preset"');
         expect(storedPresets).not.toContain('terrain-enhancement');
+    });
+
+    test('user presets save and restore the orthophoto comparison', async ({ page }) => {
+        await gotoMockedViewer(page);
+
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        await expect(page.getByTestId('viewer-orthophoto-picker')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toBeVisible();
+        await expectSearchParam(page, 'orthophotoCompare', 'true');
+        await expectSearchParam(page, 'orthoYear', '2024-2026');
+
+        await page.getByPlaceholder('Preset name').fill('Ortho preset');
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
+        const userPreset = page.getByTestId('viewer-user-preset');
+        await expect(userPreset).toContainText('Ortho preset');
+
+        // Focusing the preset form dismisses the picker, so reopen it to exit compare mode.
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        await page.getByTestId('viewer-orthophoto-disable').click();
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveCount(0);
+        await expectNoSearchParam(page, 'orthophotoCompare');
+        await expectNoSearchParam(page, 'orthoYear');
+
+        await userPreset.getByRole('button', { name: 'Load preset Ortho preset' }).click();
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            '2024-2026'
+        );
+        await expectSearchParam(page, 'orthophotoCompare', 'true');
+        await expectSearchParam(page, 'orthoYear', '2024-2026');
     });
 
     test('localizes the built-in terrain preset in Lithuanian', async ({ page }) => {

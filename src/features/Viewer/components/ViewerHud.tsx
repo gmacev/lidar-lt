@@ -33,7 +33,8 @@ interface ViewerHudProps {
     markers: ViewerMarkersModel;
     mapLabelsEnabled: boolean;
     orthophotoCompareEnabled: boolean;
-    onOrthophotoCompareChange: (enabled: boolean) => void;
+    orthophotoButtonRef: RefObject<HTMLButtonElement | null>;
+    onOrthophotoToolClick: () => void;
     navigation: ViewerNavigationActions;
     onBack: () => void;
     onSidebarCollapsedChange: (collapsed: boolean) => void;
@@ -62,7 +63,8 @@ export function ViewerHud({
     markers,
     mapLabelsEnabled,
     orthophotoCompareEnabled,
-    onOrthophotoCompareChange,
+    orthophotoButtonRef,
+    onOrthophotoToolClick,
     navigation,
     onBack,
     onSidebarCollapsedChange,
@@ -191,8 +193,9 @@ export function ViewerHud({
                                     }
                                 />
                                 <OrthophotoCompareButton
+                                    ref={orthophotoButtonRef}
                                     enabled={orthophotoCompareEnabled}
-                                    onChange={onOrthophotoCompareChange}
+                                    onClick={onOrthophotoToolClick}
                                 />
                                 <GoogleMapsButton viewerRef={viewerRef} />
                                 <KvrInspectButton

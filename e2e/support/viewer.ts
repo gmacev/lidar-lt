@@ -494,6 +494,14 @@ const MOCK_ORTHOPHOTO_METADATA = {
         cols: 256,
         origin: { x: -5122000, y: 10000100 },
         lods: [
+            { level: 0, resolution: 793.7515875031751, scale: 3000000 },
+            { level: 1, resolution: 529.1677250021168, scale: 2000000 },
+            { level: 2, resolution: 264.5838625010584, scale: 1000000 },
+            { level: 3, resolution: 132.2919312505292, scale: 500000 },
+            { level: 4, resolution: 66.1459656252646, scale: 250000 },
+            { level: 5, resolution: 26.458386250105836, scale: 100000 },
+            { level: 6, resolution: 13.229193125052918, scale: 50000 },
+            { level: 7, resolution: 6.614596562526459, scale: 25000 },
             { level: 8, resolution: 2.116670900008467, scale: 8000 },
             { level: 9, resolution: 1.0583354500042335, scale: 4000 },
             { level: 10, resolution: 0.5291677250021167, scale: 2000 },
@@ -506,11 +514,42 @@ const MOCK_ORTHOPHOTO_METADATA = {
 const MOCK_ORTHOPHOTO_TILE_BASE64 =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
+const MOCK_ORTHOPHOTO_SERVICE_NAMES = [
+    'NZT/ORT10LT_2024_2026',
+    'NZT/ORT10LT_2021_2023',
+    'NZT/ORT10LT_2018_2020',
+    'NZT/ORT10LT_2015',
+    'NZT/ORT10LT_2012_2013',
+    'NZT/ORT10LT_2009_2010',
+    'NZT/ORT10LT_2005_2006',
+    'NZT/ORT10LT_1995_2001',
+];
+
+function getMockOrthophotoMapName(serviceName: string) {
+    // Mirrors production quirks: the 2015 service is named ORT10LT_2015 while
+    // its mapName covers 2015-2017, and the 1995 service spans 1995-1999.
+    const bareName = serviceName.replace(/^NZT\//, '');
+    if (bareName === 'ORT10LT_2015') return 'ORT10LT 2015-2017';
+    if (bareName === 'ORT10LT_1995_2001') return 'ORT10LT 1995-1999';
+    const match = serviceName.match(/ORT10LT_(\d{4})(?:_(\d{4}))?/);
+    if (!match) return serviceName;
+    const start = match[1];
+    const end = match[2] ?? start;
+    return `ORT10LT ${start}-${end}`;
+}
+
 interface MockViewerOptions {
     metadata?: MetadataMode;
     potree?: PotreeMode;
     mapLabels?: MapLabelsMode;
     orthophoto?: OrthophotoMode;
+    orthophotoMissingServices?: string[];
+    orthophotoExtraServices?: string[];
+    orthophotoMetadataOverrides?: Record<
+        string,
+        { xmin: number; ymin: number; xmax: number; ymax: number }
+    >;
+    orthophotoMissingFirstTileServices?: string[];
     sourceManifest?: object;
 }
 
@@ -519,20 +558,56 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
     const potreeMode = options.potree ?? 'mock';
     const mapLabelsMode = options.mapLabels ?? 'ok';
     const orthophotoMode = options.orthophoto ?? 'ok';
+    const missingServices = options.orthophotoMissingServices ?? [];
+    const extraServices = options.orthophotoExtraServices ?? [];
+    const metadataOverrides = options.orthophotoMetadataOverrides ?? {};
+    const missingFirstTileServices = options.orthophotoMissingFirstTileServices ?? [];
+    const firstTileBlocked = new Set<string>();
     let orthophotoTileRequest = 0;
 
-    await page.route('**/arcgis/rest/services/NZT/ORT_recent/MapServer**', async (route) => {
+    await page.route('**/arcgis/rest/services/NZT**', async (route) => {
         if (orthophotoMode === 'unavailable') {
             await route.fulfill({ status: 503, body: '' });
             return;
         }
 
-        if (route.request().url().includes('/tile/')) {
+        const url = route.request().url();
+
+        if (url.includes('/services/NZT?f=pjson')) {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    services: [...MOCK_ORTHOPHOTO_SERVICE_NAMES, ...extraServices].map((name) => ({
+                        name,
+                        type: 'MapServer',
+                    })),
+                }),
+            });
+            return;
+        }
+
+        if (url.includes('/tile/')) {
+            // The first tile requested for the service 404s; neighbors succeed.
+            const firstTileService = missingFirstTileServices.find((service) =>
+                url.includes(service)
+            );
+            if (firstTileService && !firstTileBlocked.has(firstTileService)) {
+                firstTileBlocked.add(firstTileService);
+                await route.fulfill({ status: 404, body: '' });
+                return;
+            }
+            if (missingServices.some((service) => url.includes(service))) {
+                await route.fulfill({ status: 404, body: '' });
+                return;
+            }
             orthophotoTileRequest += 1;
-            if (
-                orthophotoMode === 'tiles-unavailable' ||
-                (orthophotoMode === 'partial' && orthophotoTileRequest % 2 === 1)
-            ) {
+            if (orthophotoMode === 'tiles-unavailable' && !url.includes('/tile/5/')) {
+                // L5 probes succeed so the overlay mounts; only renderer tiles fail.
+                await route.fulfill({ status: 503, body: '' });
+                return;
+            }
+            if (orthophotoMode === 'partial' && orthophotoTileRequest % 2 === 1) {
                 await route.fulfill({ status: 503, body: '' });
                 return;
             }
@@ -544,10 +619,24 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
             return;
         }
 
+        const serviceMatch = url.match(/\/NZT\/([^/]+)\/MapServer/);
+        const bareServiceName = serviceMatch ? serviceMatch[1] : '';
+        const metadataOverride = bareServiceName ? metadataOverrides[bareServiceName] : undefined;
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify(MOCK_ORTHOPHOTO_METADATA),
+            body: JSON.stringify({
+                ...MOCK_ORTHOPHOTO_METADATA,
+                ...(metadataOverride
+                    ? {
+                          fullExtent: {
+                              ...MOCK_ORTHOPHOTO_METADATA.fullExtent,
+                              ...metadataOverride,
+                          },
+                      }
+                    : null),
+                mapName: serviceMatch ? getMockOrthophotoMapName(serviceMatch[1]) : '',
+            }),
         });
     });
 

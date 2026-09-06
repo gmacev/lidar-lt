@@ -28,10 +28,10 @@ import {
     getViewerWorldBounds,
 } from '@/features/Viewer/utils/viewerLabels';
 import {
-    fetchOrthophotoMetadata,
     getOrthophotoTileUrl,
     type OrthophotoMetadata,
 } from '@/features/Viewer/utils/orthophotoProvider';
+import type { OrthophotoServiceInfo } from '@/features/Viewer/utils/orthophotoCatalog';
 import {
     createOrthophotoTilePlan,
     type Lks94Bounds,
@@ -44,6 +44,7 @@ interface OrthophotoCompareOverlayProps {
     coverageReady: boolean;
     isViewerReady: boolean;
     onError: () => void;
+    service: OrthophotoServiceInfo;
     viewerRef: RefObject<PotreeViewer | null>;
 }
 
@@ -176,9 +177,10 @@ export function OrthophotoCompareOverlay({
     coverageReady,
     isViewerReady,
     onError,
+    service,
     viewerRef,
 }: OrthophotoCompareOverlayProps) {
-    const [metadata, setMetadata] = useState<OrthophotoMetadata | null>(null);
+    const metadata: OrthophotoMetadata = service.metadata;
     const [splitPercent, setSplitPercent] = useState(50);
     const { t } = useTranslation();
     const rootRef = useRef<HTMLDivElement>(null);
@@ -192,20 +194,6 @@ export function OrthophotoCompareOverlay({
     useEffect(() => {
         onErrorRef.current = onError;
     }, [onError]);
-
-    useEffect(() => {
-        const controller = new AbortController();
-        void fetchOrthophotoMetadata(controller.signal)
-            .then((value) => {
-                if (!controller.signal.aborted) setMetadata(value);
-            })
-            .catch((error: unknown) => {
-                if (controller.signal.aborted) return;
-                console.warn('Orthophoto metadata could not be loaded', error);
-                onErrorRef.current();
-            });
-        return () => controller.abort();
-    }, []);
 
     useEffect(() => {
         if (!isViewerReady) return;
@@ -230,7 +218,7 @@ export function OrthophotoCompareOverlay({
 
     useEffect(() => {
         const host = rendererHostRef.current;
-        if (!host || !metadata || !coverageReady || !isViewerReady) return;
+        if (!host || !coverageReady || !isViewerReady) return;
 
         const scene = new Scene();
         const renderer = new WebGLRenderer({ alpha: true, antialias: false });
@@ -342,7 +330,12 @@ export function OrthophotoCompareOverlay({
             };
             textureRecords.set(fragment.tileKey, record);
             const texture = textureLoader.load(
-                getOrthophotoTileUrl(fragment.level, fragment.row, fragment.column),
+                getOrthophotoTileUrl(
+                    service.baseUrl,
+                    fragment.level,
+                    fragment.row,
+                    fragment.column
+                ),
                 () => {
                     if (disposed) {
                         texture.dispose();
@@ -520,7 +513,7 @@ export function OrthophotoCompareOverlay({
             renderer.dispose();
             renderer.domElement.remove();
         };
-    }, [coverageBounds, coverageReady, isViewerReady, metadata, viewerRef]);
+    }, [coverageBounds, coverageReady, isViewerReady, metadata, service, viewerRef]);
 
     const updateSplitFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
         const rect = rootRef.current?.getBoundingClientRect();
@@ -582,6 +575,7 @@ export function OrthophotoCompareOverlay({
         <div
             ref={rootRef}
             data-testid="viewer-orthophoto-compare"
+            data-service={service.id}
             className="pointer-events-none absolute inset-0 z-[5] overflow-hidden"
         >
             <div

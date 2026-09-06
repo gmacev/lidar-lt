@@ -1,5 +1,6 @@
-const ORTHOPHOTO_PROVIDER_BASE_URL =
-    'https://www.geoportal.lt/arcgis/rest/services/NZT/ORT_recent/MapServer';
+export const ORTHOPHOTO_ARCGIS_ROOT = 'https://www.geoportal.lt/arcgis/rest/services';
+
+export const ORTHOPHOTO_CATALOG_URL = `${ORTHOPHOTO_ARCGIS_ROOT}/NZT?f=pjson`;
 
 export interface OrthophotoLod {
     level: number;
@@ -8,6 +9,7 @@ export interface OrthophotoLod {
 }
 
 export interface OrthophotoMetadata {
+    mapName: string;
     fullExtent: {
         minX: number;
         minY: number;
@@ -25,6 +27,7 @@ export interface OrthophotoMetadata {
 
 interface ArcGisMetadata {
     error?: { message?: string };
+    mapName?: unknown;
     fullExtent?: {
         xmin?: number;
         ymin?: number;
@@ -40,7 +43,7 @@ interface ArcGisMetadata {
     };
 }
 
-let metadataCache: OrthophotoMetadata | null = null;
+const metadataCache = new Map<string, OrthophotoMetadata>();
 
 function requireFiniteNumber(value: unknown, field: string) {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
@@ -74,6 +77,7 @@ function normalizeMetadata(value: ArcGisMetadata): OrthophotoMetadata {
         .sort((first, second) => first.level - second.level);
 
     return {
+        mapName: typeof value.mapName === 'string' ? value.mapName : '',
         fullExtent: {
             minX: requireFiniteNumber(extent.xmin, 'fullExtent.xmin'),
             minY: requireFiniteNumber(extent.ymin, 'fullExtent.ymin'),
@@ -90,10 +94,11 @@ function normalizeMetadata(value: ArcGisMetadata): OrthophotoMetadata {
     };
 }
 
-export async function fetchOrthophotoMetadata(signal: AbortSignal) {
-    if (metadataCache) return metadataCache;
+export async function fetchOrthophotoMetadata(baseUrl: string, signal?: AbortSignal) {
+    const cached = metadataCache.get(baseUrl);
+    if (cached) return cached;
 
-    const response = await fetch(`${ORTHOPHOTO_PROVIDER_BASE_URL}?f=pjson`, {
+    const response = await fetch(`${baseUrl}?f=pjson`, {
         headers: { Accept: 'application/json' },
         signal,
     });
@@ -102,10 +107,10 @@ export async function fetchOrthophotoMetadata(signal: AbortSignal) {
     }
 
     const metadata = normalizeMetadata((await response.json()) as ArcGisMetadata);
-    metadataCache = metadata;
+    metadataCache.set(baseUrl, metadata);
     return metadata;
 }
 
-export function getOrthophotoTileUrl(level: number, row: number, column: number) {
-    return `${ORTHOPHOTO_PROVIDER_BASE_URL}/tile/${level}/${row}/${column}`;
+export function getOrthophotoTileUrl(baseUrl: string, level: number, row: number, column: number) {
+    return `${baseUrl}/tile/${level}/${row}/${column}`;
 }

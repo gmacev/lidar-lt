@@ -193,6 +193,9 @@ export const ViewerStateSchema = z.object({
     mapLabels: optionalSearchBoolean,
     // Optional Geoportal orthophoto/LiDAR comparison overlay
     orthophotoCompare: optionalSearchBoolean,
+    // Pinned orthophoto vintage (year range id, e.g. "2024-2026"). When absent,
+    // the newest vintage covering the sector is used.
+    orthoYear: z.string().optional(),
     // Sector metadata
     sectorName: z.string().optional(),
     // Shareable point markers encoded as x,y,z;x,y,z

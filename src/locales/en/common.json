@@ -228,9 +228,16 @@
         "errorDescription": "OpenStreetMap labels could not be loaded. Turn the layer off and on to retry."
     },
     "orthophotoCompare": {
-        "toggle": "Compare with current orthophoto",
+        "toggle": "Compare with orthophoto",
         "sliderLabel": "Orthophoto comparison position",
         "projectionChanged": "Camera switched to orthographic projection",
+        "pickerTitle": "Orthophoto period",
+        "periodYear": "Orthophoto {{range}}",
+        "loading": "Looking for orthophoto periods covering this sector…",
+        "empty": "No orthophoto period covers this sector.",
+        "disable": "Turn off",
+        "close": "Close",
+        "retry": "Try again",
         "errorTitle": "Orthophoto unavailable",
         "errorDescription": "Geoportal orthophoto imagery could not be loaded. Turn comparison off and on to retry."
     },
