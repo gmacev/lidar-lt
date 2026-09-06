@@ -58576,6 +58576,9 @@ varying vec3 	vPosition;
 
 #if defined(use_edl)
 float edlPointDepth(){
+	#if defined(edl_top_down)
+		return vLogDepth;
+	#else
 	// Ground points represent a terrain patch, not a camera-facing depth step.
 	// Extend each ground sample horizontally across its sprite for shading only;
 	// geometry, visibility, picking and non-ground points keep their real depth.
@@ -58605,6 +58608,7 @@ float edlPointDepth(){
 		linearDepth += dot(up.xy, (sampleNdc - centerNdc) / projectionScale) / up.z;
 	}
 	return linearDepth > 0.0 ? log2(linearDepth) : vLogDepth;
+	#endif
 }
 #endif
 
@@ -59240,6 +59244,16 @@ uniform mat4 uProj;
 uniform sampler2D uEDLColor;
 uniform sampler2D uEDLDepth;
 
+// Shared by the EDL and relief rings for this fragment only.
+float centerLinearDepth;
+vec2 centerNdc;
+vec3 centerViewPosition;
+float centerPixelFootprint;
+vec3 centerRay;
+float centerPlaneDenominator;
+vec3 reliefGroundX;
+vec3 reliefGroundY;
+
 vec2 edlSampleUv(vec2 pixelOffset){
 	// Nearest-filtered depth lookups must land on stable texel centers.
 	vec2 samplePixel = floor(gl_FragCoord.xy + pixelOffset) + vec2(0.5);
@@ -59255,7 +59269,7 @@ float depthResponseNormalization(float depth){
 	// moves. Orthographic depth differences are not: they vary with the ratio
 	// between view-space depth and the frustum radius. projectionScale.x is the
 	// reciprocal of that radius, so this restores the same screen-space response.
-	return max(0.0001, exp2(depth) * abs(reliefProjectionScale.x));
+	return max(0.0001, centerLinearDepth * abs(reliefProjectionScale.x));
 }
 
 vec3 reliefViewPosition(float depth, vec2 pixelOffset){
@@ -59274,12 +59288,12 @@ vec2 terrainResponseSample(float depth, float sampleDepth, vec2 pixelOffset){
 	if(length(reliefViewUp.xy) < 0.0001){
 		return vec2(depth - sampleDepth, 1.0);
 	}
-	vec3 offset = reliefViewPosition(sampleDepth, pixelOffset) - reliefViewPosition(depth, vec2(0.0));
+	vec3 offset = reliefViewPosition(sampleDepth, pixelOffset) - centerViewPosition;
 	float height = dot(reliefViewUp, offset);
 	vec3 groundOffset = offset - height * reliefViewUp;
-	float footprint = reliefPixelFootprint(depth) * length(pixelOffset);
+	float footprint = centerPixelFootprint * length(pixelOffset);
 	float stretch = max(1.0, length(groundOffset) / max(0.000001, footprint));
-	float virtualDepth = max(0.000001, exp2(depth) - height);
+	float virtualDepth = max(0.000001, centerLinearDepth - height);
 	return vec2(depth - log2(virtualDepth), stretch);
 }
 
@@ -59339,21 +59353,17 @@ float response(float depth){
 
 float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale){
 	vec2 pixelOffset = reliefRadius * radiusScale * direction;
-	vec2 centerNdc = edlSampleUv(vec2(0.0)) * 2.0 - 1.0;
 	vec2 neighborNdc = edlSampleUv(pixelOffset) * 2.0 - 1.0;
-	float linearDepth = exp2(centerDepth);
 
 	if(reliefPerspective > 0.5){
-		vec3 centerRay = vec3(centerNdc / reliefProjectionScale, -1.0);
 		vec3 neighborRay = vec3(neighborNdc / reliefProjectionScale, -1.0);
-		float centerDenominator = dot(reliefViewUp, centerRay);
 		float neighborDenominator = dot(reliefViewUp, neighborRay);
 
-		if(abs(centerDenominator) < 0.0001 || abs(neighborDenominator) < 0.0001){
+		if(abs(centerPlaneDenominator) < 0.0001 || abs(neighborDenominator) < 0.0001){
 			return centerDepth;
 		}
 
-		float depthRatio = centerDenominator / neighborDenominator;
+		float depthRatio = centerPlaneDenominator / neighborDenominator;
 		return depthRatio > 0.0 ? centerDepth + log2(depthRatio) : centerDepth;
 	}
 
@@ -59362,7 +59372,7 @@ float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale)
 	}
 
 	vec2 viewOffset = (neighborNdc - centerNdc) / reliefProjectionScale;
-	float neighborDepth = linearDepth + dot(reliefViewUp.xy, viewOffset) / reliefViewUp.z;
+	float neighborDepth = centerLinearDepth + dot(reliefViewUp.xy, viewOffset) / reliefViewUp.z;
 	return neighborDepth > 0.0 ? log2(neighborDepth) : centerDepth;
 }
 
@@ -59370,10 +59380,10 @@ float horizontalPlaneDepth(float centerDepth, vec2 direction, float radiusScale)
 // mistaking foreshortened screen-depth differences for steeper terrain.
 void accumulateReliefSlope(float depth, float sampleDepth, vec2 pixelOffset, float weight,
 	vec3 groundX, vec3 groundY, inout vec3 covariance, inout vec2 moments){
-	vec3 offset = reliefViewPosition(sampleDepth, pixelOffset) - reliefViewPosition(depth, vec2(0.0));
+	vec3 offset = reliefViewPosition(sampleDepth, pixelOffset) - centerViewPosition;
 	float height = dot(reliefViewUp, offset);
 	vec2 ground = vec2(dot(offset, groundX), dot(offset, groundY));
-	float difference = log2(max(0.000001, exp2(depth) - height)) - depth;
+	float difference = log2(max(0.000001, centerLinearDepth - height)) - depth;
 	covariance += weight * vec3(ground.x * ground.x, ground.x * ground.y, ground.y * ground.y);
 	moments += weight * ground * difference;
 }
@@ -59407,12 +59417,8 @@ vec3 reliefGradient(float depth, float radiusScale){
 	bool validBr = br != 0.0;
 
 	if(length(reliefViewUp.xy) >= 0.0001){
-		vec3 groundX = vec3(1.0, 0.0, 0.0) - reliefViewUp.x * reliefViewUp;
-		if(length(groundX) < 0.0001){
-			groundX = vec3(0.0, 1.0, 0.0) - reliefViewUp.y * reliefViewUp;
-		}
-		groundX = normalize(groundX);
-		vec3 groundY = normalize(cross(reliefViewUp, groundX));
+		vec3 groundX = reliefGroundX;
+		vec3 groundY = reliefGroundY;
 		vec3 covariance = vec3(0.0);
 		vec2 moments = vec2(0.0);
 		if(validTl) accumulateReliefSlope(depth, tl, pixelRadius * vec2(-1.0, 1.0), 1.0, groundX, groundY, covariance, moments);
@@ -59429,7 +59435,7 @@ vec3 reliefGradient(float depth, float radiusScale){
 		}
 		vec2 slope = vec2(covariance.z * moments.x - covariance.y * moments.y,
 			covariance.x * moments.y - covariance.y * moments.x) / determinant;
-		return 8.0 * reliefRadius * reliefPixelFootprint(depth) * (slope.x * groundX + slope.y * groundY);
+		return 8.0 * reliefRadius * centerPixelFootprint * (slope.x * groundX + slope.y * groundY);
 	}
 
 
@@ -59496,6 +59502,26 @@ void main(){
 	
 	float depth = cEDL.a;
 	depth = (depth == 1.0) ? 0.0 : depth;
+	if(depth == 0.0){
+		discard;
+	}
+	centerLinearDepth = exp2(depth);
+	if(reliefEnabled > 0.5 || length(reliefViewUp.xy) >= 0.0001){
+		centerNdc = edlSampleUv(vec2(0.0)) * 2.0 - 1.0;
+		vec2 centerXy = centerNdc / reliefProjectionScale;
+		centerViewPosition = vec3(reliefPerspective > 0.5 ? centerXy * centerLinearDepth : centerXy, -centerLinearDepth);
+		centerPixelFootprint = reliefPixelFootprint(depth);
+		centerRay = vec3(centerXy, -1.0);
+		centerPlaneDenominator = dot(reliefViewUp, centerRay);
+	}
+	if(reliefEnabled > 0.5 && length(reliefViewUp.xy) >= 0.0001){
+		reliefGroundX = vec3(1.0, 0.0, 0.0) - reliefViewUp.x * reliefViewUp;
+		if(length(reliefGroundX) < 0.0001){
+			reliefGroundX = vec3(0.0, 1.0, 0.0) - reliefViewUp.y * reliefViewUp;
+		}
+		reliefGroundX = normalize(reliefGroundX);
+		reliefGroundY = normalize(cross(reliefViewUp, reliefGroundX));
+	}
 	// Terrain-space sampling already corrects projection distortion. Further
 	// angle-based slope suppression or a brightness floor would wash out EDL.
 	float res = response(depth) * depthResponseNormalization(depth);
@@ -59515,10 +59541,6 @@ void main(){
 		float fragDepth = (pz + 1.0) / 2.0;
 
 		gl_FragDepthEXT = fragDepth;
-	}
-
-	if(depth == 0.0){
-		discard;
 	}
 
 }
@@ -61006,21 +61028,27 @@ void main() {
 			material.uniforms.octreeSize.value = this.pcoGeometry.boundingBox.getSize(new Vector3()).x;
 		}
 
-		computeVisibilityTextureData(nodes, camera) {
+		computeVisibilityTextureData(nodes, camera, cacheKey = this) {
 
 			if (Potree.measureTimings) performance.mark("computeVisibilityTextureData-start");
 
-			if (!this._visibilityTextureScratch) {
+			if (!this._visibilityTextureCaches) {
+				this._visibilityTextureCaches = new WeakMap();
+			}
+
+			if (!this._visibilityTextureCaches.has(cacheKey)) {
 				const data = new Uint8Array(0);
 				const visibleNodeTextureOffsets = new Map();
-				this._visibilityTextureScratch = {
+				this._visibilityTextureCaches.set(cacheKey, {
 					data,
+					inputs: new Map(),
 					nodes: [],
 					nodeMap: new Map(),
 					offsetsToChild: [],
 					visibleNodeTextureOffsets,
 					result: {
 						data,
+						version: 0,
 						offsets: visibleNodeTextureOffsets
 					},
 					sort: function (a, b) {
@@ -61031,10 +61059,37 @@ void main() {
 						if (na > nb) return 1;
 						return 0;
 					}
-				};
+				});
 			}
 
-			const scratch = this._visibilityTextureScratch;
+			const scratch = this._visibilityTextureCaches.get(cacheKey);
+			// Membership, names and density determine the texture; camera and draw
+			// order do not. Keep picking materials separate from the display cache.
+			let unchanged = scratch.result.version > 0 && scratch.inputs.size === nodes.length;
+			for (let i = 0; unchanged && i < nodes.length; i++) {
+				const node = nodes[i];
+				const previous = scratch.inputs.get(node);
+				unchanged = previous !== undefined
+					&& previous.name === node.name
+					&& previous.geometryName === node.geometryNode.name
+					&& Object.is(previous.density, node.geometryNode.density);
+			}
+			if (unchanged) {
+				if (Potree.measureTimings) {
+					performance.mark("computeVisibilityTextureData-end");
+					performance.measure("render.computeVisibilityTextureData", "computeVisibilityTextureData-start", "computeVisibilityTextureData-end");
+				}
+				return scratch.result;
+			}
+			scratch.inputs.clear();
+			for (const node of nodes) {
+				scratch.inputs.set(node, {
+					name: node.name,
+					geometryName: node.geometryNode.name,
+					density: node.geometryNode.density,
+				});
+			}
+			scratch.result.version++;
 			const requiredDataLength = nodes.length * 4;
 			if (scratch.data.length < requiredDataLength) {
 				scratch.data = new Uint8Array(requiredDataLength);
@@ -63556,6 +63611,7 @@ void main() {
 			this.buffers.clear();
 			this.shaders.clear();
 			this.textures.clear();
+			this.visibilityTextureStates = new WeakMap();
 			this.glTypeMapping.clear();
 			this.glTypeMapping.set(Float32Array, this.gl.FLOAT);
 			this.glTypeMapping.set(Uint8Array, this.gl.UNSIGNED_BYTE);
@@ -64070,12 +64126,25 @@ void main() {
 					if (vnNodes.length > maxVisibleNodes) {
 						vnNodes = vnNodes.slice(0, maxVisibleNodes);
 					}
-					visibilityTextureData = octree.computeVisibilityTextureData(vnNodes, camera);
+					visibilityTextureData = octree.computeVisibilityTextureData(vnNodes, camera, material);
 
 					const vnt = material.visibleNodesTexture;
 					const data = vnt.image.data;
-					data.set(visibilityTextureData.data);
-					vnt.needsUpdate = true;
+					const previous = this.visibilityTextureStates.get(vnt);
+					if (visibilityTextureData.version === undefined || !previous
+						|| previous.result !== visibilityTextureData
+						|| previous.version !== visibilityTextureData.version
+						|| previous.data !== data
+						|| previous.textureVersion !== vnt.version) {
+						data.set(visibilityTextureData.data);
+						vnt.needsUpdate = true;
+						this.visibilityTextureStates.set(vnt, {
+							result: visibilityTextureData,
+							version: visibilityTextureData.version,
+							data,
+							textureVersion: vnt.version,
+						});
+					}
 
 				}
 			}
@@ -64100,6 +64169,10 @@ void main() {
 				let hasReturnNumber = false;
 				let hasNumberOfReturns = false;
 				let hasPointSourceId = false;
+				// Stay well inside the shader's 0.0001 top-down threshold so
+				// float uniform rounding cannot disable an active terrain correction.
+				const edlTopDown = material.useEDL
+					&& Math.hypot(view.elements[8], view.elements[9]) < 0.00005;
 
 				if (octree.pcoGeometry.root.isLoaded()) {
 					let attributes = octree.pcoGeometry.root.geometry.attributes;
@@ -64121,7 +64194,8 @@ void main() {
 					|| variant.hasGpsTime !== hasGpsTime
 					|| variant.hasReturnNumber !== hasReturnNumber
 					|| variant.hasNumberOfReturns !== hasNumberOfReturns
-					|| variant.hasPointSourceId !== hasPointSourceId;
+					|| variant.hasPointSourceId !== hasPointSourceId
+					|| variant.edlTopDown !== edlTopDown;
 
 				if (variantChanged) {
 
@@ -64136,6 +64210,9 @@ void main() {
 
 					if (hasGpsTime) {
 						defines.push("#define clip_gps_enabled");
+					}
+					if (edlTopDown) {
+						defines.push("#define edl_top_down");
 					}
 					if (hasReturnNumber) {
 						defines.push("#define clip_return_number_enabled");
@@ -64178,6 +64255,7 @@ void main() {
 						hasReturnNumber,
 						hasNumberOfReturns,
 						hasPointSourceId,
+						edlTopDown,
 					};
 
 				}
@@ -71669,7 +71747,6 @@ void main() {
 
 			this.edlMaterial = null;
 
-			this.rtRegular;
 			this.rtEDL;
 
 			this.gl = viewer.renderer.getContext();
@@ -71696,12 +71773,6 @@ void main() {
 				depthTexture: new DepthTexture(undefined, undefined, UnsignedIntType)
 			});
 
-			this.rtRegular = new WebGLRenderTarget(1024, 1024, {
-				minFilter: NearestFilter,
-				magFilter: NearestFilter,
-				format: RGBAFormat,
-				depthTexture: new DepthTexture(undefined, undefined, UnsignedIntType)
-			});
 		};
 
 		resize(width, height) {
@@ -71711,7 +71782,6 @@ void main() {
 			}
 
 			this.rtEDL.setSize(width, height);
-			this.rtRegular.setSize(width, height);
 		}
 
 		makeScreenshot(camera, size, callback) {
@@ -71778,9 +71848,6 @@ void main() {
 
 			renderer.setRenderTarget(this.rtEDL);
 			renderer.clear(true, true, true);
-
-			renderer.setRenderTarget(this.rtRegular);
-			renderer.clear(true, true, false);
 
 			renderer.setRenderTarget(oldTarget);
 		}
@@ -71950,7 +72017,6 @@ void main() {
 
 			}
 
-			viewer.dispatchEvent({ type: "render.pass.scene", viewer: viewer, renderTarget: this.rtRegular });
 			viewer.renderer.setRenderTarget(null);
 			viewer.renderer.render(viewer.scene.scene, camera);
 
