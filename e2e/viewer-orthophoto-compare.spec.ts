@@ -391,6 +391,22 @@ test.describe('viewer orthophoto comparison', () => {
 
     test('shows one non-blocking error when every visible tile fails', async ({ page }) => {
         await installMockViewer(page, { orthophoto: 'tiles-unavailable' });
+        let releaseRecentTiles!: () => void;
+        const recentTilesGate = new Promise<void>((resolve) => {
+            releaseRecentTiles = resolve;
+        });
+        // Registered last so it runs before the default handlers: hold
+        // recent imagery tiles until the continuous mosaic is observed, so
+        // the runtime fallback cannot flip to dated imagery first and make
+        // the initial assertion racy.
+        await page.route(/\/NZT\/ORT_recent\/MapServer\/tile\//, async (route) => {
+            if (route.request().url().includes('/tile/5/')) {
+                await route.fallback();
+                return;
+            }
+            await recentTilesGate;
+            await route.fallback();
+        });
         await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
 
         await expectViewerReady(page);
@@ -402,6 +418,7 @@ test.describe('viewer orthophoto comparison', () => {
         );
         const renderer = page.getByTestId('viewer-orthophoto-renderer');
         await expect(renderer.locator('canvas')).toBeVisible();
+        releaseRecentTiles();
         await expect
             .poll(async () => Number((await renderer.getAttribute('data-failed-tiles')) ?? 0))
             .toBeGreaterThan(0);
