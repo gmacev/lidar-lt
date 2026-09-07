@@ -117,9 +117,9 @@ export function GridVisualizer() {
                 initialViewState={{
                     longitude: 23.8813,
                     latitude: 55.1694,
-                    zoom: 6,
+                    zoom: 6.8,
                 }}
-                zoomSnap={1}
+                minZoom={GEOPORTAL_MIN_MAP_ZOOM}
                 maxZoom={GEOPORTAL_MAX_MAP_ZOOM}
                 style={{ width: '100%', height: '100%' }}
                 mapStyle={EMPTY_MAP_STYLE}

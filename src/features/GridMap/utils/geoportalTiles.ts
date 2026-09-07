@@ -2,7 +2,7 @@ import maplibregl, { type AddProtocolAction } from 'maplibre-gl';
 
 const GEOPORTAL_PROTOCOL = 'geoportal';
 const GEOPORTAL_TILE_BASE_URL =
-    'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile';
+    'https://www.geoportal.lt/mapproxy/rest/services/gisc_pagrindinis_wm/MapServer/tile';
 
 export const GEOPORTAL_MIN_MAP_ZOOM = 6;
 export const GEOPORTAL_MAX_MAP_ZOOM = 17;

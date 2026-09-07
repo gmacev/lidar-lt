@@ -13,10 +13,10 @@ test.describe('Geoportal basemap tile mapping', () => {
         const tileUrls = buildGeoportalTileUrls({ zoom: 7, x: 72, y: 40 });
 
         expect(tileUrls).toEqual([
-            'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile/2/80/144',
-            'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile/2/80/145',
-            'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile/2/81/144',
-            'https://www.geoportal.lt/arcgis/rest/services/geoportal_public/background_Lietuva-102100/MapServer/tile/2/81/145',
+            'https://www.geoportal.lt/mapproxy/rest/services/gisc_pagrindinis_wm/MapServer/tile/2/80/144',
+            'https://www.geoportal.lt/mapproxy/rest/services/gisc_pagrindinis_wm/MapServer/tile/2/80/145',
+            'https://www.geoportal.lt/mapproxy/rest/services/gisc_pagrindinis_wm/MapServer/tile/2/81/144',
+            'https://www.geoportal.lt/mapproxy/rest/services/gisc_pagrindinis_wm/MapServer/tile/2/81/145',
         ]);
         expect(GEOPORTAL_IMAGE_SIZE / GEOPORTAL_LOGICAL_TILE_SIZE).toBe(2);
 
