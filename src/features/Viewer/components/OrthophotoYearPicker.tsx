@@ -8,6 +8,7 @@ import { ToolPopover } from './ToolPopover';
 interface OrthophotoYearPickerProps {
     anchorRef: RefObject<HTMLButtonElement | null>;
     contentRef: RefObject<HTMLDivElement | null>;
+    datedReady: boolean;
     isOpen: boolean;
     onClose: () => void;
     onDisable: () => void;
@@ -21,6 +22,7 @@ interface OrthophotoYearPickerProps {
 export function OrthophotoYearPicker({
     anchorRef,
     contentRef,
+    datedReady,
     isOpen,
     onClose,
     onDisable,
@@ -127,12 +129,27 @@ export function OrthophotoYearPicker({
                                                 <span className="size-1.5 rounded-full bg-neon-amber" />
                                             )}
                                         </span>
-                                        {t('orthophotoCompare.periodYear', {
-                                            range: service.rangeLabel,
-                                        })}
+                                        {service.kind === 'recent'
+                                            ? t('orthophotoCompare.recent')
+                                            : t('orthophotoCompare.periodYear', {
+                                                  range: service.rangeLabel,
+                                              })}
                                     </button>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {status === 'ready' && !datedReady && (
+                        <div
+                            data-testid="viewer-orthophoto-picker-loading-more"
+                            className="mt-1 flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1.5"
+                            aria-live="polite"
+                        >
+                            <div className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-white/15 border-t-neon-amber" />
+                            <p className="text-[13px] leading-5 text-white/60">
+                                {t('orthophotoCompare.loadingMore')}
+                            </p>
                         </div>
                     )}
                 </div>

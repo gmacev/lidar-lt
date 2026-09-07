@@ -49,6 +49,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const orthophotoButtonRef = useRef<HTMLButtonElement | null>(null);
     const orthophotoPickerRef = useRef<HTMLDivElement | null>(null);
     const orthophotoErrorReportedRef = useRef<string | null>(null);
+    const recentFailedRef = useRef(false);
     const [projection, setProjection] = useState<Projection>(
         initialState.projection ?? 'PERSPECTIVE'
     );
@@ -142,9 +143,25 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         enabled: orthophotoCompareEnabled,
         viewerRef,
     });
-    const selectedOrthophotoService = orthophotoCompareEnabled
+    const { datedReady, recentReady } = orthophotoCatalog;
+    const resolvedOrthophotoService = orthophotoCompareEnabled
         ? findOrthophotoService(orthophotoCatalog.services, initialState.orthoYear)
         : null;
+    // An explicit choice that resolves to nothing stays unresolved while
+    // either source is still loading, instead of flashing the wrong vintage.
+    // The default is the continuous mosaic, so it waits for recent rather
+    // than flashing a dated vintage that won the discovery race.
+    let selectedOrthophotoService = resolvedOrthophotoService;
+    if (selectedOrthophotoService) {
+        if (initialState.orthoYear === undefined) {
+            if (!recentReady) selectedOrthophotoService = null;
+        } else if (
+            selectedOrthophotoService.id !== initialState.orthoYear &&
+            (!datedReady || !recentReady)
+        ) {
+            selectedOrthophotoService = null;
+        }
+    }
 
     // Pin the resolved vintage so reloads and shared links keep the same imagery.
     useEffect(() => {
@@ -152,13 +169,19 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         if (orthophotoCatalog.services.length === 0) return;
         const resolved = findOrthophotoService(orthophotoCatalog.services, initialState.orthoYear);
         if (resolved && resolved.id !== initialState.orthoYear) {
+            // Never clobber an explicit choice before both sources arrive.
+            if (initialState.orthoYear !== undefined && (!datedReady || !recentReady)) return;
+            // Never churn the default pin while recent is still pending.
+            if (initialState.orthoYear === undefined && !recentReady) return;
             urlState.updateUrl({ orthoYear: resolved.id });
         }
     }, [
+        datedReady,
         initialState.orthoYear,
         orthophotoCatalog.services,
         orthophotoCatalog.status,
         orthophotoCompareEnabled,
+        recentReady,
         urlState,
     ]);
 
@@ -172,6 +195,53 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
         orthophotoErrorReportedRef.current = cellId;
         handleOrthophotoError();
     }, [cellId, orthophotoCatalog.status, orthophotoCompareEnabled]);
+
+    useEffect(() => {
+        recentFailedRef.current = false;
+    }, [cellId]);
+
+    // When every visible tile of the continuous mosaic fails, yield once to
+    // the first dated service instead of leaving a broken layer up.
+    useEffect(() => {
+        if (!orthophotoCompareEnabled || !recentFailedRef.current) return;
+        if (selectedOrthophotoService?.kind !== 'recent') {
+            recentFailedRef.current = false;
+            return;
+        }
+        if (!datedReady) return;
+        recentFailedRef.current = false;
+        const fallback = orthophotoCatalog.services.find((service) => service.kind === 'dated');
+        if (fallback) {
+            urlState.updateUrl({ orthoYear: fallback.id });
+        } else {
+            handleOrthophotoError();
+        }
+    }, [
+        datedReady,
+        orthophotoCatalog.services,
+        orthophotoCompareEnabled,
+        selectedOrthophotoService,
+        urlState,
+    ]);
+
+    const handleOrthophotoTilesFailed = () => {
+        if (selectedOrthophotoService?.kind === 'recent') {
+            const fallback = orthophotoCatalog.services.find((service) => service.kind === 'dated');
+            if (fallback) {
+                urlState.updateUrl({ orthoYear: fallback.id });
+                return;
+            }
+            if (datedReady) {
+                handleOrthophotoError();
+                return;
+            }
+            // Dated options are still loading; the effect above retries the
+            // fallback once they arrive.
+            recentFailedRef.current = true;
+            return;
+        }
+        handleOrthophotoError();
+    };
 
     useEffect(() => {
         if (!isOrthophotoPickerOpen) return;
@@ -217,6 +287,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const handleOrthophotoDisable = () => {
         setViewerProjection(viewerRef.current, projection);
         setIsOrthophotoPickerOpen(false);
+        recentFailedRef.current = false;
         urlState.updateUrl({ orthophotoCompare: undefined, orthoYear: undefined });
     };
 
@@ -250,7 +321,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
                     coverageBounds={sourceManifestState.coverageBounds}
                     coverageReady={sourceManifestState.settled}
                     isViewerReady
-                    onError={handleOrthophotoError}
+                    onError={handleOrthophotoTilesFailed}
                     service={selectedOrthophotoService}
                     viewerRef={viewerRef}
                 />
@@ -312,6 +383,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
             <OrthophotoYearPicker
                 anchorRef={orthophotoButtonRef}
                 contentRef={orthophotoPickerRef}
+                datedReady={orthophotoCatalog.datedReady}
                 isOpen={isOrthophotoPickerOpen && orthophotoCompareEnabled && uiVisible}
                 onClose={() => setIsOrthophotoPickerOpen(false)}
                 onDisable={handleOrthophotoDisable}

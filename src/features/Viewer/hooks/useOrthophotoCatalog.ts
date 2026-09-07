@@ -2,7 +2,8 @@ import { useEffect, useState, type RefObject } from 'react';
 import type { PotreeViewer } from '@/common/types/potree';
 import {
     clearOrthophotoProbeCache,
-    fetchAvailableOrthophotoServices,
+    fetchAvailableDatedOrthophotoServices,
+    fetchRecentOrthophotoService,
     type OrthophotoServiceInfo,
 } from '@/features/Viewer/utils/orthophotoCatalog';
 import type { Lks94Bounds } from '@/features/Viewer/utils/orthophotoTiles';
@@ -19,7 +20,9 @@ interface UseOrthophotoCatalogOptions {
 }
 
 interface OrthophotoCatalogState {
+    datedReady: boolean;
     key: string | null;
+    recentReady: boolean;
     services: OrthophotoServiceInfo[];
     status: OrthophotoCatalogStatus;
 }
@@ -33,7 +36,9 @@ export function useOrthophotoCatalog({
 }: UseOrthophotoCatalogOptions) {
     const [retryKey, setRetryKey] = useState(0);
     const [state, setState] = useState<OrthophotoCatalogState>({
+        datedReady: false,
         key: null,
+        recentReady: false,
         services: [],
         status: 'idle',
     });
@@ -44,7 +49,9 @@ export function useOrthophotoCatalog({
     const requestKey = enabled && coverageReady ? `${cellId}|${boundsKey}|${retryKey}` : null;
     if (state.key !== requestKey) {
         setState({
+            datedReady: false,
             key: requestKey,
+            recentReady: false,
             services: [],
             status: requestKey ? 'loading' : 'idle',
         });
@@ -57,15 +64,88 @@ export function useOrthophotoCatalog({
         let frameId = 0;
 
         const loadWithBounds = (effectiveBounds: readonly Lks94Bounds[]) => {
-            void fetchAvailableOrthophotoServices(effectiveBounds, controller.signal)
-                .then((available) => {
+            // Recent metadata and dated discovery start together: a stalled
+            // ORT_recent request must not block dated options from appearing.
+            // Each side publishes independently as it settles.
+            let recentService: OrthophotoServiceInfo | null = null;
+            let recentSettled = false;
+            let datedServices: OrthophotoServiceInfo[] = [];
+            let datedSettled = false;
+            let datedFailed = false;
+
+            const publish = () => {
+                if (controller.signal.aborted) return;
+                if (recentSettled && datedSettled) {
+                    if (datedFailed && !recentService) {
+                        setState({
+                            datedReady: true,
+                            key: requestKey,
+                            recentReady: true,
+                            services: [],
+                            status: 'error',
+                        });
+                    } else {
+                        setState({
+                            datedReady: true,
+                            key: requestKey,
+                            recentReady: true,
+                            services: recentService
+                                ? [recentService, ...datedServices]
+                                : datedServices,
+                            status: 'ready',
+                        });
+                    }
+                    return;
+                }
+                if (recentSettled && recentService && !datedSettled) {
+                    // Recent needs no dated discovery or probes, so it renders
+                    // without waiting for the dated options below.
+                    setState({
+                        datedReady: false,
+                        key: requestKey,
+                        recentReady: true,
+                        services: [recentService],
+                        status: 'ready',
+                    });
+                    return;
+                }
+                if (!recentSettled && datedSettled && !datedFailed && datedServices.length > 0) {
+                    // Dated discovery won the race: offer it now instead of
+                    // leaving the picker loading behind a stalled recent
+                    // request. Recent prepends itself when its metadata lands.
+                    // An empty dated result still waits for recent before the
+                    // picker can honestly report no coverage.
+                    setState({
+                        datedReady: true,
+                        key: requestKey,
+                        recentReady: false,
+                        services: datedServices,
+                        status: 'ready',
+                    });
+                }
+                // Otherwise keep waiting: still loading, recent is down while
+                // dated is pending, or dated failed while recent is pending.
+            };
+
+            void fetchRecentOrthophotoService().then((service) => {
+                if (controller.signal.aborted) return;
+                recentService = service;
+                recentSettled = true;
+                publish();
+            });
+            void fetchAvailableDatedOrthophotoServices(effectiveBounds, controller.signal)
+                .then((services) => {
                     if (controller.signal.aborted) return;
-                    setState({ key: requestKey, services: available, status: 'ready' });
+                    datedServices = services;
+                    datedSettled = true;
+                    publish();
                 })
                 .catch((error: unknown) => {
                     if (controller.signal.aborted) return;
                     console.warn('Orthophoto catalog could not be loaded', error);
-                    setState({ key: requestKey, services: [], status: 'error' });
+                    datedSettled = true;
+                    datedFailed = true;
+                    publish();
                 });
         };
 
@@ -103,6 +183,8 @@ export function useOrthophotoCatalog({
     }, [coverageBounds, requestKey, viewerRef]);
 
     return {
+        datedReady: state.datedReady,
+        recentReady: state.recentReady,
         retry: () => {
             clearOrthophotoProbeCache();
             setRetryKey((value) => value + 1);

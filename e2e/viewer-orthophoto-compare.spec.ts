@@ -9,13 +9,16 @@ import {
 } from './support/viewer';
 
 test.describe('viewer orthophoto comparison', () => {
-    test('toggles, picks a vintage, persists, and resets without persisting projection', async ({
-        page,
-    }) => {
+    test('defaults to the continuous mosaic, switches periods, and persists', async ({ page }) => {
         let orthophotoRequests = 0;
+        const recentTileRequests: string[] = [];
         page.on('request', (request) => {
-            if (request.url().includes('/arcgis/rest/services/NZT/ORT')) {
+            const url = request.url();
+            if (url.includes('/arcgis/rest/services/NZT/ORT')) {
                 orthophotoRequests += 1;
+            }
+            if (url.includes('/NZT/ORT_recent/MapServer/tile/')) {
+                recentTileRequests.push(url);
             }
         });
         await gotoMockedViewer(page);
@@ -32,18 +35,26 @@ test.describe('viewer orthophoto comparison', () => {
         await expect(picker).toBeVisible();
         // No "aktualiausia" wording anywhere in the picker.
         await expect(picker.getByText(/aktualiausia/i)).toHaveCount(0);
-        const newestOption = page.getByTestId('viewer-orthophoto-year-2024-2026');
-        await expect(newestOption).toBeVisible();
-        await expect(newestOption).toHaveAttribute('aria-checked', 'true');
+        const recentOption = page.getByTestId('viewer-orthophoto-year-recent');
+        await expect(recentOption).toBeVisible();
+        await expect(recentOption).toHaveAttribute('aria-checked', 'true');
+        await expect(recentOption).toHaveText('Latest continuous orthophoto');
+        const options = picker.getByRole('radio');
+        await expect(options.first()).toHaveAttribute(
+            'data-testid',
+            'viewer-orthophoto-year-recent'
+        );
+        await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toBeVisible();
         await expect(page.getByTestId('viewer-orthophoto-year-1995-1999')).toBeVisible();
-        // The resolved newest vintage is pinned for stable reloads.
-        await expectSearchParam(page, 'orthoYear', '2024-2026');
+        // The continuous mosaic is the default and is pinned for stable reloads.
+        await expectSearchParam(page, 'orthoYear', 'recent');
 
         await expect(page.getByTestId('viewer-orthophoto-compare')).toBeVisible();
         await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
             'data-service',
-            '2024-2026'
+            'recent'
         );
+        await expect.poll(() => recentTileRequests.length).toBeGreaterThan(0);
         const renderer = page.getByTestId('viewer-orthophoto-renderer');
         await expect(renderer.locator('canvas')).toBeVisible();
         await expect
@@ -73,6 +84,23 @@ test.describe('viewer orthophoto comparison', () => {
             'data-service',
             '2021-2023'
         );
+
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        await expect(page.getByTestId('viewer-orthophoto-picker')).toBeVisible();
+        await page.getByTestId('viewer-orthophoto-year-recent').click();
+        await expectSearchParam(page, 'orthoYear', 'recent');
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            'recent'
+        );
+
+        await page.reload();
+        await expectViewerReady(page);
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            'recent'
+        );
+        await expectSearchParam(page, 'orthoYear', 'recent');
 
         await page.getByTestId('viewer-reset-defaults').click();
         await expectNoSearchParam(page, 'orthophotoCompare');
@@ -116,6 +144,7 @@ test.describe('viewer orthophoto comparison', () => {
     }) => {
         await installMockViewer(page, {
             orthophotoMissingServices: ['ORT10LT_2024_2026'],
+            orthophotoRecentUnavailable: true,
         });
         await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
         await expectViewerReady(page);
@@ -128,18 +157,21 @@ test.describe('viewer orthophoto comparison', () => {
 
         await page.getByTestId('viewer-orthophoto-compare-toggle').click();
         await expect(page.getByTestId('viewer-orthophoto-picker')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-year-recent')).toHaveCount(0);
         await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toHaveCount(0);
         await expect(page.getByTestId('viewer-orthophoto-year-2021-2023')).toBeVisible();
     });
 
-    test('auto-discovers a future vintage and preselects it as newest', async ({ page }) => {
+    test('falls back to the newest dated service when the continuous mosaic is down', async ({
+        page,
+    }) => {
         await installMockViewer(page, {
             orthophotoExtraServices: ['NZT/ORT10LT_2026_2028'],
+            orthophotoRecentUnavailable: true,
         });
         await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
         await expectViewerReady(page);
 
-        // A vintage unknown at author time is discovered, labeled, and preselected.
         await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
             'data-service',
             '2026-2028'
@@ -149,12 +181,44 @@ test.describe('viewer orthophoto comparison', () => {
         await page.getByTestId('viewer-orthophoto-compare-toggle').click();
         const picker = page.getByTestId('viewer-orthophoto-picker');
         await expect(picker).toBeVisible();
-        const futureOption = page.getByTestId('viewer-orthophoto-year-2026-2028');
-        await expect(futureOption).toBeVisible();
-        await expect(futureOption).toHaveAttribute('aria-checked', 'true');
+        await expect(picker.getByTestId('viewer-orthophoto-year-recent')).toHaveCount(0);
+        const options = picker.getByRole('radio');
+        await expect(options.first()).toHaveAttribute(
+            'data-testid',
+            'viewer-orthophoto-year-2026-2028'
+        );
+    });
+
+    test('auto-discovers a future vintage below the continuous option', async ({ page }) => {
+        await installMockViewer(page, {
+            orthophotoExtraServices: ['NZT/ORT10LT_2026_2028'],
+        });
+        await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
+        await expectViewerReady(page);
+
+        // The continuous mosaic stays the default; a vintage unknown at author
+        // time slots in as the newest dated option.
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            'recent'
+        );
+        await expectSearchParam(page, 'orthoYear', 'recent');
+
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        const picker = page.getByTestId('viewer-orthophoto-picker');
+        await expect(picker).toBeVisible();
+        const recentOption = page.getByTestId('viewer-orthophoto-year-recent');
+        await expect(recentOption).toBeVisible();
+        await expect(recentOption).toHaveAttribute('aria-checked', 'true');
         await expect(picker.getByText(/aktualiausia/i)).toHaveCount(0);
         const options = picker.getByRole('radio');
         await expect(options.first()).toHaveAttribute(
+            'data-testid',
+            'viewer-orthophoto-year-recent'
+        );
+        const futureOption = page.getByTestId('viewer-orthophoto-year-2026-2028');
+        await expect(futureOption).toBeVisible();
+        await expect(options.nth(1)).toHaveAttribute(
             'data-testid',
             'viewer-orthophoto-year-2026-2028'
         );
@@ -174,9 +238,9 @@ test.describe('viewer orthophoto comparison', () => {
         // A directory-listed vintage outside the sector is neither shown nor pinned.
         await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
             'data-service',
-            '2024-2026'
+            'recent'
         );
-        await expectSearchParam(page, 'orthoYear', '2024-2026');
+        await expectSearchParam(page, 'orthoYear', 'recent');
 
         await page.getByTestId('viewer-orthophoto-compare-toggle').click();
         await expect(page.getByTestId('viewer-orthophoto-picker')).toBeVisible();
@@ -187,6 +251,7 @@ test.describe('viewer orthophoto comparison', () => {
     test('keeps a vintage with a rollout hole at the sector center', async ({ page }) => {
         await installMockViewer(page, {
             orthophotoMissingFirstTileServices: ['ORT10LT_2024_2026'],
+            orthophotoRecentUnavailable: true,
         });
         await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
         await expectViewerReady(page);
@@ -224,9 +289,9 @@ test.describe('viewer orthophoto comparison', () => {
 
         await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
             'data-service',
-            '2024-2026'
+            'recent'
         );
-        await expectSearchParam(page, 'orthoYear', '2024-2026');
+        await expectSearchParam(page, 'orthoYear', 'recent');
         await expect(page.getByText('Orthophoto unavailable')).toHaveCount(0);
     });
 
@@ -329,10 +394,11 @@ test.describe('viewer orthophoto comparison', () => {
         await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
 
         await expectViewerReady(page);
-        // Probes succeed so the overlay mounts; only renderer tiles fail.
+        // Probes succeed so the overlay mounts on the continuous mosaic;
+        // only renderer tiles fail.
         await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
             'data-service',
-            '2024-2026'
+            'recent'
         );
         const renderer = page.getByTestId('viewer-orthophoto-renderer');
         await expect(renderer.locator('canvas')).toBeVisible();
@@ -340,6 +406,144 @@ test.describe('viewer orthophoto comparison', () => {
             .poll(async () => Number((await renderer.getAttribute('data-failed-tiles')) ?? 0))
             .toBeGreaterThan(0);
         await expect(page.getByText('Orthophoto unavailable')).toBeVisible();
+        // Recent yielded once to dated imagery, which then failed too: the
+        // toast appears exactly once instead of looping between services.
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            '2024-2026'
+        );
         await expect(page.getByTestId('viewer-container').locator('canvas')).toBeVisible();
+    });
+
+    test('falls back to the newest dated service when recent tiles fail', async ({ page }) => {
+        await installMockViewer(page, { orthophotoRecentTilesUnavailable: true });
+        await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
+        await expectViewerReady(page);
+
+        // Recent mounts, its failing tiles yield once to the newest dated
+        // service, and no error toast appears for the recovered layer.
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            '2024-2026'
+        );
+        await expectSearchParam(page, 'orthoYear', '2024-2026');
+        await expect(page.getByText('Orthophoto unavailable')).toHaveCount(0);
+    });
+
+    test('falls back to the continuous mosaic for an unknown saved selection', async ({ page }) => {
+        await gotoMockedViewer(
+            page,
+            `${CANONICAL_VIEWER_PATH}&orthophotoCompare=true&orthoYear=bogus`
+        );
+        await expectViewerReady(page);
+
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            'recent'
+        );
+        await expectSearchParam(page, 'orthoYear', 'recent');
+    });
+
+    test('labels the continuous option in Lithuanian without year wording', async ({ page }) => {
+        await page.addInitScript(() => localStorage.setItem('i18nextLng', 'lt'));
+        await gotoMockedViewer(page, `${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
+
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        const picker = page.getByTestId('viewer-orthophoto-picker');
+        await expect(picker).toBeVisible();
+        const recentOption = page.getByTestId('viewer-orthophoto-year-recent');
+        await expect(recentOption).toHaveText('Naujausias vientisas ortofoto');
+        await expect(picker.getByText(/aktualiausia/i)).toHaveCount(0);
+    });
+
+    test('carries the continuous selection through sector navigation', async ({ page }) => {
+        await gotoMockedViewer(
+            page,
+            `${CANONICAL_VIEWER_PATH}&orthophotoCompare=true&orthoYear=recent`
+        );
+
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            'recent'
+        );
+
+        const arrows = page
+            .getByRole('group', { name: 'Adjacent sector navigation' })
+            .getByRole('button', { name: /Navigate to/ });
+        await expect(arrows.first()).toBeVisible();
+        await arrows.first().click();
+
+        await expectViewerReady(page);
+        expect(page.url()).not.toContain('/viewer/76_32');
+        await expectSearchParam(page, 'orthophotoCompare', 'true');
+        await expectSearchParam(page, 'orthoYear', 'recent');
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            'recent'
+        );
+    });
+
+    test('discovers dated options while recent metadata stalls', async ({ page }) => {
+        await installMockViewer(page);
+        // Registered last so it runs before the default handlers: the
+        // continuous mosaic metadata never settles, so dated discovery must
+        // proceed on its own instead of leaving the picker loading forever.
+        await page.route(
+            /\/NZT\/ORT_recent\/MapServer\?f=pjson/,
+            () => new Promise<never>(() => {})
+        );
+        await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
+        await expectViewerReady(page);
+
+        // The picker offers dated options with no full-loading spinner: the
+        // pending recent request no longer blocks the dated list.
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        await expect(page.getByTestId('viewer-orthophoto-picker')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-picker-loading')).toHaveCount(0);
+
+        // The default stays unresolved instead of flashing a dated vintage
+        // while the continuous mosaic is still pending.
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveCount(0);
+
+        // An explicit dated choice renders while recent is still pending.
+        await page.getByTestId('viewer-orthophoto-year-2024-2026').click();
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            '2024-2026'
+        );
+        await expect(page.getByText('Orthophoto unavailable')).toHaveCount(0);
+    });
+
+    test('shows dated options loading beneath the continuous option', async ({ page }) => {
+        await installMockViewer(page);
+        let releaseDirectory!: () => void;
+        const directoryGate = new Promise<void>((resolve) => {
+            releaseDirectory = resolve;
+        });
+        // Registered last so it runs before the default handlers: dated
+        // discovery waits while recent metadata resolves right away.
+        await page.route(/\/services\/NZT\?f=pjson/, async (route) => {
+            await directoryGate;
+            await route.fallback();
+        });
+
+        await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
+        await expectViewerReady(page);
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            'recent'
+        );
+
+        // The picker is usable with the continuous option while dated
+        // options disclose their loading state instead of appearing silently.
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        await expect(page.getByTestId('viewer-orthophoto-year-recent')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-picker-loading-more')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-picker-loading')).toHaveCount(0);
+
+        releaseDirectory();
+        await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-picker-loading-more')).toHaveCount(0);
     });
 });

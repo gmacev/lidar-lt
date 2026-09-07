@@ -7,7 +7,12 @@ import {
 } from './orthophotoProvider';
 import type { Lks94Bounds } from './orthophotoTiles';
 
-export interface OrthophotoServiceInfo {
+/** Continuously covering mixed-vintage mosaic: newest imagery per location. */
+const ORTHOPHOTO_RECENT_SERVICE_NAME = 'NZT/ORT_recent';
+const ORTHOPHOTO_RECENT_ID = 'recent';
+
+interface OrthophotoDatedService {
+    kind: 'dated';
     /** Stable key used in the URL, e.g. "2024-2026". */
     id: string;
     /** ArcGIS service name, e.g. "NZT/ORT10LT_2024_2026". */
@@ -21,10 +26,24 @@ export interface OrthophotoServiceInfo {
     metadata: OrthophotoMetadata;
 }
 
+interface OrthophotoRecentService {
+    kind: 'recent';
+    /** Stable key used in the URL: "recent". */
+    id: typeof ORTHOPHOTO_RECENT_ID;
+    /** ArcGIS service name: "NZT/ORT_recent". */
+    serviceName: typeof ORTHOPHOTO_RECENT_SERVICE_NAME;
+    /** MapServer root URL used for metadata and tile requests. */
+    baseUrl: string;
+    metadata: OrthophotoMetadata;
+}
+
+export type OrthophotoServiceInfo = OrthophotoDatedService | OrthophotoRecentService;
+
 /**
  * Nationwide 10 cm orthophoto series. Other NZT/ORT* services (ORT2LT city
- * imagery, ORT_recent mixed-vintage mosaic, ORT_skrydziai flight boundaries,
- * Web Mercator duplicates) are intentionally excluded from the year picker.
+ * imagery, ORT_skrydziai flight boundaries, Web Mercator duplicates) are
+ * intentionally excluded from the year picker. ORT_recent is handled
+ * separately as the continuous mixed-vintage option.
  */
 const ORTHOPHOTO_SERIES_PATTERN = /^NZT\/ORT10LT_\d{4}(?:_\d{4})?$/;
 
@@ -65,8 +84,9 @@ function isSeriesService(service: unknown): service is { name: string; type: str
     );
 }
 
-let catalogCache: OrthophotoServiceInfo[] | null = null;
-let catalogPromise: Promise<OrthophotoServiceInfo[]> | null = null;
+let datedCache: OrthophotoDatedService[] | null = null;
+let datedPromise: Promise<OrthophotoDatedService[]> | null = null;
+let recentPromise: Promise<OrthophotoRecentService | null> | null = null;
 
 function parseYearRange(mapName: string, serviceName: string) {
     // Prefer the human range from mapName: "ORT10LT 2015-2017" even though the
@@ -115,13 +135,14 @@ async function listSeriesServiceNames(): Promise<string[]> {
     }
 }
 
-async function describeService(serviceName: string): Promise<OrthophotoServiceInfo | null> {
+async function describeService(serviceName: string): Promise<OrthophotoDatedService | null> {
     try {
         const baseUrl = `${ORTHOPHOTO_ARCGIS_ROOT}/${serviceName}/MapServer`;
         const metadata = await fetchOrthophotoMetadata(baseUrl);
         const range = parseYearRange(metadata.mapName, serviceName);
         if (!range) return null;
         return {
+            kind: 'dated',
             id: range.rangeLabel,
             serviceName,
             baseUrl,
@@ -136,36 +157,63 @@ async function describeService(serviceName: string): Promise<OrthophotoServiceIn
     }
 }
 
+async function describeRecentService(): Promise<OrthophotoRecentService | null> {
+    try {
+        const baseUrl = `${ORTHOPHOTO_ARCGIS_ROOT}/${ORTHOPHOTO_RECENT_SERVICE_NAME}/MapServer`;
+        const metadata = await fetchOrthophotoMetadata(baseUrl);
+        return {
+            kind: 'recent',
+            id: ORTHOPHOTO_RECENT_ID,
+            serviceName: ORTHOPHOTO_RECENT_SERVICE_NAME,
+            baseUrl,
+            metadata,
+        };
+    } catch {
+        return null;
+    }
+}
+
 /**
- * Discovers every ORT10LT year service, newest first. Session-cached and
- * independent of caller cancellation; only per-sector probes are
- * caller-cancellable.
+ * ORT_recent metadata only: never probed, never year-parsed, and shared
+ * session-wide independent of caller cancellation. A failed fetch resolves
+ * to null so dated services still work.
  */
-async function fetchOrthophotoCatalog(): Promise<OrthophotoServiceInfo[]> {
-    if (catalogCache) return catalogCache;
-    if (!catalogPromise) {
-        catalogPromise = (async () => {
+export function fetchRecentOrthophotoService(): Promise<OrthophotoRecentService | null> {
+    if (!recentPromise) {
+        recentPromise = describeRecentService();
+    }
+    return recentPromise;
+}
+
+/**
+ * Every ORT10LT year service, newest first. Session-cached and independent
+ * of caller cancellation; only per-sector probes are caller-cancellable.
+ */
+async function fetchDatedCatalog(): Promise<OrthophotoDatedService[]> {
+    if (datedCache) return datedCache;
+    if (!datedPromise) {
+        datedPromise = (async () => {
             const serviceNames = await listSeriesServiceNames();
             const described = await Promise.all(
                 serviceNames.map((serviceName) => describeService(serviceName))
             );
-            const services = described
-                .filter((service): service is OrthophotoServiceInfo => service !== null)
+            const dated = described
+                .filter((service): service is OrthophotoDatedService => service !== null)
                 .sort((first, second) => {
                     if (second.endYear !== first.endYear) return second.endYear - first.endYear;
                     return second.startYear - first.startYear;
                 });
-            if (services.length === 0) {
+            if (dated.length === 0) {
                 throw new Error('No orthophoto year services are available');
             }
-            catalogCache = services;
-            return services;
+            datedCache = dated;
+            return dated;
         })();
-        catalogPromise.catch(() => {
-            catalogPromise = null;
+        datedPromise.catch(() => {
+            datedPromise = null;
         });
     }
-    return catalogPromise;
+    return datedPromise;
 }
 
 function getUnionBounds(bounds: readonly Lks94Bounds[]): Lks94Bounds | null {
@@ -299,19 +347,20 @@ async function isOrthophotoServiceAvailable(
     }
     return false;
 }
-
 /**
- * Catalog filtered to vintages covering the sector, newest first. Empty
- * bounds yield no services; the caller substitutes point-cloud bounds first.
+ * Dated vintages covering the sector, newest first. ORT_recent is resolved
+ * separately via fetchRecentOrthophotoService so it can render without
+ * waiting for dated discovery and probes. Empty bounds yield no services;
+ * the caller substitutes point-cloud bounds first.
  */
-export async function fetchAvailableOrthophotoServices(
+export async function fetchAvailableDatedOrthophotoServices(
     coverageBounds: readonly Lks94Bounds[],
     signal: AbortSignal
-): Promise<OrthophotoServiceInfo[]> {
-    const catalog = await fetchOrthophotoCatalog();
+): Promise<OrthophotoDatedService[]> {
+    const dated = await fetchDatedCatalog();
     const sectorBounds = getUnionBounds(coverageBounds);
     if (!sectorBounds) return [];
-    const candidates = catalog.filter((service) =>
+    const candidates = dated.filter((service) =>
         boundsIntersect(sectorBounds, service.metadata.fullExtent)
     );
 
@@ -322,9 +371,10 @@ export async function fetchAvailableOrthophotoServices(
             return available ? service : null;
         })
     );
-    return results.filter((service): service is OrthophotoServiceInfo => service !== null);
+    return results.filter((service): service is OrthophotoDatedService => service !== null);
 }
 
+/** Explicit selection when available, else the first service: recent when present, newest dated otherwise. */
 export function findOrthophotoService(
     services: readonly OrthophotoServiceInfo[],
     id: string | undefined

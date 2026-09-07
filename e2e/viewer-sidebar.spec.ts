@@ -200,9 +200,9 @@ test.describe('viewer sidebar settings', () => {
 
         await page.getByTestId('viewer-orthophoto-compare-toggle').click();
         await expect(page.getByTestId('viewer-orthophoto-picker')).toBeVisible();
-        await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-year-recent')).toBeVisible();
         await expectSearchParam(page, 'orthophotoCompare', 'true');
-        await expectSearchParam(page, 'orthoYear', '2024-2026');
+        await expectSearchParam(page, 'orthoYear', 'recent');
 
         await page.getByPlaceholder('Preset name').fill('Ortho preset');
         await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -220,10 +220,40 @@ test.describe('viewer sidebar settings', () => {
         await expect(page.getByTestId('viewer-orthophoto-compare')).toBeVisible();
         await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
             'data-service',
-            '2024-2026'
+            'recent'
         );
         await expectSearchParam(page, 'orthophotoCompare', 'true');
-        await expectSearchParam(page, 'orthoYear', '2024-2026');
+        await expectSearchParam(page, 'orthoYear', 'recent');
+    });
+
+    test('user presets save and restore a dated orthophoto selection', async ({ page }) => {
+        await gotoMockedViewer(page);
+
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        await expect(page.getByTestId('viewer-orthophoto-picker')).toBeVisible();
+        await page.getByTestId('viewer-orthophoto-year-2021-2023').click();
+        await expectSearchParam(page, 'orthoYear', '2021-2023');
+
+        await page.getByPlaceholder('Preset name').fill('Dated preset');
+        await page.getByRole('button', { name: 'Save', exact: true }).click();
+        const userPreset = page.getByTestId('viewer-user-preset');
+        await expect(userPreset).toContainText('Dated preset');
+
+        // Focusing the preset form dismisses the picker, so reopen it to exit compare mode.
+        await page.getByTestId('viewer-orthophoto-compare-toggle').click();
+        await page.getByTestId('viewer-orthophoto-disable').click();
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveCount(0);
+        await expectNoSearchParam(page, 'orthophotoCompare');
+        await expectNoSearchParam(page, 'orthoYear');
+
+        await userPreset.getByRole('button', { name: 'Load preset Dated preset' }).click();
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
+            'data-service',
+            '2021-2023'
+        );
+        await expectSearchParam(page, 'orthophotoCompare', 'true');
+        await expectSearchParam(page, 'orthoYear', '2021-2023');
     });
 
     test('localizes the built-in terrain preset in Lithuanian', async ({ page }) => {

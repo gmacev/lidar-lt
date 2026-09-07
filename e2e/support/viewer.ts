@@ -515,6 +515,7 @@ const MOCK_ORTHOPHOTO_TILE_BASE64 =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
 const MOCK_ORTHOPHOTO_SERVICE_NAMES = [
+    'NZT/ORT_recent',
     'NZT/ORT10LT_2024_2026',
     'NZT/ORT10LT_2021_2023',
     'NZT/ORT10LT_2018_2020',
@@ -529,6 +530,7 @@ function getMockOrthophotoMapName(serviceName: string) {
     // Mirrors production quirks: the 2015 service is named ORT10LT_2015 while
     // its mapName covers 2015-2017, and the 1995 service spans 1995-1999.
     const bareName = serviceName.replace(/^NZT\//, '');
+    if (bareName === 'ORT_recent') return 'ORT recent';
     if (bareName === 'ORT10LT_2015') return 'ORT10LT 2015-2017';
     if (bareName === 'ORT10LT_1995_2001') return 'ORT10LT 1995-1999';
     const match = serviceName.match(/ORT10LT_(\d{4})(?:_(\d{4}))?/);
@@ -550,6 +552,8 @@ interface MockViewerOptions {
         { xmin: number; ymin: number; xmax: number; ymax: number }
     >;
     orthophotoMissingFirstTileServices?: string[];
+    orthophotoRecentUnavailable?: boolean;
+    orthophotoRecentTilesUnavailable?: boolean;
     sourceManifest?: object;
 }
 
@@ -562,6 +566,8 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
     const extraServices = options.orthophotoExtraServices ?? [];
     const metadataOverrides = options.orthophotoMetadataOverrides ?? {};
     const missingFirstTileServices = options.orthophotoMissingFirstTileServices ?? [];
+    const recentUnavailable = options.orthophotoRecentUnavailable ?? false;
+    const recentTilesUnavailable = options.orthophotoRecentTilesUnavailable ?? false;
     const firstTileBlocked = new Set<string>();
     let orthophotoTileRequest = 0;
 
@@ -588,6 +594,12 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
         }
 
         if (url.includes('/tile/')) {
+            // Recent imagery tiles fail while its metadata (and dated
+            // services) stay healthy.
+            if (recentTilesUnavailable && url.includes('ORT_recent')) {
+                await route.fulfill({ status: 503, body: '' });
+                return;
+            }
             // The first tile requested for the service 404s; neighbors succeed.
             const firstTileService = missingFirstTileServices.find((service) =>
                 url.includes(service)
@@ -621,6 +633,10 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
 
         const serviceMatch = url.match(/\/NZT\/([^/]+)\/MapServer/);
         const bareServiceName = serviceMatch ? serviceMatch[1] : '';
+        if (recentUnavailable && bareServiceName === 'ORT_recent') {
+            await route.fulfill({ status: 503, body: '' });
+            return;
+        }
         const metadataOverride = bareServiceName ? metadataOverrides[bareServiceName] : undefined;
         await route.fulfill({
             status: 200,
