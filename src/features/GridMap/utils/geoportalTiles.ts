@@ -13,16 +13,8 @@ const GEOPORTAL_NATIVE_TILE_SIZE = 256;
 
 const DARK_TILE_CACHE_LIMIT = 96;
 const DARK_TILE_JPEG_QUALITY = 0.94;
-
-// Centralized dark-cartography tuning. Luminance is inverted while chroma keeps its
-// original direction, so forests stay green and water stays blue instead of becoming
-// the complementary colors produced by a direct RGB inversion.
-const DARK_TRANSFORM = {
-    maximumLuminance: 0.86,
-    invertedLuminanceRange: 0.74,
-    contrast: 1.18,
-    chroma: 1.15,
-} as const;
+export const GEOPORTAL_DARK_TILE_FILTER =
+    'invert(92%) hue-rotate(180deg) saturate(240%) contrast(106%) brightness(121%)';
 
 interface GeoportalTileCoordinates {
     zoom: number;
@@ -75,23 +67,8 @@ export function getGeoportalTileTemplate(theme: GeoportalTheme): string {
     return `${GEOPORTAL_PROTOCOL}://${theme}/{z}/{x}/{y}`;
 }
 
-export function transformGeoportalDarkPixels(pixels: Uint8ClampedArray): void {
-    for (let index = 0; index < pixels.length; index += 4) {
-        const red = (pixels[index] ?? 0) / 255;
-        const green = (pixels[index + 1] ?? 0) / 255;
-        const blue = (pixels[index + 2] ?? 0) / 255;
-        const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
-        const invertedLuminance =
-            DARK_TRANSFORM.maximumLuminance - DARK_TRANSFORM.invertedLuminanceRange * luminance;
-        const contrastedLuminance = (invertedLuminance - 0.5) * DARK_TRANSFORM.contrast + 0.5;
-        pixels[index] = toByte(contrastedLuminance + (red - luminance) * DARK_TRANSFORM.chroma);
-        pixels[index + 1] = toByte(
-            contrastedLuminance + (green - luminance) * DARK_TRANSFORM.chroma
-        );
-        pixels[index + 2] = toByte(
-            contrastedLuminance + (blue - luminance) * DARK_TRANSFORM.chroma
-        );
-    }
+export function getGeoportalCanvasFilter(theme: GeoportalTheme): string {
+    return theme === 'dark' ? GEOPORTAL_DARK_TILE_FILTER : 'none';
 }
 
 function registerGeoportalProtocol(): void {
@@ -184,9 +161,10 @@ async function createComposedTile(
         canvas.width = GEOPORTAL_IMAGE_SIZE;
         canvas.height = GEOPORTAL_IMAGE_SIZE;
 
-        const context = canvas.getContext('2d', { willReadFrequently: true });
+        const context = canvas.getContext('2d');
         if (!context) throw new Error('Canvas 2D is unavailable');
 
+        context.filter = getGeoportalCanvasFilter(theme);
         decodedTiles.forEach((tile, index) => {
             const offsetX = (index % 2) * GEOPORTAL_NATIVE_TILE_SIZE;
             const offsetY = Math.floor(index / 2) * GEOPORTAL_NATIVE_TILE_SIZE;
@@ -198,12 +176,6 @@ async function createComposedTile(
                 GEOPORTAL_NATIVE_TILE_SIZE
             );
         });
-
-        if (theme === 'dark') {
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            transformGeoportalDarkPixels(imageData.data);
-            context.putImageData(imageData, 0, 0);
-        }
 
         const transformedBlob = await canvasToBlob(
             canvas,
@@ -338,10 +310,6 @@ function throwAbortError(): never {
 
 function createAbortError(): DOMException {
     return new DOMException('The tile request was cancelled', 'AbortError');
-}
-
-function toByte(value: number): number {
-    return Math.round(Math.max(0, Math.min(1, value)) * 255);
 }
 
 registerGeoportalProtocol();

@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
 import {
     GEOPORTAL_IMAGE_SIZE,
+    GEOPORTAL_DARK_TILE_FILTER,
     GEOPORTAL_LOGICAL_TILE_SIZE,
     GEOPORTAL_MAX_MAP_ZOOM,
     GEOPORTAL_MIN_MAP_ZOOM,
     buildGeoportalTileUrls,
-    transformGeoportalDarkPixels,
+    getGeoportalCanvasFilter,
 } from '../src/features/GridMap/utils/geoportalTiles';
 
 test.describe('Geoportal basemap tile mapping', () => {
@@ -36,19 +37,11 @@ test.describe('Geoportal basemap tile mapping', () => {
         expect(buildGeoportalTileUrls({ zoom: 7, x: 0, y: -1 })).toBeNull();
     });
 
-    test('creates a subdued dark palette while retaining semantic chroma and alpha', () => {
-        const pixels = new Uint8ClampedArray([
-            245, 240, 220, 255, 15, 15, 15, 190, 60, 120, 180, 128,
-        ]);
-
-        transformGeoportalDarkPixels(pixels);
-
-        const darkLand = Array.from(pixels.slice(0, 3));
-        expect(Math.max(...darkLand)).toBeGreaterThan(20);
-        expect(darkLand.every((channel) => channel < 100)).toBe(true);
-        expect(Array.from(pixels.slice(4, 7)).every((channel) => channel > 180)).toBe(true);
-        expect(pixels[10]).toBeGreaterThan(pixels[9] ?? 0);
-        expect(pixels[9]).toBeGreaterThan(pixels[8] ?? 0);
-        expect([pixels[3], pixels[7], pixels[11]]).toEqual([255, 190, 128]);
+    test('uses the Geoportal-adjusted CSS filter only for dark tiles', () => {
+        expect(GEOPORTAL_DARK_TILE_FILTER).toBe(
+            'invert(92%) hue-rotate(180deg) saturate(240%) contrast(106%) brightness(121%)'
+        );
+        expect(getGeoportalCanvasFilter('dark')).toBe(GEOPORTAL_DARK_TILE_FILTER);
+        expect(getGeoportalCanvasFilter('light')).toBe('none');
     });
 });
