@@ -3,6 +3,7 @@ import type { PointCloud, Potree, PotreeViewer } from '@/common/types/potree';
 import {
     configureMaterialForElevation,
     configureMaterialForIntensity,
+    DEFAULT_HIDDEN_CLASSES,
     EDL_DEFAULTS,
     getDefaultPointBudget,
     getAutoElevationRangeForZScale,
@@ -249,7 +250,7 @@ function showAllClassifications(viewer: PotreeViewer) {
 function applyClassificationVisibility(viewer: PotreeViewer, hiddenClasses?: number[]) {
     showAllClassifications(viewer);
 
-    const hiddenClassSet = new Set(hiddenClasses ?? []);
+    const hiddenClassSet = new Set(hiddenClasses ?? DEFAULT_HIDDEN_CLASSES);
 
     for (const id of CLASSIFICATION_DISPLAY_ORDER) {
         const isVisible = !hiddenClassSet.has(id);

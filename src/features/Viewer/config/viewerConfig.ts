@@ -62,6 +62,10 @@ export const Z_SCALE_DEFAULTS: { scale: number } = {
     scale: 1.0,
 };
 
+// Noise points usually obscure the useful surface, so keep them off until a
+// viewer explicitly enables the class.
+export const DEFAULT_HIDDEN_CLASSES = [7] as const;
+
 import { z } from 'zod';
 
 const optionalSearchNumber = z.preprocess((value) => {

@@ -45,6 +45,10 @@ test.describe('viewer sidebar settings', () => {
     test('updates classification, EDL, relief, and point-cloud params', async ({ page }) => {
         await gotoMockedViewer(page);
 
+        await expect(page.getByTestId('viewer-classification-7')).not.toBeChecked();
+        await expectSearchParam(page, 'hiddenClasses', '[7]');
+        await page.getByTestId('viewer-classification-7').check();
+        await expectNoSearchParam(page, 'hiddenClasses');
         await page.getByTestId('viewer-classification-2').uncheck();
         await expectSearchParam(page, 'hiddenClasses', '[2]');
 

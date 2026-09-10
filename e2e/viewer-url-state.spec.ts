@@ -54,18 +54,9 @@ test.describe('viewer URL state', () => {
 
         await expectSearchParam(page, 'sectorName', 'VILNIUS (centras)');
         await expectSearchParam(page, 'mk', '581500,6060500,100');
-        for (const key of [
-            'colorMode',
-            'ps',
-            'pb',
-            'hiddenClasses',
-            'x',
-            'y',
-            'z',
-            'yaw',
-            'pitch',
-            'radius',
-        ]) {
+        await expectSearchParam(page, 'hiddenClasses', '[7]');
+        await expect(page.getByTestId('viewer-classification-7')).not.toBeChecked();
+        for (const key of ['colorMode', 'ps', 'pb', 'x', 'y', 'z', 'yaw', 'pitch', 'radius']) {
             await expectNoSearchParam(page, key);
         }
     });

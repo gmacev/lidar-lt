@@ -1,7 +1,7 @@
 import { useState, useEffect, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
-import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { DEFAULT_HIDDEN_CLASSES, type ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { refreshAutoElevationRange } from '@/features/Viewer/config';
 import { CLASSIFICATION_DISPLAY_ORDER } from '@/features/Viewer/utils/viewerDisplaySettings';
 
@@ -26,7 +26,7 @@ export function ClassificationControl({
 }: ClassificationControlProps) {
     const { t } = useTranslation();
     const [hiddenClasses, setHiddenClasses] = useState<Set<number>>(
-        new Set(initialState.hiddenClasses ?? [])
+        new Set(initialState.hiddenClasses ?? DEFAULT_HIDDEN_CLASSES)
     );
 
     // Translation keys for classification names
@@ -84,7 +84,6 @@ export function ClassificationControl({
         }
 
         setHiddenClasses(newSet);
-        // Pass undefined when empty to remove from URL
         updateUrl({ hiddenClasses: newSet.size > 0 ? Array.from(newSet) : undefined });
     };
 

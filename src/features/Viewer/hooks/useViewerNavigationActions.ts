@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { PotreeViewer } from '@/common/types/potree';
-import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { DEFAULT_HIDDEN_CLASSES, type ViewerState } from '@/features/Viewer/config/viewerConfig';
 import {
     getCurrentCameraState,
     resetPotreeViewerDisplayDefaults,
@@ -93,6 +93,7 @@ export function useViewerNavigationActions({
         resetPotreeViewerDisplayDefaults(viewerRef.current);
         recenterView();
         const resetState: ViewerState = {
+            hiddenClasses: [...DEFAULT_HIDDEN_CLASSES],
             ...(initialState.sectorName ? { sectorName: initialState.sectorName } : {}),
             ...(initialState.mk ? { mk: initialState.mk } : {}),
         };

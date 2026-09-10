@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import debounce from 'lodash/debounce';
-import type { ViewerState } from '@/features/Viewer/config/viewerConfig';
+import { DEFAULT_HIDDEN_CLASSES, type ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { Route } from '@/routes/viewer.$cellId';
 
 interface UseViewerUrlStateOptions {
@@ -11,6 +11,7 @@ interface UseViewerUrlStateOptions {
 
 export function useViewerUrlState({ cellId, initialState }: UseViewerUrlStateOptions) {
     const navigate = useNavigate({ from: Route.fullPath });
+    const normalizedCellIdRef = useRef<string | null>(null);
     const [sidebarResetKey, setSidebarResetKey] = useState(0);
     const [resetSidebarInitialState, setResetSidebarInitialState] = useState<{
         cellId: string;
@@ -50,6 +51,18 @@ export function useViewerUrlState({ cellId, initialState }: UseViewerUrlStateOpt
             updateUrlDebounced.cancel();
         };
     }, [updateUrlDebounced]);
+
+    useEffect(() => {
+        if (normalizedCellIdRef.current === cellId) return;
+
+        normalizedCellIdRef.current = cellId;
+        if (initialState.hiddenClasses !== undefined) return;
+
+        void navigate({
+            search: (prev) => ({ ...prev, hiddenClasses: [...DEFAULT_HIDDEN_CLASSES] }),
+            replace: true,
+        });
+    }, [cellId, initialState.hiddenClasses, navigate]);
 
     const setSidebarInitialState = (state: ViewerState) => {
         setResetSidebarInitialState({ cellId, state });
