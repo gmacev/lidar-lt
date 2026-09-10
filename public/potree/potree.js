@@ -58665,6 +58665,16 @@ void main() {
 		#endif
 	#endif
 
+	#if defined(use_edl) && !defined(weighted_splats)
+		// The EDL targets are floating-point and nearest-sampled. Carry the
+		// non-ground flag in the otherwise unused sign of blue, leaving log
+		// depth untouched. The resolve pass restores the color magnitude.
+		// A tiny normal float also makes a zero blue component identifiable.
+		if(vEdlGround < 0.5){
+			gl_FragColor.b = -max(gl_FragColor.b, 1.0e-20);
+		}
+	#endif
+
 	#if defined(weighted_splats)
 		float distance = 2.0 * length(gl_PointCoord.xy - 0.5);
 		float weight = max(0.0, 1.0 - distance);
@@ -58963,7 +58973,7 @@ vec2 terrainResponseSample(float depth, float sampleDepth, vec2 pixelOffset){
 	return vec2(depth - log2(virtualDepth), stretch);
 }
 
-vec2 terrainResponse(float depth, float pixelRadius){
+vec2 terrainResponse(float depth, float pixelRadius, bool ground){
 	// Track absolute height variation as well as one-sided EDL. A zero EDL
 	// response alone can describe a real peak, not just a flat sprite interior.
 	// Track absolute height variation as well as one-sided EDL. A zero EDL
@@ -58987,7 +58997,7 @@ vec2 terrainResponse(float depth, float pixelRadius){
 			originalResponse = (validA ? 100.0 : 0.0) + (validB ? 100.0 : 0.0);
 		}else if(validA && validB){
 			originalResponse = max(0.0, depth - depthA) + max(0.0, depth - depthB);
-			if(length(reliefViewUp.xy) >= 0.0001){
+			if(ground && length(reliefViewUp.xy) >= 0.0001){
 				vec2 a = terrainResponseSample(depth, depthA, pixelRadius * neighbours[i]);
 				vec2 b = terrainResponseSample(depth, depthB, pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2]);
 				originalResponse = max(0.0, a.x / a.y) + max(0.0, b.x / b.y);
@@ -59005,12 +59015,12 @@ vec2 terrainResponse(float depth, float pixelRadius){
 	return vec2(sum / float(NEIGHBOUR_COUNT), variation);
 }
 
-float response(float depth){
-	vec2 fine = terrainResponse(depth, radius);
+float response(float depth, bool ground){
+	vec2 fine = terrainResponse(depth, radius, ground);
 	// Borrow a radius-normalized response only where the inner ring has no
 	// terrain evidence. The correction vanishes continuously towards top-down.
-	if(depth != 0.0 && reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && fine.y < 0.00001){
-		vec2 support = terrainResponse(depth, 2.0 * radius);
+	if(ground && depth != 0.0 && reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && fine.y < 0.00001){
+		vec2 support = terrainResponse(depth, 2.0 * radius, true);
 		if(support.y < 1.0){
 			float weight = dot(reliefViewUp.xy, reliefViewUp.xy) * (1.0 - smoothstep(0.0, 0.00001, fine.y));
 			fine.x = mix(fine.x, 0.5 * support.x, weight);
@@ -59149,7 +59159,7 @@ float reliefShade(float depth){
 	}
 	// Recover slope evidence when the small kernel stays inside a flat sprite.
 	if(reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && length(gradient) < 0.00001){
-		float variation = terrainResponse(depth, 2.0 * reliefRadius).y;
+		float variation = terrainResponse(depth, 2.0 * reliefRadius, true).y;
 		if(variation < 0.00001){
 			vec3 support = reliefGradient(depth, 4.0);
 			float weight = dot(reliefViewUp.xy, reliefViewUp.xy) * (1.0 - smoothstep(0.0, 0.00001, variation));
@@ -59166,10 +59176,11 @@ float reliefShade(float depth){
 
 void main() {
 
-	float edlDepth = texture2D(uEDLMap, edlSampleUv(vec2(0.0))).a;
+	vec4 edlSample = texture2D(uEDLMap, edlSampleUv(vec2(0.0)));
+	float edlDepth = edlSample.a;
 	// Terrain-space sampling already corrects projection distortion. Further
 	// angle-based slope suppression or a brightness floor would wash out EDL.
-	float res = response(edlDepth) * depthResponseNormalization(edlDepth);
+	float res = response(edlDepth, edlSample.b >= 0.0) * depthResponseNormalization(edlDepth);
 	float shade = exp(-res * 300.0 * edlStrength);
 	float relief = 1.0;
 	if(reliefEnabled > 0.5){
@@ -59297,7 +59308,7 @@ vec2 terrainResponseSample(float depth, float sampleDepth, vec2 pixelOffset){
 	return vec2(depth - log2(virtualDepth), stretch);
 }
 
-vec2 terrainResponse(float depth, float pixelRadius){
+vec2 terrainResponse(float depth, float pixelRadius, bool ground){
 	
 	float sum = 0.0;
 	float variation = 0.0;
@@ -59319,7 +59330,7 @@ vec2 terrainResponse(float depth, float pixelRadius){
 			originalResponse = (validA ? 100.0 : 0.0) + (validB ? 100.0 : 0.0);
 		}else if(validA && validB){
 			originalResponse = max(0.0, depth - depthA) + max(0.0, depth - depthB);
-			if(length(reliefViewUp.xy) >= 0.0001){
+			if(ground && length(reliefViewUp.xy) >= 0.0001){
 				vec2 a = terrainResponseSample(depth, depthA, pixelRadius * neighbours[i]);
 				vec2 b = terrainResponseSample(depth, depthB, pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2]);
 				originalResponse = max(0.0, a.x / a.y) + max(0.0, b.x / b.y);
@@ -59337,12 +59348,12 @@ vec2 terrainResponse(float depth, float pixelRadius){
 	return vec2(sum / float(NEIGHBOUR_COUNT), variation);
 }
 
-float response(float depth){
-	vec2 fine = terrainResponse(depth, radius);
+float response(float depth, bool ground){
+	vec2 fine = terrainResponse(depth, radius, ground);
 	// Borrow a radius-normalized response only where the inner ring has no
 	// terrain evidence. The correction vanishes continuously towards top-down.
-	if(depth != 0.0 && reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && fine.y < 0.00001){
-		vec2 support = terrainResponse(depth, 2.0 * radius);
+	if(ground && depth != 0.0 && reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && fine.y < 0.00001){
+		vec2 support = terrainResponse(depth, 2.0 * radius, true);
 		if(support.y < 1.0){
 			float weight = dot(reliefViewUp.xy, reliefViewUp.xy) * (1.0 - smoothstep(0.0, 0.00001, fine.y));
 			fine.x = mix(fine.x, 0.5 * support.x, weight);
@@ -59482,7 +59493,7 @@ float reliefShade(float depth){
 	}
 	// Recover slope evidence when the small kernel stays inside a flat sprite.
 	if(reliefPerspective > 0.5 && length(reliefViewUp.xy) >= 0.0001 && length(gradient) < 0.00001){
-		float variation = terrainResponse(depth, 2.0 * reliefRadius).y;
+		float variation = terrainResponse(depth, 2.0 * reliefRadius, true).y;
 		if(variation < 0.00001){
 			vec3 support = reliefGradient(depth, 4.0);
 			float weight = dot(reliefViewUp.xy, reliefViewUp.xy) * (1.0 - smoothstep(0.0, 0.00001, variation));
@@ -59524,13 +59535,15 @@ void main(){
 	}
 	// Terrain-space sampling already corrects projection distortion. Further
 	// angle-based slope suppression or a brightness floor would wash out EDL.
-	float res = response(depth) * depthResponseNormalization(depth);
+	float res = response(depth, cEDL.b >= 0.0) * depthResponseNormalization(depth);
 	float shade = exp(-res * 300.0 * edlStrength);
 	float relief = 1.0;
 	if(reliefEnabled > 0.5){
 		relief = reliefShade(depth);
 	}
 
+	// Undo the classification marker without changing the displayed palette.
+	cEDL.b = abs(cEDL.b);
 	gl_FragColor = vec4(cEDL.rgb * shade * relief, opacity);
 
 	{ // write regular hyperbolic depth values to depth buffer
