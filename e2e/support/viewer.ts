@@ -424,6 +424,7 @@ const MOCK_POTREE_SCRIPT = String.raw`
       };
       this.earthControls = {};
       this.orbitControls = {};
+      this.mobileMapControls = { doubleTapZoomEnabled: true };
       this.useHQ = false;
     }
 

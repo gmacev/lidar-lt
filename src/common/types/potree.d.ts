@@ -249,6 +249,9 @@ interface OrbitControls extends PotreeControls {
 }
 
 type EarthControls = PotreeControls;
+interface MobileMapControls extends PotreeControls {
+    doubleTapZoomEnabled: boolean;
+}
 
 // ============================================================================
 // Viewer
@@ -259,6 +262,7 @@ export interface PotreeViewer {
     renderer: WebGLRenderer;
     orbitControls: OrbitControls;
     earthControls: EarthControls;
+    mobileMapControls: MobileMapControls;
     /** Enables Potree's high-quality splat renderer. */
     useHQ: boolean;
     measuringTool: MeasuringTool;

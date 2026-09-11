@@ -202,8 +202,10 @@ export function OrthophotoCompareOverlay({
 
         viewer.earthControls.pitchLocked = true;
         viewer.orbitControls.pitchLocked = true;
+        viewer.mobileMapControls.pitchLocked = true;
         viewer.earthControls.stop?.();
         viewer.orbitControls.stop?.();
+        viewer.mobileMapControls.stop?.();
 
         const view = viewer.scene.view;
         const pivot = view.getPivot();
@@ -213,6 +215,7 @@ export function OrthophotoCompareOverlay({
         return () => {
             viewer.earthControls.pitchLocked = false;
             viewer.orbitControls.pitchLocked = false;
+            viewer.mobileMapControls.pitchLocked = false;
         };
     }, [isViewerReady, viewerRef]);
 

@@ -62,4 +62,22 @@ test.describe('viewer responsive layout', () => {
         await expect(page.getByTestId('viewer-orthophoto-compare')).toBeVisible();
         await expect(slider).toBeVisible();
     });
+
+    test('short mobile landscape keeps the complete right tool palette visible', async ({
+        page,
+    }, testInfo) => {
+        test.skip(testInfo.project.name !== 'mobile-chromium', 'mobile-only assertion');
+
+        await page.setViewportSize({ width: 915, height: 360 });
+        await gotoMockedViewer(page);
+
+        const rail = page.getByTestId('viewer-right-rail');
+        const compass = page.getByTestId('viewer-compass');
+        await expect(rail).toHaveCSS('width', '84px');
+        await expect(compass).toBeVisible();
+
+        const compassBox = await compass.boundingBox();
+        if (!compassBox) throw new Error('Compass has no rendered bounds');
+        expect(compassBox.y + compassBox.height).toBeLessThanOrEqual(360);
+    });
 });

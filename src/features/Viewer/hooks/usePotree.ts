@@ -511,9 +511,9 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
 
             viewer.setDescription('');
 
-            // Control - use orbit controls for touch devices (better touch gesture support)
+            // Use map-style direct manipulation on touch devices.
             if (isTouchDevice()) {
-                viewer.setControls(viewer.orbitControls);
+                viewer.setControls(viewer.mobileMapControls);
             } else {
                 viewer.setControls(viewer.earthControls);
             }

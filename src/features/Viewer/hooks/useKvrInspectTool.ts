@@ -235,7 +235,7 @@ export function useKvrInspectTool({
 
         // Touch screens never fire mousedown here: Potree preventDefaults
         // touchstart/touchend, which suppresses compatibility mouse events.
-        // Detect single-finger taps instead; drags keep orbiting the camera.
+        // Detect single-finger taps instead; drags keep panning the camera.
         const handleTouchStart = (event: TouchEvent) => {
             touchStart =
                 event.touches.length === 1
@@ -278,6 +278,11 @@ export function useKvrInspectTool({
                 rendererElement.removeEventListener('touchend', handleTouchEnd);
                 rendererElement.removeEventListener('touchcancel', handleTouchCancel);
                 rendererElement.style.cursor = previousCursor;
+            }
+
+            const mobileMapControls = viewerRef.current?.mobileMapControls;
+            if (mobileMapControls) {
+                mobileMapControls.doubleTapZoomEnabled = !nextRendererElement;
             }
 
             rendererElement = nextRendererElement;

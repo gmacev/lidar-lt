@@ -82334,9 +82334,11 @@ ENDSEC
 			this.domElement.addEventListener('dblclick', this.onDoubleClick.bind(this));
 			this.domElement.addEventListener('keydown', this.onKeyDown.bind(this));
 			this.domElement.addEventListener('keyup', this.onKeyUp.bind(this));
-			this.domElement.addEventListener('touchstart', this.onTouchStart.bind(this));
-			this.domElement.addEventListener('touchend', this.onTouchEnd.bind(this));
-			this.domElement.addEventListener('touchmove', this.onTouchMove.bind(this));
+			this.domElement.style.touchAction = 'none';
+			this.domElement.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+			this.domElement.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
+			this.domElement.addEventListener('touchcancel', this.onTouchCancel.bind(this), { passive: false });
+			this.domElement.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
 		}
 
 		addInputListener(listener) {
@@ -82382,6 +82384,30 @@ ENDSEC
 
 		onTouchEnd(e) {
 			if (this.logMessages) console.log(this.constructor.name + ': onTouchEnd');
+
+			e.preventDefault();
+
+			for (let inputListener of this.getSortedListeners()) {
+				inputListener.dispatchEvent({
+					type: 'drop',
+					drag: this.drag,
+					viewer: this.viewer
+				});
+			}
+
+			this.drag = null;
+
+			for (let inputListener of this.getSortedListeners()) {
+				inputListener.dispatchEvent({
+					type: e.type,
+					touches: e.touches,
+					changedTouches: e.changedTouches
+				});
+			}
+		}
+
+		onTouchCancel(e) {
+			if (this.logMessages) console.log(this.constructor.name + ': onTouchCancel');
 
 			e.preventDefault();
 
@@ -83513,6 +83539,423 @@ ENDSEC
 	};
 
 	/**
+	 * Direct-manipulation touch controls for geographic point-cloud scenes.
+	 * Gesture conventions follow THREE.MapControls while camera changes remain
+	 * native to Potree's scene.view.
+	 */
+	class MobileMapControls extends EventDispatcher {
+
+		constructor(viewer) {
+			super();
+
+			this.viewer = viewer;
+			this.renderer = viewer.renderer;
+			this.scene = null;
+			this.sceneControls = new Scene();
+			this.enabled = false;
+			this.pitchLocked = false;
+			this.doubleTapZoomEnabled = true;
+			this.gesture = null;
+			this.interacting = false;
+			this.lastTap = null;
+			this.doubleTapTween = null;
+
+			this.addEventListener('touchstart', e => this.onTouchStart(e));
+			this.addEventListener('touchmove', e => this.onTouchMove(e));
+			this.addEventListener('touchend', e => this.onTouchEnd(e));
+			this.addEventListener('touchcancel', () => this.stop());
+		}
+
+		setScene(scene) {
+			this.scene = scene;
+		}
+
+		update() {
+			// Gestures update scene.view immediately so the cloud stays under the fingers.
+		}
+
+		stop() {
+			this.gesture = null;
+			this.lastTap = null;
+			this.stopDoubleTapTween();
+			this.endInteraction();
+		}
+
+		stopDoubleTapTween() {
+			if (!this.doubleTapTween) {
+				return;
+			}
+
+			this.doubleTapTween.stop();
+			this.doubleTapTween = null;
+		}
+
+		beginInteraction() {
+			if (this.interacting) {
+				return;
+			}
+
+			this.interacting = true;
+			this.dispatchEvent({ type: 'start' });
+		}
+
+		endInteraction() {
+			if (!this.interacting) {
+				return;
+			}
+
+			this.interacting = false;
+			this.dispatchEvent({ type: 'end' });
+		}
+
+		getTouchPoints(touches) {
+			let rect = this.renderer.domElement.getBoundingClientRect();
+			let points = [];
+
+			for (let i = 0; i < touches.length; i++) {
+				let touch = touches[i];
+				points.push({
+					id: touch.identifier,
+					x: touch.clientX - rect.left,
+					y: touch.clientY - rect.top
+				});
+			}
+
+			points.sort((a, b) => a.id - b.id);
+			return points;
+		}
+
+		getTwoTouchMetrics(points) {
+			let dx = points[1].x - points[0].x;
+			let dy = points[1].y - points[0].y;
+
+			return {
+				center: new Vector2(
+					(points[0].x + points[1].x) / 2,
+					(points[0].y + points[1].y) / 2),
+				distance: Math.max(1, Math.sqrt(dx * dx + dy * dy)),
+				angle: Math.atan2(dy, dx)
+			};
+		}
+
+		normalizeAngle(angle) {
+			while (angle > Math.PI) angle -= 2 * Math.PI;
+			while (angle < -Math.PI) angle += 2 * Math.PI;
+			return angle;
+		}
+
+		getPointCloudIntersection(point) {
+			if (!this.scene || this.scene.pointclouds.length === 0) {
+				return null;
+			}
+
+			let intersection = Utils.getMousePointCloudIntersection(
+				point,
+				this.scene.getActiveCamera(),
+				this.viewer,
+				this.scene.pointclouds,
+				{ pickClipped: true });
+
+			return intersection ? intersection.location.clone() : null;
+		}
+
+		createOneFingerGesture(point) {
+			let camera = this.scene ? this.scene.getActiveCamera().clone() : null;
+			let anchor = this.getPointCloudIntersection(new Vector2(point.x, point.y));
+
+			return {
+				type: 'pan',
+				start: point,
+				last: point,
+				moved: false,
+				anchor: anchor,
+				camera: camera,
+				viewPosition: this.scene ? this.scene.view.position.clone() : null
+			};
+		}
+
+		createTwoFingerGesture(points) {
+			let metrics = this.getTwoTouchMetrics(points);
+
+			return {
+				type: 'two',
+				mode: 'pending',
+				startPoints: points,
+				start: metrics,
+				last: metrics,
+				anchor: this.getPointCloudIntersection(metrics.center)
+			};
+		}
+
+		resetGesture(touches) {
+			let points = this.getTouchPoints(touches);
+
+			if (points.length === 1) {
+				this.gesture = this.createOneFingerGesture(points[0]);
+			} else if (points.length === 2) {
+				this.gesture = this.createTwoFingerGesture(points);
+			} else {
+				this.gesture = null;
+			}
+		}
+
+		onTouchStart(e) {
+			if (!this.enabled || !this.scene) {
+				return;
+			}
+
+			this.stopDoubleTapTween();
+			if (e.touches.length !== 1) {
+				this.lastTap = null;
+			}
+
+			// A changed touch count starts a fresh baseline. This prevents the camera
+			// jump common in older controls when a second finger joins a drag.
+			this.resetGesture(e.touches);
+		}
+
+		onTouchEnd(e) {
+			if (!this.enabled) {
+				return;
+			}
+
+			if (e.touches.length > 0) {
+				this.resetGesture(e.touches);
+				return;
+			}
+
+			let completedGesture = this.gesture;
+			this.gesture = null;
+			this.endInteraction();
+
+			if (completedGesture && completedGesture.type === 'pan' &&
+				!completedGesture.moved && e.changedTouches.length === 1) {
+				let points = this.getTouchPoints(e.changedTouches);
+				this.handleTap(points[0]);
+			}
+		}
+
+		handleTap(point) {
+			if (!this.doubleTapZoomEnabled) {
+				this.lastTap = null;
+				return;
+			}
+
+			let now = Date.now();
+			let previous = this.lastTap;
+			let isDoubleTap = previous && now - previous.time <= 300 &&
+				Math.sqrt(
+					Math.pow(point.x - previous.point.x, 2) +
+					Math.pow(point.y - previous.point.y, 2)) <= 32;
+
+			if (!isDoubleTap) {
+				this.lastTap = { point: point, time: now };
+				return;
+			}
+
+			this.lastTap = null;
+			this.zoomToPoint(new Vector2(point.x, point.y));
+		}
+
+		zoomToPoint(point) {
+			let view = this.scene.view;
+			let anchor = this.getPointCloudIntersection(point) || view.getPivot();
+			let startPosition = view.position.clone();
+			let startRadius = Math.max(0.2, view.radius);
+			let targetScale = Math.max(0.2 / startRadius, 0.5);
+			let value = { scale: 1 };
+
+			this.stopDoubleTapTween();
+			this.beginInteraction();
+
+			let tween = new TWEEN.Tween(value).to({ scale: targetScale }, 260);
+			tween.easing(TWEEN.Easing.Quartic.Out);
+			tween.onUpdate(() => {
+				view.position.copy(startPosition).sub(anchor).multiplyScalar(value.scale).add(anchor);
+				view.radius = startRadius * value.scale;
+				this.viewer.setMoveSpeed(view.radius / 2.5);
+			});
+			tween.onComplete(() => {
+				if (this.doubleTapTween === tween) {
+					this.doubleTapTween = null;
+					this.endInteraction();
+				}
+			});
+			this.doubleTapTween = tween;
+			tween.start();
+		}
+
+		onTouchMove(e) {
+			if (!this.enabled || !this.scene) {
+				return;
+			}
+
+			let points = this.getTouchPoints(e.touches);
+			if (!this.gesture || points.length === 0 ||
+				(this.gesture.type === 'pan' && points.length !== 1) ||
+				(this.gesture.type === 'two' && points.length !== 2)) {
+				this.resetGesture(e.touches);
+				return;
+			}
+
+			if (this.gesture.type === 'pan') {
+				this.updatePan(points[0]);
+			} else {
+				this.updateTwoFingerGesture(points);
+			}
+		}
+
+		updatePan(point) {
+			let gesture = this.gesture;
+			let totalX = point.x - gesture.start.x;
+			let totalY = point.y - gesture.start.y;
+
+			if (!gesture.moved && Math.sqrt(totalX * totalX + totalY * totalY) <= 12) {
+				gesture.last = point;
+				return;
+			}
+
+			gesture.moved = true;
+			this.lastTap = null;
+			this.beginInteraction();
+
+			let view = this.scene.view;
+			let element = this.renderer.domElement;
+			let usedAnchor = false;
+
+			if (gesture.anchor && gesture.camera && gesture.viewPosition) {
+				let ray = Utils.mouseToRay(
+					new Vector2(point.x, point.y),
+					gesture.camera,
+					element.clientWidth,
+					element.clientHeight);
+				let plane = new Plane().setFromNormalAndCoplanarPoint(
+					new Vector3(0, 0, 1),
+					gesture.anchor);
+				let distance = ray.distanceToPlane(plane);
+
+				if (distance !== null && distance > 0) {
+					let current = ray.origin.clone().add(ray.direction.clone().multiplyScalar(distance));
+					let movement = current.sub(gesture.anchor);
+					view.position.copy(gesture.viewPosition).sub(movement);
+					usedAnchor = true;
+				}
+			}
+
+			if (!usedAnchor) {
+				let dx = point.x - gesture.last.x;
+				let dy = point.y - gesture.last.y;
+				let camera = this.scene.getActiveCamera();
+				let worldPerPixel;
+
+				if (camera.isOrthographicCamera) {
+					worldPerPixel = 2 * view.radius / Math.max(1, element.clientWidth);
+				} else {
+					let fov = camera.fov * Math.PI / 180;
+					worldPerPixel = 2 * view.radius * Math.tan(fov / 2) /
+						Math.max(1, element.clientHeight);
+				}
+
+				view.pan(-dx * worldPerPixel, dy * worldPerPixel);
+			}
+
+			gesture.last = point;
+			this.viewer.setMoveSpeed(view.radius / 2.5);
+		}
+
+		updateTwoFingerGesture(points) {
+			let gesture = this.gesture;
+			let metrics = this.getTwoTouchMetrics(points);
+			let centerX = metrics.center.x - gesture.start.center.x;
+			let centerY = metrics.center.y - gesture.start.center.y;
+			let scaleChange = Math.abs(Math.log(metrics.distance / gesture.start.distance));
+			let angleChange = Math.abs(this.normalizeAngle(metrics.angle - gesture.start.angle));
+			let firstY = points[0].y - gesture.startPoints[0].y;
+			let secondY = points[1].y - gesture.startPoints[1].y;
+			let sameVerticalDirection = firstY * secondY > 0;
+			let verticalDominance = Math.abs(centerY) > Math.abs(centerX) * 1.2;
+			let potentialTilt = firstY * secondY >= 0 &&
+				Math.abs(centerY) > 4 && verticalDominance && scaleChange < 0.08;
+			let parallelVertical = sameVerticalDirection &&
+				Math.min(Math.abs(firstY), Math.abs(secondY)) > 6 &&
+				Math.abs(centerY) > 8 && verticalDominance && scaleChange < 0.08;
+
+			if (gesture.mode === 'pending') {
+				if (parallelVertical) {
+					gesture.mode = 'tilt';
+					this.beginInteraction();
+				} else if (!potentialTilt && (scaleChange > 0.02 || angleChange > 0.035)) {
+					gesture.mode = 'transform';
+					this.beginInteraction();
+				}
+			}
+
+			if (gesture.mode === 'tilt') {
+				let dy = metrics.center.y - gesture.last.center.y;
+				this.applyTilt(-dy / Math.max(1, this.renderer.domElement.clientHeight) * 2.5,
+					gesture.anchor);
+			} else if (gesture.mode === 'transform') {
+				let scale = metrics.distance / gesture.last.distance;
+				let angle = this.normalizeAngle(metrics.angle - gesture.last.angle);
+
+				if (Number.isFinite(scale) && scale > 0) {
+					this.applyZoom(Math.max(0.5, Math.min(2, scale)), gesture.anchor);
+				}
+				this.applyYaw(angle, gesture.anchor);
+			}
+
+			gesture.last = metrics;
+		}
+
+		applyZoom(scale, anchor) {
+			let view = this.scene.view;
+			let previousRadius = Math.max(0.2, view.radius);
+			let nextRadius = Math.max(0.2, previousRadius / scale);
+			let ratio = nextRadius / previousRadius;
+			let zoomAnchor = anchor || view.getPivot();
+
+			view.position.sub(zoomAnchor).multiplyScalar(ratio).add(zoomAnchor);
+			view.radius = nextRadius;
+			this.viewer.setMoveSpeed(nextRadius / 2.5);
+		}
+
+		applyYaw(delta, anchor) {
+			if (Math.abs(delta) < 0.0001) {
+				return;
+			}
+
+			let view = this.scene.view;
+			let pivot = anchor || view.getPivot();
+			let offset = view.position.clone().sub(pivot);
+
+			offset.applyAxisAngle(new Vector3(0, 0, 1), delta);
+			view.position.copy(pivot).add(offset);
+			view.yaw += delta;
+		}
+
+		applyTilt(delta, anchor) {
+			if (this.pitchLocked || Math.abs(delta) < 0.0001) {
+				return;
+			}
+
+			let view = this.scene.view;
+			let previousPitch = view.pitch;
+			let nextPitch = Math.max(-Math.PI / 2, Math.min(-0.05, previousPitch + delta));
+			let appliedDelta = nextPitch - previousPitch;
+
+			if (Math.abs(appliedDelta) < 0.0001) {
+				return;
+			}
+
+			let pivot = anchor || view.getPivot();
+			let offset = view.position.clone().sub(pivot);
+			offset.applyAxisAngle(view.getSide(), appliedDelta);
+			view.position.copy(pivot).add(offset);
+			view.pitch = nextPitch;
+		}
+	};
+
+	/**
 	 * @author mschuetz / http://mschuetz.at
 	 *
 	 * adapted from THREE.OrbitControls by
@@ -83522,11 +83965,7 @@ ENDSEC
 	 * @author alteredq / http://alteredqualia.com/
 	 * @author WestLangley / http://github.com/WestLangley
 	 * @author erich666 / http://erichaines.com
-	 *
-	 *
-	 *
 	 */
-
 
 	class FirstPersonControls extends EventDispatcher {
 		constructor(viewer) {
@@ -90773,6 +91212,13 @@ ENDSEC
 				this.orbitControls.addEventListener('end', this.enableAnnotations.bind(this));
 			}
 
+			{ // create MOBILE MAP CONTROLS
+				this.mobileMapControls = new MobileMapControls(this);
+				this.mobileMapControls.enabled = false;
+				this.mobileMapControls.addEventListener('start', this.disableAnnotations.bind(this));
+				this.mobileMapControls.addEventListener('end', this.enableAnnotations.bind(this));
+			}
+
 			{ // create EARTH CONTROLS
 				this.earthControls = new EarthControls(this);
 				this.earthControls.enabled = false;
@@ -92300,6 +92746,7 @@ ENDSEC
 	exports.Measure = Measure;
 	exports.MeasuringTool = MeasuringTool;
 	exports.Message = Message;
+	exports.MobileMapControls = MobileMapControls;
 	exports.NodeLoader = NodeLoader;
 	exports.NormalizationEDLMaterial = NormalizationEDLMaterial;
 	exports.NormalizationMaterial = NormalizationMaterial;

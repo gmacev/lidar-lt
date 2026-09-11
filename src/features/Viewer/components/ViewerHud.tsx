@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import { GlassPanel, Icon, LanguageSwitcher, ThemeSwitcher } from '@/common/components';
+import { isTouchDevice } from '@/common/utils/screenSize';
 import type { Projection, ViewerState } from '@/features/Viewer/config/viewerConfig';
 import type { ViewerNavigationActions } from '@/features/Viewer/hooks/useViewerNavigationActions';
 import type { ReliefAzimuthCycleController } from '@/features/Viewer/hooks/useReliefAzimuthCycle';
@@ -83,6 +84,7 @@ export function ViewerHud({
     viewerRef,
 }: ViewerHudProps) {
     const { t } = useTranslation();
+    const isTouch = isTouchDevice();
 
     return (
         <>
@@ -142,18 +144,20 @@ export function ViewerHud({
                                 >
                                     <Icon name={uiVisible ? 'eyeOff' : 'eye'} size={20} />
                                 </button>
-                                {/* Controls panel - hidden on small screens */}
-                                <GlassPanel className="hidden w-64 md:block">
-                                    <h3 className="mb-2 text-sm font-bold text-neon-amber">
-                                        {t('viewer.controls')}
-                                    </h3>
-                                    <ul className="space-y-1 text-xs text-white/70">
-                                        <li>{t('viewer.controlLeftClick')}</li>
-                                        <li>{t('viewer.controlRightClick')}</li>
-                                        <li>{t('viewer.controlScroll')}</li>
-                                        <li>{t('viewer.controlAddMarker')}</li>
-                                    </ul>
-                                </GlassPanel>
+                                {/* Mouse controls are irrelevant on touch-capable devices. */}
+                                {!isTouch && (
+                                    <GlassPanel className="hidden w-64 md:block">
+                                        <h3 className="mb-2 text-sm font-bold text-neon-amber">
+                                            {t('viewer.controls')}
+                                        </h3>
+                                        <ul className="space-y-1 text-xs text-white/70">
+                                            <li>{t('viewer.controlLeftClick')}</li>
+                                            <li>{t('viewer.controlRightClick')}</li>
+                                            <li>{t('viewer.controlScroll')}</li>
+                                            <li>{t('viewer.controlAddMarker')}</li>
+                                        </ul>
+                                    </GlassPanel>
+                                )}
                             </>
                         )}
                     </div>
@@ -162,7 +166,7 @@ export function ViewerHud({
                     {!isLoading && !hasError && (
                         <div
                             data-testid="viewer-right-rail"
-                            className={`absolute right-2 top-16 z-20 flex w-10 flex-col items-center gap-3 md:top-[140px] xl:right-4 ${
+                            className={`${isTouch ? 'viewer-touch-right-rail' : ''} absolute right-2 top-16 z-20 flex w-10 flex-col items-center gap-3 md:top-[140px] xl:right-4 ${
                                 profile.isMeasuring
                                     ? profile.isPanelCollapsed
                                         ? 'bottom-[3.25rem]'
@@ -178,7 +182,9 @@ export function ViewerHud({
                                 tools={toolbar}
                             />
 
-                            <div className="flex shrink-0 flex-col items-center gap-2">
+                            <div
+                                className={`${isTouch ? 'viewer-touch-right-tools' : ''} flex shrink-0 flex-col items-center gap-2`}
+                            >
                                 <ToolbarToolButton
                                     data-testid="viewer-recenter"
                                     icon={<Icon name="crosshair" size={20} />}
