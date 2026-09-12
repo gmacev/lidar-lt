@@ -59002,6 +59002,31 @@ vec2 terrainResponse(float depth, float pixelRadius, bool ground){
 				vec2 b = terrainResponseSample(depth, depthB, pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2]);
 				originalResponse = max(0.0, a.x / a.y) + max(0.0, b.x / b.y);
 				variation += abs(a.x) + abs(b.x);
+			}else if(!ground && originalResponse > 0.0 && length(reliefViewUp.xy) >= 0.0001){
+				// Opposite signed, matching differences describe a local depth
+				// ramp. At oblique angles suppress that balanced component,
+				// retaining unmatched jumps at foliage and building boundaries.
+				float a = depth - depthA;
+				float b = depth - depthB;
+				float ramp = a * b < 0.0 ? min(abs(a), abs(b)) : 0.0;
+				// A wider pair can reveal the same ramp across a flat point
+				// interior. Require matching direction and nearby depth scales;
+				// do not borrow a slope across an unrelated distant surface.
+				float farDepthA = texture2D(uEDLMap, edlSampleUv(2.0 * pixelRadius * neighbours[i])).a;
+				float farDepthB = texture2D(uEDLMap, edlSampleUv(2.0 * pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2])).a;
+				if(farDepthA != 0.0 && farDepthB != 0.0){
+					float farA = depth - farDepthA;
+					float farB = depth - farDepthB;
+					float nearScale = max(abs(a), abs(b));
+					if(farA * farB < 0.0 && a * farA >= 0.0 && b * farB >= 0.0
+						&& abs(farA - 2.0 * a) <= nearScale
+						&& abs(farB - 2.0 * b) <= nearScale){
+						float widerRamp = 0.5 * min(abs(farA), abs(farB));
+						// Retain at least half of the previously unmatched edge.
+						ramp += 0.5 * min(max(0.0, widerRamp - ramp), originalResponse - ramp);
+					}
+				}
+				originalResponse -= min(1.0, dot(reliefViewUp.xy, reliefViewUp.xy)) * ramp;
 			}
 		}else if(validA){
 			originalResponse = max(0.0, depth - depthA);
@@ -59335,6 +59360,33 @@ vec2 terrainResponse(float depth, float pixelRadius, bool ground){
 				vec2 b = terrainResponseSample(depth, depthB, pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2]);
 				originalResponse = max(0.0, a.x / a.y) + max(0.0, b.x / b.y);
 				variation += abs(a.x) + abs(b.x);
+			}else if(!ground && originalResponse > 0.0 && length(reliefViewUp.xy) >= 0.0001){
+				// Opposite signed, matching differences describe a local depth
+				// ramp. At oblique angles suppress that balanced component,
+				// retaining unmatched jumps at foliage and building boundaries.
+				float a = depth - depthA;
+				float b = depth - depthB;
+				float ramp = a * b < 0.0 ? min(abs(a), abs(b)) : 0.0;
+				// A wider pair can reveal the same ramp across a flat point
+				// interior. Require matching direction and nearby depth scales;
+				// do not borrow a slope across an unrelated distant surface.
+				float farDepthA = texture2D(uEDLColor, edlSampleUv(2.0 * pixelRadius * neighbours[i])).a;
+				float farDepthB = texture2D(uEDLColor, edlSampleUv(2.0 * pixelRadius * neighbours[i + NEIGHBOUR_COUNT / 2])).a;
+				farDepthA = farDepthA == 1.0 ? 0.0 : farDepthA;
+				farDepthB = farDepthB == 1.0 ? 0.0 : farDepthB;
+				if(farDepthA != 0.0 && farDepthB != 0.0){
+					float farA = depth - farDepthA;
+					float farB = depth - farDepthB;
+					float nearScale = max(abs(a), abs(b));
+					if(farA * farB < 0.0 && a * farA >= 0.0 && b * farB >= 0.0
+						&& abs(farA - 2.0 * a) <= nearScale
+						&& abs(farB - 2.0 * b) <= nearScale){
+						float widerRamp = 0.5 * min(abs(farA), abs(farB));
+						// Retain at least half of the previously unmatched edge.
+						ramp += 0.5 * min(max(0.0, widerRamp - ramp), originalResponse - ramp);
+					}
+				}
+				originalResponse -= min(1.0, dot(reliefViewUp.xy, reliefViewUp.xy)) * ramp;
 			}
 		}else if(validA){
 			originalResponse = max(0.0, depth - depthA);
