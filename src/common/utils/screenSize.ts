@@ -39,3 +39,13 @@ export function isTouchDevice(): boolean {
         navigator.msMaxTouchPoints > 0
     );
 }
+
+/**
+ * Firefox for Android can report viewport bounds that still extend slightly
+ * behind its dynamic browser and system chrome.
+ */
+export function isFirefoxAndroid(): boolean {
+    if (typeof navigator === 'undefined') return false;
+
+    return /Android/i.test(navigator.userAgent) && /Firefox\//i.test(navigator.userAgent);
+}

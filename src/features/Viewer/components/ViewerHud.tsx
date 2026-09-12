@@ -21,7 +21,6 @@ import { GoogleMapsButton } from './GoogleMapsButton';
 import { KvrInspectButton } from './KvrInspectButton';
 import { MapLabelsButton } from './MapLabelsButton';
 import { SectorNavigation } from './SectorNavigation';
-import { ToolbarToolButton } from './ToolbarToolButton';
 import { OrthophotoCompareButton } from './OrthophotoCompareButton';
 
 interface ViewerHudProps {
@@ -93,6 +92,7 @@ export function ViewerHud({
                     {/* Sector info + Coordinate Search - bottom center, always */}
                     {!isLoading && !hasError && !profile.isMeasuring && (
                         <div
+                            data-testid="viewer-bottom-navigation"
                             className={`absolute left-1/2 z-20 flex -translate-x-1/2 items-stretch gap-2 ${
                                 profile.isMeasuring
                                     ? profile.isPanelCollapsed
@@ -113,6 +113,7 @@ export function ViewerHud({
                             <SectorNavigation
                                 cellId={cellId}
                                 onNavigate={navigation.handleSectorNavigate}
+                                onRecenter={navigation.handleRecenterView}
                             />
                         </div>
                     )}
@@ -183,15 +184,9 @@ export function ViewerHud({
                             />
 
                             <div
-                                className={`${isTouch ? 'viewer-touch-right-tools' : ''} flex shrink-0 flex-col items-center gap-2`}
+                                data-testid="viewer-right-tools"
+                                className={`flex shrink-0 flex-col items-center ${isTouch ? 'gap-1' : 'gap-2'}`}
                             >
-                                <ToolbarToolButton
-                                    data-testid="viewer-recenter"
-                                    icon={<Icon name="crosshair" size={20} />}
-                                    isActive={false}
-                                    label={t('viewer.recenter')}
-                                    onClick={navigation.handleRecenterView}
-                                />
                                 <MapLabelsButton
                                     enabled={mapLabelsEnabled}
                                     onChange={(enabled) =>

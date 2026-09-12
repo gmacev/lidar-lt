@@ -546,6 +546,7 @@ body,
 #root {
     min-height: 100vh;
     min-height: 100dvh;
+    overflow: hidden;
     background-color: var(--color-void-black);
     color: white;
     font-family:
@@ -553,8 +554,8 @@ body,
         -apple-system,
         sans-serif;
     /* App is viewport-locked: never let the document itself scroll or
-       rubber-band. On mobile this prevents the stuck scroll offset left
-       behind after the on-screen keyboard closes. */
+       rubber-band. On mobile this also prevents browser chrome from
+       exposing content outside the full-screen app shell. */
     overscroll-behavior: none;
 }
 
@@ -614,21 +615,23 @@ body,
     display: none;
 }
 
-/* Keep the viewer tool rail reachable in short landscape touch viewports. */
+/* Firefox Android leaves small strips of its reported viewport beneath
+   browser chrome. Keep the full viewer shell inside the observed usable area. */
+.viewer-firefox-android-viewport {
+    height: calc(100svh - 0.5rem);
+}
+
+@media (orientation: landscape) {
+    .viewer-firefox-android-viewport {
+        width: calc(100svw - 20px);
+    }
+}
+
+/* Keep the single-column touch rail above the bottom edge in short landscape viewports. */
 @media (max-height: 480px) {
     .viewer-touch-right-rail {
         top: 3.75rem;
         bottom: 1.25rem;
-        width: 5.25rem;
-        gap: 0.25rem;
-    }
-
-    .viewer-touch-right-tools {
-        display: grid;
-        grid-auto-flow: column;
-        grid-template-rows: repeat(3, 2.5rem);
-        grid-template-columns: repeat(2, 2.5rem);
-        gap: 0.25rem;
     }
 }
 

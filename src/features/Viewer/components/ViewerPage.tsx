@@ -18,7 +18,7 @@ import {
     getViewerSourceManifestUrl,
 } from '@/features/Viewer/utils/viewerDataUrls';
 import { setViewerProjection } from '@/features/Viewer/utils/viewerDefaults';
-import { isMobile } from '@/common/utils/screenSize';
+import { isFirefoxAndroid, isMobile } from '@/common/utils/screenSize';
 import { MarkerOverlay } from './MarkerOverlay';
 import { ViewerLabelsOverlay } from './ViewerLabelsOverlay';
 import { MeasurementContextMenus } from './MeasurementContextMenus';
@@ -53,6 +53,7 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     const [projection, setProjection] = useState<Projection>(
         initialState.projection ?? 'PERSPECTIVE'
     );
+    const needsFirefoxViewportInset = isFirefoxAndroid();
     const effectiveProjection: Projection = orthophotoCompareEnabled ? 'ORTHOGRAPHIC' : projection;
     useViewerDataOriginPreconnect();
 
@@ -306,7 +307,9 @@ export function ViewerPage({ cellId, onBack, initialState }: ViewerPageProps) {
     return (
         <div
             data-testid="viewer-page"
-            className="potree-viewer relative h-dvh w-screen bg-void-black"
+            className={`potree-viewer fixed inset-0 h-svh w-svw touch-none overflow-hidden bg-void-black ${
+                needsFirefoxViewportInset ? 'viewer-firefox-android-viewport' : ''
+            }`}
         >
             <div
                 ref={containerRef}

@@ -17,30 +17,30 @@ export function ViewerMobileNotice() {
     if (!isTouchDevice() || isDismissed) return null;
 
     return (
-        <div
+        <button
             data-testid="viewer-mobile-notice"
-            role="note"
-            className="fixed left-2 right-14 top-14 z-40 mx-auto max-w-[300px] rounded-lg border border-amber-400/30 bg-black/70 p-2 backdrop-blur-sm"
+            type="button"
+            onClick={() => setIsDismissed(true)}
+            title={t('viewer.mobileNoticeDismiss')}
+            className="fixed left-2 right-14 top-14 z-40 mx-auto max-w-[300px] cursor-pointer rounded-lg border border-amber-400/30 bg-black/70 p-2 text-left backdrop-blur-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
         >
-            <div className="flex items-start gap-1.5">
+            <span className="flex items-start gap-1.5">
                 <Icon name="warningTriangle" size={18} className="mt-px shrink-0 text-amber-300" />
-                <p className="min-w-0 flex-1 text-[13px] font-bold leading-tight text-amber-200">
+                <span className="min-w-0 flex-1 text-[13px] font-bold leading-tight text-amber-200">
                     {t('viewer.mobileNoticeTitle')}
-                </p>
-                <button
+                </span>
+                <span
                     data-testid="viewer-mobile-notice-close"
-                    type="button"
-                    onClick={() => setIsDismissed(true)}
-                    aria-label={t('viewer.mobileNoticeDismiss')}
-                    title={t('viewer.mobileNoticeDismiss')}
+                    aria-hidden="true"
                     className="-mr-1 -mt-1 shrink-0 rounded p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
                 >
                     <Icon name="close" size={14} />
-                </button>
-            </div>
-            <p className="mt-1 text-xs leading-snug text-white/65">
+                </span>
+            </span>
+            <span className="mt-1 block text-xs leading-snug text-white/65">
                 {t('viewer.mobileNoticeBody')}
-            </p>
-        </div>
+            </span>
+            <span className="sr-only">{t('viewer.mobileNoticeDismiss')}</span>
+        </button>
     );
 }

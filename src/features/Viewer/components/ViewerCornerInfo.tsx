@@ -49,6 +49,7 @@ export function ViewerCornerInfo({
 
     return (
         <div
+            data-testid="viewer-corner-info"
             className={`theme-surface theme-corner-info flex max-w-[calc(100vw-1rem)] items-center gap-x-2 gap-y-1 overflow-hidden rounded-tl-sm border border-b-0 border-r-0 border-white/10 bg-void-black/65 px-1 py-0.5 text-[10px] font-medium leading-none text-white/70 ${className}`}
         >
             {showSourceDetails && (
