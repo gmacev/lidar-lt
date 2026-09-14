@@ -170,16 +170,23 @@ export function SectorNavigation({ cellId, onNavigate, onRecenter }: SectorNavig
             aria-label={t('sectorNavigation.label')}
             role="group"
         >
-            <button
-                type="button"
-                data-testid="viewer-recenter"
-                aria-label={t('viewer.recenter')}
-                title={t('viewer.recenter')}
-                onClick={onRecenter}
-                className="group/sector-center col-start-2 row-start-2 flex h-full w-full items-center justify-center border-b border-r border-glass-border bg-black/35 shadow-[inset_0_1px_5px_rgba(0,0,0,0.7)] transition-colors hover:bg-neon-amber/[0.12] focus-visible:z-10 focus-visible:bg-neon-amber/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-amber/60 active:bg-neon-amber/[0.18]"
+            <Popover
+                align="center"
+                anchorRef={navigationRef}
+                className="theme-surface rounded-lg border border-white/10 bg-void-black/90 px-3 py-2.5 text-center text-[13px] leading-snug text-white/75 shadow-[0_18px_50px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)]"
+                onTriggerClick={onRecenter}
+                role="tooltip"
+                side="top"
+                trigger={
+                    <span className="h-2 w-2 rounded-full bg-neon-amber shadow-[0_0_8px_rgba(255,184,0,0.62)] transition-transform group-hover/sector-center:scale-125 group-focus-visible/sector-center:scale-125 motion-reduce:transition-none" />
+                }
+                triggerAriaLabel={t('viewer.recenter')}
+                triggerClassName="group/sector-center col-start-2 row-start-2 flex h-full w-full items-center justify-center border-b border-r border-glass-border bg-black/35 shadow-[inset_0_1px_5px_rgba(0,0,0,0.7)] transition-colors hover:bg-neon-amber/[0.12] focus-visible:z-10 focus-visible:bg-neon-amber/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-amber/60 active:bg-neon-amber/[0.18]"
+                triggerTestId="viewer-recenter"
+                width={190}
             >
-                <span className="h-2 w-2 rounded-full bg-neon-amber shadow-[0_0_8px_rgba(255,184,0,0.62)] transition-transform group-hover/sector-center:scale-125 group-focus-visible/sector-center:scale-125 motion-reduce:transition-none" />
-            </button>
+                <div className="font-medium text-neon-amber">{t('viewer.recenter')}</div>
+            </Popover>
 
             {directions.map((config) => {
                 const adjacentId = getAdjacentId(cellId, config.columnOffset, config.rowOffset);

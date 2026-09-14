@@ -26,6 +26,7 @@ interface PopoverProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> 
     trigger?: ReactNode;
     triggerAriaLabel?: string;
     triggerClassName?: string;
+    triggerTestId?: string;
     viewportPadding?: number;
     width?: number;
 }
@@ -62,6 +63,7 @@ export const Popover = forwardRef<HTMLDivElement, PopoverProps>(function Popover
         trigger,
         triggerAriaLabel,
         triggerClassName = '',
+        triggerTestId,
         viewportPadding = DEFAULT_VIEWPORT_PADDING,
         width,
         ...props
@@ -71,7 +73,6 @@ export const Popover = forwardRef<HTMLDivElement, PopoverProps>(function Popover
     const id = useId();
     const internalAnchorRef = useRef<HTMLButtonElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
-    const closeTimerRef = useRef<number | null>(null);
     const [internalIsOpen, setInternalIsOpen] = useState(false);
     const [isPinnedOpen, setIsPinnedOpen] = useState(false);
     const [position, setPosition] = useState<CSSProperties>({
@@ -86,27 +87,18 @@ export const Popover = forwardRef<HTMLDivElement, PopoverProps>(function Popover
 
     useImperativeHandle(ref, () => panelRef.current as HTMLDivElement);
 
-    const clearCloseTimer = () => {
-        if (closeTimerRef.current === null) return;
-        window.clearTimeout(closeTimerRef.current);
-        closeTimerRef.current = null;
-    };
-
     const open = () => {
         if (isControlled) return;
-        clearCloseTimer();
         setInternalIsOpen(true);
     };
 
     const close = () => {
         if (isControlled || isPinnedOpen) return;
-        clearCloseTimer();
-        closeTimerRef.current = window.setTimeout(() => setInternalIsOpen(false), 80);
+        setInternalIsOpen(false);
     };
 
     const closePinned = () => {
         if (isControlled) return;
-        clearCloseTimer();
         setIsPinnedOpen(false);
         setInternalIsOpen(false);
     };
@@ -115,15 +107,12 @@ export const Popover = forwardRef<HTMLDivElement, PopoverProps>(function Popover
         onTriggerClick?.();
         if (isControlled) return;
 
-        clearCloseTimer();
         setIsPinnedOpen((current) => {
             const next = !current;
             setInternalIsOpen(next);
             return next;
         });
     };
-
-    useEffect(() => clearCloseTimer, []);
 
     useEffect(() => {
         if (!isOpen || isControlled) return;
@@ -229,6 +218,7 @@ export const Popover = forwardRef<HTMLDivElement, PopoverProps>(function Popover
                     ref={internalAnchorRef}
                     type="button"
                     className={triggerClassName}
+                    data-testid={triggerTestId}
                     aria-describedby={isOpen ? id : undefined}
                     aria-label={triggerAriaLabel}
                     onBlur={close}
