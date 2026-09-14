@@ -57677,7 +57677,7 @@ uniform mat4 uShadowProj[num_shadowmaps];
 varying vec3	vColor;
 varying float	vLogDepth;
 #if defined(use_edl)
-varying float vEdlGround;
+varying float vEdlTerrainLike;
 #endif
 varying vec3	vViewPosition;
 varying float 	vRadius;
@@ -58417,7 +58417,7 @@ void main() {
 	gl_Position = projectionMatrix * mvPosition;
 	vLogDepth = log2(-mvPosition.z);
 	#if defined(use_edl)
-		vEdlGround = classification == 2.0 ? 1.0 : 0.0;
+		vEdlTerrainLike = classification == 2.0 || classification == 3.0 || classification == 4.0 ? 1.0 : 0.0;
 	#endif
 
 	//gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
@@ -58566,7 +58566,7 @@ uniform float uScreenHeight;
 varying vec3	vColor;
 varying float	vLogDepth;
 #if defined(use_edl)
-varying float vEdlGround;
+varying float vEdlTerrainLike;
 #endif
 varying vec3	vViewPosition;
 varying float	vRadius;
@@ -58579,12 +58579,12 @@ float edlPointDepth(){
 	#if defined(edl_top_down)
 		return vLogDepth;
 	#else
-	// Ground points represent a terrain patch, not a camera-facing depth step.
-	// Extend each ground sample horizontally across its sprite for shading only;
+// Ground, low vegetation and medium vegetation represent a terrain-following patch, not a
+	// camera-facing depth step. Extend each terrain-like sample horizontally;
 	// geometry, visibility, picking and non-ground points keep their real depth.
 	vec3 up = viewMatrix[2].xyz;
 	// Keep the original top-down value exactly, including vertex-stage rounding.
-	if(vEdlGround < 0.5 || length(up.xy) < 0.0001){
+	if(vEdlTerrainLike < 0.5 || length(up.xy) < 0.0001){
 		return vLogDepth;
 	}
 	vec4 centerClip = projectionMatrix * vec4(vViewPosition, 1.0);
@@ -58670,7 +58670,7 @@ void main() {
 		// non-ground flag in the otherwise unused sign of blue, leaving log
 		// depth untouched. The resolve pass restores the color magnitude.
 		// A tiny normal float also makes a zero blue component identifiable.
-		if(vEdlGround < 0.5){
+		if(vEdlTerrainLike < 0.5){
 			gl_FragColor.b = -max(gl_FragColor.b, 1.0e-20);
 		}
 	#endif
