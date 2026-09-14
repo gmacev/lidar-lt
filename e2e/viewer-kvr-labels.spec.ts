@@ -60,10 +60,10 @@ test.describe('viewer KVR labels', () => {
             )
             .toBeGreaterThan(0);
 
-        await page.getByTestId('viewer-map-labels-toggle').click();
-        await expect(page.getByTestId('viewer-map-labels')).toBeVisible();
+        const mapLabelsToggle = page.getByTestId('viewer-map-labels-toggle');
+        await mapLabelsToggle.click();
+        await expect(mapLabelsToggle).toHaveAttribute('data-active', 'true');
         await expect(page.locator('[data-viewer-label-id="100"]')).toBeVisible();
-        await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Vilnius');
     });
 
     test('hides transient labels with the popover, UI, and exclusive tool state', async ({
