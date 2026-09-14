@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 
 export const CANONICAL_CELL_ID = '76_32';
 const CANONICAL_SECTOR_NAME = 'VILNIUS (centras)';
+const VIEWER_READY_TIMEOUT_MS = 10_000;
 export const CANONICAL_VIEWER_PATH = `/viewer/${CANONICAL_CELL_ID}?sectorName=${encodeURIComponent(
     CANONICAL_SECTOR_NAME
 )}`;
@@ -788,9 +789,13 @@ export async function gotoMockedViewer(page: Page, path = CANONICAL_VIEWER_PATH)
 }
 
 export async function expectViewerReady(page: Page) {
+    const viewerContainer = page.getByTestId('viewer-container');
+    await expect(viewerContainer).toBeVisible({ timeout: VIEWER_READY_TIMEOUT_MS });
+    await expect(viewerContainer.locator('canvas')).toBeVisible({
+        timeout: VIEWER_READY_TIMEOUT_MS,
+    });
     await expect(page.getByTestId('viewer-loading-overlay')).toBeHidden();
     await expect(page.getByTestId('viewer-error-overlay')).toBeHidden();
-    await expect(page.getByTestId('viewer-container').locator('canvas')).toBeVisible();
     await expect(page.getByTestId('viewer-sidebar')).toBeVisible();
     await expect(page.getByTestId('viewer-right-rail')).toBeVisible();
 }
