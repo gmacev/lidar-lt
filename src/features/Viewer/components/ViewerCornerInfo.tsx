@@ -1,5 +1,4 @@
 import { useEffect, type RefObject } from 'react';
-import { useTranslation } from 'react-i18next';
 import type { PotreeViewer } from '@/common/types/potree';
 import type { SourceManifest } from '@/features/Viewer/hooks/useSourceManifest';
 import { SourceAttribution } from './SourceAttribution';
@@ -35,7 +34,6 @@ export function ViewerCornerInfo({
     className = '',
     onVisibleChange,
 }: ViewerCornerInfoProps) {
-    const { t } = useTranslation();
     const dateRange = formatDateRange(manifest?.sourceFileDateRange);
     const showSourceDetails = (uiVisible || orthophotoCompareEnabled) && Boolean(dateRange);
     const showMapAttribution = uiVisible && mapLabelsEnabled;
@@ -60,7 +58,7 @@ export function ViewerCornerInfo({
                     <span aria-hidden="true" className="text-white/35">
                         {'\u00b7'}
                     </span>
-                    <SourceAttribution dateRange={dateRange!} />
+                    <SourceAttribution dateRange={dateRange!} showProvider={!showMapAttribution} />
                 </span>
             )}
             {showSourceDetails && showMapAttribution && (
@@ -73,31 +71,23 @@ export function ViewerCornerInfo({
                     data-testid="viewer-map-attribution"
                     className="inline-flex min-w-0 items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap"
                 >
-                    <a
-                        href="https://openfreemap.org/"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="theme-corner-link text-white/75 underline-offset-2 hover:text-white hover:underline"
-                    >
-                        OpenFreeMap
-                    </a>
                     <span>{'\u00a9'}</span>
                     <a
-                        href="https://openmaptiles.org/"
+                        href="https://nzt.lrv.lt/"
                         target="_blank"
                         rel="noreferrer"
                         className="theme-corner-link text-white/75 underline-offset-2 hover:text-white hover:underline"
                     >
-                        OpenMapTiles
+                        NŽT
                     </a>
-                    <span>{t('home.mapDataFrom')}</span>
+                    <span aria-hidden="true">{'\u00b7'}</span>
                     <a
-                        href="https://www.openstreetmap.org/copyright"
+                        href="https://www.geoportal.lt/vietovardziai/"
                         target="_blank"
                         rel="noreferrer"
                         className="theme-corner-link text-white/75 underline-offset-2 hover:text-white hover:underline"
                     >
-                        OpenStreetMap
+                        Geoportal.lt
                     </a>
                 </span>
             )}

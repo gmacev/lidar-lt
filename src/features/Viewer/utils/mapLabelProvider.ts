@@ -1,7 +1,3 @@
-import { VectorTile } from '@mapbox/vector-tile';
-import type { Geometry, Position } from 'geojson';
-import Pbf from 'pbf';
-
 type MapLabelCategory =
     | 'city'
     | 'town'
@@ -42,340 +38,83 @@ export interface Lks94Bounds {
     maxY: number;
 }
 
-interface TileJson {
-    tiles?: string[];
-    minzoom?: number;
-    maxzoom?: number;
+interface GeoportalLabelRecord {
+    objectId: string;
+    name: string;
+    nameStatus: string;
+    localType: string;
+    subtype: string;
+    longitude: number;
+    latitude: number;
 }
 
-interface TileCoordinate {
-    x: number;
-    y: number;
-    z: number;
-}
-
-const TILEJSON_URL = 'https://tiles.openfreemap.org/planet';
+const GEOPORTAL_SEARCH_URL = 'https://www.geoportal.lt/mapproxy/elasticsearch_gvdr';
+const GEOPORTAL_MAX_RESULTS = 1000;
 const LKS94_PROJ =
     '+proj=tmerc +lat_0=0 +lon_0=24 +k=0.9998 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs';
-// A 5 x 5 km sector can straddle a 5 x 5 tile grid at zoom 14. Dropping to
-// zoom 13 loses lower-rank POIs such as named archaeological sites.
-const MAX_TILE_REQUESTS = 25;
-const MAX_SOURCE_ZOOM = 14;
-const MIN_SOURCE_ZOOM = 3;
-const WEB_MERCATOR_MAX_LATITUDE = 85.05112878;
-const RELIEF_CLASSES = new Set(['peak', 'saddle', 'ridge', 'cliff', 'arete']);
-const HUMAN_MADE_POI_CLASSES = new Set([
-    'quarry',
-    'mine',
-    'mineshaft',
-    'dam',
-    'weir',
-    'dyke',
-    'embankment',
-    'cemetery',
-]);
-const HERITAGE_POI_CLASSES = new Set(['castle', 'fort', 'fortress', 'ruins']);
-const HILL_FORT_NAME_PATTERN = /(?:piliakaln|hill[\s-]?fort)/i;
+const MAP_LABEL_BASE_PRIORITY: Record<MapLabelCategory, number> = {
+    city: 500,
+    town: 400,
+    village: 300,
+    relief: 280,
+    hamlet: 260,
+    island: 250,
+    dwelling: 220,
+    water: 200,
+    river: 180,
+    protected: 160,
+    stream: 140,
+    canal: 130,
+    'human-made': 120,
+    archaeological: 270,
+    heritage: 110,
+};
+const GEOPORTAL_ARCHAEOLOGICAL_NAME_PATTERN =
+    /(?:piliakaln|pilkap|kapinyn|senovės gyvenviet|alkakaln|dvarviet|senkap|mūšio viet)/iu;
+const GEOPORTAL_ARCHAEOLOGICAL_QUERY =
+    'piliakaln* OR pilkap* OR kapinyn* OR "senovės gyvenvietė" OR alkakaln* OR dvarviet* OR senkap* OR "mūšio vieta"';
 
-let tileJsonCache: TileJson | null = null;
-const tileCache = new Map<string, MapLabelCandidate[]>();
+const GEOPORTAL_SUBTYPES = {
+    settlements: ['miestas', 'miestelis', 'kaimas', 'viensėdis', 'dvaras'],
+    hydrography: [
+        'upė',
+        'upelis',
+        'ežeras',
+        'tvenkinys',
+        'šaltinis',
+        'versmė',
+        'sala',
+        'kanalas',
+        'kūdra',
+        'įlanka',
+        'krioklys',
+    ],
+    relief: [
+        'kalnas',
+        'kalva',
+        'aukštuma',
+        'pakiluma',
+        'kauburys',
+        'skardis',
+        'slėnis',
+        'šlaitas',
+        'griovys',
+        'dauba',
+        'duburys',
+        'įduba',
+        'loma',
+        'žemuma',
+        'klonis',
+    ],
+    context: ['kapinės', 'parkas'],
+    burialLandscape: ['kapinės', 'kapai', 'kapinynas', 'senkapis', 'senkapiai', 'piliakalnis'],
+    structures: ['malūnas', 'užtvanka', 'bažnyčia', 'sodyba'],
+} as const;
 
 function ensureLks94Projection() {
     if (!window.proj4.defs('EPSG:3346')) {
         window.proj4.defs('EPSG:3346', LKS94_PROJ);
     }
-}
-
-function readString(properties: Record<string, string | number | boolean>, key: string) {
-    const value = properties[key];
-    return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
-
-function getNames(properties: Record<string, string | number | boolean>) {
-    const defaultName = readString(properties, 'name');
-    if (!defaultName) return null;
-
-    return {
-        default: defaultName,
-        lt: readString(properties, 'name:lt'),
-        en: readString(properties, 'name_en') ?? readString(properties, 'name:en'),
-        latin: readString(properties, 'name:latin'),
-    };
-}
-
-function isHillFortAttraction(featureClasses: string[], names: MapLabelNames): boolean {
-    if (!featureClasses.includes('attraction')) return false;
-
-    // OpenMapTiles can prioritize tourism=attraction and omit the original
-    // historic/fortification tags, as it does for Apuolės piliakalnis.
-    return [names.default, names.lt, names.en, names.latin].some(
-        (name) => name !== undefined && HILL_FORT_NAME_PATTERN.test(name)
-    );
-}
-
-function getCategory(
-    layerName: string,
-    properties: Record<string, string | number | boolean>,
-    names: MapLabelNames
-): MapLabelCategory | null {
-    if (layerName === 'place') {
-        const placeClass = properties.class;
-        if (placeClass === 'city' || placeClass === 'town' || placeClass === 'village') {
-            return placeClass;
-        }
-        if (placeClass === 'hamlet') return 'hamlet';
-        if (placeClass === 'isolated_dwelling') return 'dwelling';
-        if (placeClass === 'island') return 'island';
-        return null;
-    }
-
-    if (layerName === 'water_name') return 'water';
-    if (layerName === 'waterway') {
-        if (properties.class === 'river') return 'river';
-        if (properties.class === 'stream') return 'stream';
-        if (properties.class === 'canal') return 'canal';
-        return null;
-    }
-    if (layerName === 'mountain_peak' && RELIEF_CLASSES.has(String(properties.class))) {
-        return 'relief';
-    }
-    if (layerName === 'park') return 'protected';
-    if (layerName === 'poi') {
-        const featureClasses = [properties.class, properties.subclass].map(String);
-        if (featureClasses.some((featureClass) => HUMAN_MADE_POI_CLASSES.has(featureClass))) {
-            return 'human-made';
-        }
-        if (featureClasses.includes('archaeological_site')) return 'archaeological';
-        if (featureClasses.some((featureClass) => HERITAGE_POI_CLASSES.has(featureClass))) {
-            return 'heritage';
-        }
-        if (isHillFortAttraction(featureClasses, names)) return 'archaeological';
-    }
-    return null;
-}
-
-function isPosition(value: unknown): value is Position {
-    return (
-        Array.isArray(value) &&
-        value.length >= 2 &&
-        typeof value[0] === 'number' &&
-        typeof value[1] === 'number'
-    );
-}
-
-function lineLength(line: Position[]) {
-    let length = 0;
-    for (let index = 1; index < line.length; index += 1) {
-        const previous = line[index - 1];
-        const current = line[index];
-        if (!previous || !current) continue;
-        length += Math.hypot(current[0] - previous[0], current[1] - previous[1]);
-    }
-    return length;
-}
-
-function lineMidpoint(line: Position[]): { position: Position; weight: number } | null {
-    if (line.length === 0) return null;
-    if (line.length === 1 && line[0]) return { position: line[0], weight: 0 };
-
-    const length = lineLength(line);
-    const target = length / 2;
-    let traversed = 0;
-
-    for (let index = 1; index < line.length; index += 1) {
-        const start = line[index - 1];
-        const end = line[index];
-        if (!start || !end) continue;
-        const segmentLength = Math.hypot(end[0] - start[0], end[1] - start[1]);
-        if (traversed + segmentLength >= target) {
-            const ratio = segmentLength === 0 ? 0 : (target - traversed) / segmentLength;
-            return {
-                position: [
-                    start[0] + (end[0] - start[0]) * ratio,
-                    start[1] + (end[1] - start[1]) * ratio,
-                ],
-                weight: length,
-            };
-        }
-        traversed += segmentLength;
-    }
-
-    const last = line.at(-1);
-    return last ? { position: last, weight: length } : null;
-}
-
-function getGeometryAnchor(geometry: Geometry): { position: Position; weight: number } | null {
-    if (geometry.type === 'Point') return { position: geometry.coordinates, weight: 0 };
-    if (geometry.type === 'MultiPoint') {
-        const point = geometry.coordinates[0];
-        return point ? { position: point, weight: 0 } : null;
-    }
-    if (geometry.type === 'LineString') return lineMidpoint(geometry.coordinates);
-    if (geometry.type === 'MultiLineString') {
-        return (
-            geometry.coordinates
-                .map(lineMidpoint)
-                .filter((item): item is NonNullable<typeof item> => Boolean(item))
-                .sort((first, second) => second.weight - first.weight)[0] ?? null
-        );
-    }
-    if (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') {
-        const positions =
-            geometry.type === 'Polygon'
-                ? geometry.coordinates.flat()
-                : geometry.coordinates.flat(2);
-        const validPositions = positions.filter(isPosition);
-        if (validPositions.length === 0) return null;
-        const total = validPositions.reduce(
-            (sum, position) => [sum[0] + position[0], sum[1] + position[1]],
-            [0, 0]
-        );
-        return {
-            position: [total[0] / validPositions.length, total[1] / validPositions.length],
-            weight: validPositions.length,
-        };
-    }
-    return null;
-}
-
-function getPriority(
-    category: MapLabelCategory,
-    properties: Record<string, string | number | boolean>
-) {
-    const rankValue = typeof properties.rank === 'number' ? properties.rank : 20;
-    const rankAdjustment = Math.max(0, 30 - rankValue);
-    const basePriority: Record<MapLabelCategory, number> = {
-        city: 500,
-        town: 400,
-        village: 300,
-        relief: 280,
-        hamlet: 260,
-        island: 250,
-        dwelling: 220,
-        water: 200,
-        river: 180,
-        protected: 160,
-        stream: 140,
-        canal: 130,
-        'human-made': 120,
-        archaeological: 270,
-        heritage: 110,
-    };
-    return basePriority[category] + rankAdjustment;
-}
-
-function decodeTile(buffer: ArrayBuffer, tile: TileCoordinate): MapLabelCandidate[] {
-    const vectorTile = new VectorTile(new Pbf(buffer));
-    const candidates: MapLabelCandidate[] = [];
-
-    for (const layerName of ['place', 'mountain_peak', 'water_name', 'waterway', 'park', 'poi']) {
-        const layer = vectorTile.layers[layerName];
-        if (!layer) continue;
-
-        for (let index = 0; index < layer.length; index += 1) {
-            const feature = layer.feature(index);
-            const names = getNames(feature.properties);
-            if (!names) continue;
-            const category = getCategory(layerName, feature.properties, names);
-            if (!category) continue;
-
-            const geoJson = feature.toGeoJSON(tile.x, tile.y, tile.z);
-            if (!geoJson.geometry) continue;
-            const anchor = getGeometryAnchor(geoJson.geometry);
-            if (!anchor) continue;
-
-            ensureLks94Projection();
-            const [x, y] = window.proj4('EPSG:4326', 'EPSG:3346', [
-                anchor.position[0],
-                anchor.position[1],
-            ]);
-            if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-
-            candidates.push({
-                id: `${tile.z}/${tile.x}/${tile.y}:${layerName}:${feature.id ?? index}`,
-                category,
-                names,
-                position: [x, y],
-                priority: getPriority(category, feature.properties),
-                geometryWeight: anchor.weight,
-            });
-        }
-    }
-
-    return candidates;
-}
-
-function longitudeToTileX(longitude: number, zoom: number) {
-    const tileCount = 2 ** zoom;
-    return Math.max(0, Math.min(tileCount - 1, Math.floor(((longitude + 180) / 360) * tileCount)));
-}
-
-function latitudeToTileY(latitude: number, zoom: number) {
-    const tileCount = 2 ** zoom;
-    const clampedLatitude = Math.max(
-        -WEB_MERCATOR_MAX_LATITUDE,
-        Math.min(WEB_MERCATOR_MAX_LATITUDE, latitude)
-    );
-    const radians = (clampedLatitude * Math.PI) / 180;
-    const value = (1 - Math.log(Math.tan(radians) + 1 / Math.cos(radians)) / Math.PI) / 2;
-    return Math.max(0, Math.min(tileCount - 1, Math.floor(value * tileCount)));
-}
-
-function getTileCoordinates(bounds: Lks94Bounds, zoom: number): TileCoordinate[] {
-    ensureLks94Projection();
-    const lks94Corners: Array<[number, number]> = [
-        [bounds.minX, bounds.minY],
-        [bounds.minX, bounds.maxY],
-        [bounds.maxX, bounds.minY],
-        [bounds.maxX, bounds.maxY],
-    ];
-    const corners = lks94Corners.map((coordinate) =>
-        window.proj4('EPSG:3346', 'EPSG:4326', coordinate)
-    );
-    const longitudes = corners.map((coordinate) => coordinate[0]);
-    const latitudes = corners.map((coordinate) => coordinate[1]);
-    const minX = longitudeToTileX(Math.min(...longitudes), zoom);
-    const maxX = longitudeToTileX(Math.max(...longitudes), zoom);
-    const minY = latitudeToTileY(Math.max(...latitudes), zoom);
-    const maxY = latitudeToTileY(Math.min(...latitudes), zoom);
-    const tiles: TileCoordinate[] = [];
-
-    for (let x = minX; x <= maxX; x += 1) {
-        for (let y = minY; y <= maxY; y += 1) {
-            tiles.push({ x, y, z: zoom });
-        }
-    }
-    return tiles;
-}
-
-function getCoverageTileCoordinates(coverageBounds: readonly Lks94Bounds[], zoom: number) {
-    const uniqueTiles = new Map<string, TileCoordinate>();
-    for (const bounds of coverageBounds) {
-        for (const tile of getTileCoordinates(bounds, zoom)) {
-            uniqueTiles.set(`${tile.z}/${tile.x}/${tile.y}`, tile);
-        }
-    }
-    return [...uniqueTiles.values()];
-}
-
-async function getTileJson(signal: AbortSignal) {
-    if (tileJsonCache) return tileJsonCache;
-    const response = await fetch(TILEJSON_URL, { signal });
-    if (!response.ok) throw new Error(`OpenFreeMap TileJSON returned HTTP ${response.status}`);
-    const tileJson = (await response.json()) as TileJson;
-    if (!tileJson.tiles?.[0]) throw new Error('OpenFreeMap TileJSON has no vector tile URL');
-    tileJsonCache = tileJson;
-    return tileJson;
-}
-
-async function fetchTile(url: string, tile: TileCoordinate, signal: AbortSignal) {
-    const cached = tileCache.get(url);
-    if (cached) return cached;
-    const response = await fetch(url, { signal });
-    if (!response.ok) throw new Error(`OpenFreeMap tile returned HTTP ${response.status}`);
-    const candidates = decodeTile(await response.arrayBuffer(), tile);
-    tileCache.set(url, candidates);
-    return candidates;
 }
 
 function deduplicateCandidates(candidates: MapLabelCandidate[]) {
@@ -396,41 +135,259 @@ function isCandidateInsideBounds(candidate: MapLabelCandidate, bounds: Lks94Boun
     return x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY;
 }
 
-export async function fetchMapLabels(coverageBounds: readonly Lks94Bounds[], signal: AbortSignal) {
-    if (coverageBounds.length === 0) return [];
-    const tileJson = await getTileJson(signal);
-    const maximumZoom = Math.min(tileJson.maxzoom ?? MAX_SOURCE_ZOOM, MAX_SOURCE_ZOOM);
-    const minimumZoom = Math.max(tileJson.minzoom ?? MIN_SOURCE_ZOOM, MIN_SOURCE_ZOOM);
-    let zoom = maximumZoom;
-    let tiles = getCoverageTileCoordinates(coverageBounds, zoom);
+function createGeoportalCategoryClause(localType: string, subtypes: readonly string[]) {
+    return {
+        bool: {
+            filter: [{ term: { localtype: localType } }, { terms: { subtype: subtypes } }],
+        },
+    };
+}
 
-    while (tiles.length > MAX_TILE_REQUESTS && zoom > minimumZoom) {
-        zoom -= 1;
-        tiles = getCoverageTileCoordinates(coverageBounds, zoom);
-    }
-    if (tiles.length > MAX_TILE_REQUESTS) {
-        throw new Error('Point-cloud bounds require too many map tiles');
+function getGeoportalSearchBounds(coverageBounds: readonly Lks94Bounds[]) {
+    ensureLks94Projection();
+    const corners = coverageBounds.flatMap((bounds) => [
+        [bounds.minX, bounds.minY],
+        [bounds.minX, bounds.maxY],
+        [bounds.maxX, bounds.minY],
+        [bounds.maxX, bounds.maxY],
+    ]);
+    const projected = corners.map((coordinate) =>
+        window.proj4('EPSG:3346', 'EPSG:4326', coordinate)
+    );
+    const longitudes = projected.map((coordinate) => coordinate[0]);
+    const latitudes = projected.map((coordinate) => coordinate[1]);
+
+    return {
+        minLongitude: Math.min(...longitudes),
+        maxLongitude: Math.max(...longitudes),
+        minLatitude: Math.min(...latitudes),
+        maxLatitude: Math.max(...latitudes),
+    };
+}
+
+function createGeoportalQuery(coverageBounds: readonly Lks94Bounds[]) {
+    const bounds = getGeoportalSearchBounds(coverageBounds);
+    return {
+        size: GEOPORTAL_MAX_RESULTS,
+        _source: [
+            'objectid',
+            'name',
+            'namestatus',
+            'localtype',
+            'subtype',
+            'LOCATIONX',
+            'LOCATIONY',
+        ],
+        query: {
+            bool: {
+                filter: [
+                    {
+                        range: {
+                            LOCATIONX: {
+                                gte: bounds.minLongitude,
+                                lte: bounds.maxLongitude,
+                            },
+                        },
+                    },
+                    {
+                        range: {
+                            LOCATIONY: {
+                                gte: bounds.minLatitude,
+                                lte: bounds.maxLatitude,
+                            },
+                        },
+                    },
+                ],
+                should: [
+                    createGeoportalCategoryClause('Gyvenvietės', GEOPORTAL_SUBTYPES.settlements),
+                    createGeoportalCategoryClause('Hidrografija', GEOPORTAL_SUBTYPES.hydrography),
+                    createGeoportalCategoryClause('Reljefas', GEOPORTAL_SUBTYPES.relief),
+                    createGeoportalCategoryClause('Kita', GEOPORTAL_SUBTYPES.context),
+                    createGeoportalCategoryClause(
+                        'Žemės danga',
+                        GEOPORTAL_SUBTYPES.burialLandscape
+                    ),
+                    createGeoportalCategoryClause('Statinys', GEOPORTAL_SUBTYPES.structures),
+                    {
+                        bool: {
+                            filter: [{ term: { localtype: 'Saugomos vietovės' } }],
+                            must_not: [{ term: { subtype: 'kultūros vertybė' } }],
+                        },
+                    },
+                    {
+                        bool: {
+                            filter: [
+                                { term: { localtype: 'Saugomos vietovės' } },
+                                { term: { subtype: 'kultūros vertybė' } },
+                            ],
+                            must: [
+                                {
+                                    query_string: {
+                                        default_field: 'name',
+                                        query: GEOPORTAL_ARCHAEOLOGICAL_QUERY,
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+                minimum_should_match: 1,
+            },
+        },
+    };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readGeoportalString(value: unknown) {
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function readGeoportalCoordinate(value: unknown) {
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function parseGeoportalRecord(value: unknown): GeoportalLabelRecord | null {
+    if (!isRecord(value) || !isRecord(value._source)) return null;
+    const source = value._source;
+    const objectIdValue = source.objectid;
+    const objectId =
+        typeof objectIdValue === 'string' || typeof objectIdValue === 'number'
+            ? String(objectIdValue)
+            : null;
+    const name = readGeoportalString(source.name);
+    const nameStatus = readGeoportalString(source.namestatus);
+    const localType = readGeoportalString(source.localtype);
+    const subtype = readGeoportalString(source.subtype);
+    const longitude = readGeoportalCoordinate(source.LOCATIONX);
+    const latitude = readGeoportalCoordinate(source.LOCATIONY);
+    if (
+        !objectId ||
+        !name ||
+        !nameStatus ||
+        !localType ||
+        !subtype ||
+        longitude === null ||
+        latitude === null
+    ) {
+        return null;
     }
 
-    const template = tileJson.tiles?.[0];
-    if (!template) throw new Error('OpenFreeMap TileJSON has no vector tile URL');
-    const results = await Promise.allSettled(
-        tiles.map((tile) => {
-            const url = template
-                .replace('{z}', String(tile.z))
-                .replace('{x}', String(tile.x))
-                .replace('{y}', String(tile.y));
-            return fetchTile(url, tile, signal);
+    return { objectId, name, nameStatus, localType, subtype, longitude, latitude };
+}
+
+function parseGeoportalResponse(value: unknown) {
+    if (!isRecord(value)) throw new Error('Geoportal returned an invalid response');
+    if (isRecord(value.error)) {
+        const message = readGeoportalString(value.error.reason) ?? 'Geoportal search failed';
+        throw new Error(message);
+    }
+    if (!isRecord(value.hits) || !Array.isArray(value.hits.hits)) {
+        throw new Error('Geoportal response has no search results');
+    }
+    return value.hits.hits
+        .map(parseGeoportalRecord)
+        .filter((record): record is GeoportalLabelRecord => record !== null);
+}
+
+function includesSubtype(subtypes: readonly string[], value: string) {
+    return subtypes.includes(value);
+}
+
+function getGeoportalCategory(record: GeoportalLabelRecord): MapLabelCategory | null {
+    const localType = record.localType.toLocaleLowerCase('lt');
+    const subtype = record.subtype.toLocaleLowerCase('lt');
+
+    if (localType === 'gyvenvietės') {
+        if (subtype === 'miestas') return 'city';
+        if (subtype === 'miestelis') return 'town';
+        if (subtype === 'kaimas') return 'village';
+        if (subtype === 'viensėdis') return 'dwelling';
+        if (subtype === 'dvaras') return 'heritage';
+        return null;
+    }
+    if (localType === 'hidrografija') {
+        if (!includesSubtype(GEOPORTAL_SUBTYPES.hydrography, subtype)) return null;
+        if (subtype === 'upė') return 'river';
+        if (['upelis', 'šaltinis', 'versmė', 'krioklys'].includes(subtype)) return 'stream';
+        if (subtype === 'kanalas') return 'canal';
+        if (subtype === 'sala') return 'island';
+        return 'water';
+    }
+    if (localType === 'reljefas') {
+        return includesSubtype(GEOPORTAL_SUBTYPES.relief, subtype) ? 'relief' : null;
+    }
+    if (localType === 'kita') {
+        if (!includesSubtype(GEOPORTAL_SUBTYPES.context, subtype)) return null;
+        return subtype === 'parkas' ? 'protected' : 'human-made';
+    }
+    if (localType === 'žemės danga') {
+        if (!includesSubtype(GEOPORTAL_SUBTYPES.burialLandscape, subtype)) return null;
+        return subtype === 'kapinės' ? 'human-made' : 'archaeological';
+    }
+    if (localType === 'statinys') {
+        if (!includesSubtype(GEOPORTAL_SUBTYPES.structures, subtype)) return null;
+        return subtype === 'užtvanka' ? 'human-made' : 'heritage';
+    }
+    if (localType === 'saugomos vietovės') {
+        if (subtype !== 'kultūros vertybė') return 'protected';
+        return GEOPORTAL_ARCHAEOLOGICAL_NAME_PATTERN.test(record.name) ? 'archaeological' : null;
+    }
+    return null;
+}
+
+function getGeoportalPriority(category: MapLabelCategory, nameStatus: string) {
+    const normalizedStatus = nameStatus.toLocaleLowerCase('lt');
+    const statusAdjustment =
+        normalizedStatus === 'oficialus' ? 20 : normalizedStatus === 'istorinis' ? -10 : 0;
+    return MAP_LABEL_BASE_PRIORITY[category] + statusAdjustment;
+}
+
+async function fetchGeoportalMapLabels(
+    coverageBounds: readonly Lks94Bounds[],
+    signal: AbortSignal
+) {
+    const response = await fetch(GEOPORTAL_SEARCH_URL, {
+        method: 'POST',
+        // Geoportal accepts JSON bodies as text/plain. Keeping this a CORS-simple
+        // request avoids its incomplete OPTIONS response for custom headers.
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: JSON.stringify(createGeoportalQuery(coverageBounds)),
+        signal,
+    });
+    if (!response.ok) throw new Error(`Geoportal search returned HTTP ${response.status}`);
+    const payload: unknown = await response.json();
+    const records = parseGeoportalResponse(payload);
+    ensureLks94Projection();
+
+    return deduplicateCandidates(
+        records.flatMap((record): MapLabelCandidate[] => {
+            const category = getGeoportalCategory(record);
+            if (!category) return [];
+            const [x, y] = window.proj4('EPSG:4326', 'EPSG:3346', [
+                record.longitude,
+                record.latitude,
+            ]);
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return [];
+            return [
+                {
+                    id: `gvdr:${record.objectId}`,
+                    category,
+                    names: { default: record.name, lt: record.name },
+                    position: [x, y],
+                    priority: getGeoportalPriority(category, record.nameStatus),
+                    geometryWeight: 0,
+                },
+            ];
         })
-    );
-    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-
-    const successful = results.filter(
-        (result): result is PromiseFulfilledResult<MapLabelCandidate[]> =>
-            result.status === 'fulfilled'
-    );
-    if (successful.length === 0) throw new Error('All OpenFreeMap tile requests failed');
-    return deduplicateCandidates(successful.flatMap((result) => result.value)).filter((candidate) =>
+    ).filter((candidate) =>
         coverageBounds.some((bounds) => isCandidateInsideBounds(candidate, bounds))
     );
+}
+
+export function fetchMapLabels(coverageBounds: readonly Lks94Bounds[], signal: AbortSignal) {
+    if (coverageBounds.length === 0) return Promise.resolve([]);
+    return fetchGeoportalMapLabels(coverageBounds, signal);
 }

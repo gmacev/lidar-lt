@@ -24,9 +24,7 @@ test.describe('viewer map labels', () => {
         await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Ignored Peak');
         await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Ignored Cafe');
         await expect(page.getByTestId('viewer-map-labels')).not.toContainText('Outside Village');
-        await expect(page.getByTestId('viewer-map-attribution')).toContainText(
-            '©OpenMapTilesData fromOpenStreetMap'
-        );
+        await expect(page.getByTestId('viewer-map-attribution')).toContainText('©NŽT·Geoportal.lt');
 
         expect(sourceManifestRequests).toBe(initialSourceManifestRequests);
 

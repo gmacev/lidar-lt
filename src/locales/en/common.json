@@ -225,7 +225,7 @@
     "mapLabels": {
         "toggle": "Geographic labels",
         "errorTitle": "Map labels unavailable",
-        "errorDescription": "OpenStreetMap labels could not be loaded. Turn the layer off and on to retry."
+        "errorDescription": "Geographic labels could not be loaded. Turn the layer off and on to retry."
     },
     "orthophotoCompare": {
         "toggle": "Compare with orthophoto",

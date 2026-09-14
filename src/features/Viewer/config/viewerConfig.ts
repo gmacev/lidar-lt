@@ -193,7 +193,7 @@ export const ViewerStateSchema = z.object({
     fov: optionalSearchNumber, // field of view
     // Classifications (array of hidden class IDs)
     hiddenClasses: optionalSearchNumberArray,
-    // Optional OpenStreetMap-derived geographic labels overlay
+    // Optional Geoportal geographic labels overlay
     mapLabels: optionalSearchBoolean,
     // Optional Geoportal orthophoto/LiDAR comparison overlay
     orthophotoCompare: optionalSearchBoolean,

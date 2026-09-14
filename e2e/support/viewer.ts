@@ -141,9 +141,6 @@ function getMockKvrResponse(url: string) {
     };
 }
 
-const MOCK_MAP_TILE_BASE64 =
-    'Go4CeAIKBXBsYWNlKIAgEhUSCgAAAQACAAMBBAIYASIFCeovijUSFRIKAAMBBAIDAwUEBhgBIgUJ3jLIMhIVEgoABwEIAgcDBQQGGAEiBQnwDIo1Eg8SBAAJAwoYASIFCZg0ijUaBG5hbWUaB25hbWU6bHQaB25hbWVfZW4aBWNsYXNzGgRyYW5rIgkKB1ZpbG5pdXMiBgoEY2l0eSICKAEiDgoMVGVzdCBWaWxsYWdlIhMKEUJhbmRvbWFzaXMga2FpbWFzIgkKB3ZpbGxhZ2UiAigFIhEKD091dHNpZGUgVmlsbGFnZSIPCg1VPyBzZWt0b3JpYXVzIg4KDElnbm9yZWQgUGVhayIGCgRwZWFrGm94AgoKd2F0ZXJfbmFtZSiAIBITEggAAAEBAgADAhgBIgUJ9CzMNxoEbmFtZRoHbmFtZTpsdBoHbmFtZV9lbhoFY2xhc3MiCwoJVGVzdCBMYWtlIhMKEUJhbmRvbWFzaXMgZXplcmFzIgYKBGxha2UajAF4AgoId2F0ZXJ3YXkogCASGBIIAAABAAIAAwEYAiIKCYAqjjoK0guJChIUEgQAAgMDGAIiCgmAKsw3CtILiQoaBG5hbWUaB25hbWU6bHQaB25hbWVfZW4aBWNsYXNzIgcKBU5lcmlzIgcKBXJpdmVyIhAKDklnbm9yZWQgU3RyZWFtIggKBnN0cmVhbRp5Cg1tb3VudGFpbl9wZWFrEhUIARIIAAABAQICAwMYASIFCagtyDMaBG5hbWUaB25hbWU6bHQaBWNsYXNzGgNlbGUiCwoJVGVzdCBIaWxsIhEKD0JhbmRvbW9qaSBrYWx2YSIGCgRwZWFrIgkZAAAAAABgckAogCB4AhqEAQoEcGFyaxIVCAESCAAAAQECAgMDGAEiBQm4MNg2GgRuYW1lGgduYW1lOmx0GgVjbGFzcxoEcmFuayIOCgxUZXN0IFJlc2VydmUiFwoVQmFuZG9tYXNpcyBkcmF1c3RpbmlzIhAKDm5hdHVyZV9yZXNlcnZlIgkZAAAAAAAAEEAogCB4Ahq+AQoDcG9pEhcIARIKAAABAQICAwIEAxgBIgUJyDO4MBIVCAISCAAEAgUDBQQGGAEiBQngK4AyGgRuYW1lGgduYW1lOmx0GgVjbGFzcxoIc3ViY2xhc3MaBHJhbmsiDQoLVGVzdCBRdWFycnkiFQoTQmFuZG9tYXNpcyBrYXJqZXJhcyIICgZxdWFycnkiCRkAAAAAAAAIQCIOCgxJZ25vcmVkIENhZmUiBgoEY2FmZSIJGQAAAAAAAPA/KIAgeAI=';
-
 const MOCK_POTREE_SCRIPT = String.raw`
 (() => {
   const eventTarget = () => {
@@ -665,29 +662,83 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
         });
     });
 
-    await page.route('https://tiles.openfreemap.org/planet', async (route) => {
+    await page.route('https://www.geoportal.lt/mapproxy/elasticsearch_gvdr', async (route) => {
         if (mapLabelsMode === 'unavailable') {
             await route.fulfill({ status: 503, body: '' });
             return;
         }
+
+        const records = [
+            {
+                objectid: '1',
+                name: 'Vilnius',
+                namestatus: 'oficialus',
+                localtype: 'Gyvenvietės',
+                subtype: 'miestas',
+                LOCATIONX: 25.262998346412513,
+                LOCATIONY: 54.675993041365494,
+            },
+            {
+                objectid: '2',
+                name: 'Neris',
+                namestatus: 'oficialus',
+                localtype: 'Hidrografija',
+                subtype: 'upė',
+                LOCATIONX: 25.269138829765346,
+                LOCATIONY: 54.67698920493076,
+            },
+            {
+                objectid: '3',
+                name: 'Test Lake',
+                namestatus: 'kita',
+                localtype: 'Hidrografija',
+                subtype: 'ežeras',
+                LOCATIONX: 25.258121126836947,
+                LOCATIONY: 54.67171261590469,
+            },
+            {
+                objectid: '4',
+                name: 'Ignored Peak',
+                namestatus: 'kita',
+                localtype: 'Reljefas',
+                subtype: 'geomorfologinis rajonas',
+                LOCATIONX: 25.269138829765346,
+                LOCATIONY: 54.67698920493076,
+            },
+            {
+                objectid: '5',
+                name: 'Ignored Cafe',
+                namestatus: 'oficialus',
+                localtype: 'Kita',
+                subtype: 'kavinė',
+                LOCATIONX: 25.269138829765346,
+                LOCATIONY: 54.67698920493076,
+            },
+            {
+                objectid: '6',
+                name: 'Outside Village',
+                namestatus: 'oficialus',
+                localtype: 'Gyvenvietės',
+                subtype: 'kaimas',
+                LOCATIONX: 25.28730645793723,
+                LOCATIONY: 54.68758055884211,
+            },
+        ];
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-                tilejson: '3.0.0',
-                minzoom: 14,
-                maxzoom: 14,
-                tiles: ['https://tiles.openfreemap.org/test/{z}/{x}/{y}.pbf'],
+                took: 1,
+                timed_out: false,
+                hits: {
+                    total: { value: records.length, relation: 'eq' },
+                    hits: records.map((source, index) => ({
+                        _index: 'gvdr',
+                        _id: String(index + 1),
+                        _source: source,
+                    })),
+                },
             }),
-        });
-    });
-
-    await page.route('https://tiles.openfreemap.org/test/**', async (route) => {
-        const isFixtureTile = route.request().url().endsWith('/14/9341/5207.pbf');
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/x-protobuf',
-            body: isFixtureTile ? Buffer.from(MOCK_MAP_TILE_BASE64, 'base64') : Buffer.alloc(0),
         });
     });
 
