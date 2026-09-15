@@ -689,8 +689,8 @@ body,
 /* Hide Potree annotations when modal/dialog is open (body overflow hidden) */
 body[style*='overflow: hidden'] .potree .annotation,
 body[style*='overflow: hidden'] .potree-panel,
-body[style*='overflow: hidden'] .annotation-label,
-body[style*='overflow: hidden'] [class*='annotation'] {
+body[style*='overflow: hidden'] .potree .annotation-label,
+body[style*='overflow: hidden'] > .annotation-titlebar {
     visibility: hidden !important;
     pointer-events: none !important;
 }

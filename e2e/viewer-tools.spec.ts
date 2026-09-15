@@ -94,6 +94,21 @@ test.describe('viewer right-side tools', () => {
         await expect(page.getByTestId('viewer-tool-kvr')).toHaveAttribute('data-active', 'false');
     });
 
+    test('keeps annotation form controls visible after the modal locks body scrolling', async ({
+        page,
+    }) => {
+        await gotoMockedViewer(page);
+
+        await page.getByTestId('viewer-tool-annotations').click();
+        await page.getByTestId('viewer-annotation-start-placement').click();
+        await page.locator('canvas').click({ position: { x: 500, y: 200 } });
+
+        const dialog = page.getByRole('dialog');
+        await expect(dialog.locator('#annotation-title')).toBeVisible();
+        await expect(dialog.locator('#annotation-description')).toBeVisible();
+        await expect(dialog.locator('button[type="submit"]')).toBeVisible();
+    });
+
     test('copies a Google Maps URL and compass writes camera URL state', async ({
         context,
         page,
