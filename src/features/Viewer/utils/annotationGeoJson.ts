@@ -45,7 +45,7 @@ const annotationGeoJsonSchema = z
     })
     .strict();
 
-export type AnnotationGeoJson = z.infer<typeof annotationGeoJsonSchema>;
+type AnnotationGeoJson = z.infer<typeof annotationGeoJsonSchema>;
 
 interface AnnotationGeoJsonDownloadOptions {
     sectorId?: string;
@@ -54,9 +54,9 @@ interface AnnotationGeoJsonDownloadOptions {
 
 const MAX_IMPORT_FILE_SIZE = 5 * 1024 * 1024;
 
-export class AnnotationImportError extends Error {}
+class AnnotationImportError extends Error {}
 
-export function createAnnotationGeoJson(
+function createAnnotationGeoJson(
     annotations: readonly StoredSectorAnnotation[]
 ): AnnotationGeoJson {
     return {
