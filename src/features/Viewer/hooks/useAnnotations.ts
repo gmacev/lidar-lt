@@ -3,8 +3,11 @@ import { useTranslation } from 'react-i18next';
 import type { PotreeViewer, Annotation } from '@/common/types/potree';
 import {
     getAnnotationStorage,
+    getAnnotationView,
     generateAnnotationId,
+    mergeStoredAnnotations,
     type StoredAnnotation,
+    type StoredSectorAnnotation,
 } from '../utils/annotationStorage';
 import { useModal } from '@/common/hooks';
 import { AnnotationModal, type AnnotationFormData } from '../components/AnnotationModal';
@@ -27,6 +30,7 @@ interface UseAnnotationsReturn {
     navigateToAnnotation: (id: string) => void;
     deleteAnnotation: (id: string) => void;
     deleteAllAnnotations: () => void;
+    importAnnotations: (annotations: readonly StoredSectorAnnotation[]) => number;
     allVisible: boolean;
     someVisible: boolean;
 }
@@ -122,11 +126,11 @@ export function useAnnotations({
         // Add stored annotations to scene
         annotations.forEach((stored) => {
             try {
+                const annotationView = getAnnotationView(stored);
                 const ann = viewer.scene.addAnnotation(stored.position, {
                     title: stored.title,
                     description: stored.description,
-                    cameraPosition: stored.cameraPosition,
-                    cameraTarget: stored.cameraTarget,
+                    ...(annotationView ?? {}),
                 });
 
                 ann.visible = stored.visible;
@@ -235,9 +239,15 @@ export function useAnnotations({
                 position = [pivot.x, pivot.y, pivot.z];
             }
 
-            // Save camera state for annotation navigation
-            const cameraPosition = camera.position.clone();
-            const cameraTarget = viewer.scene.view.getPivot();
+            // Preserve the current viewing angle and distance, but translate the
+            // saved view so the annotation itself becomes the camera target.
+            const viewPosition = viewer.scene.view.position;
+            const currentTarget = viewer.scene.view.getPivot();
+            const cameraPosition: [number, number, number] = [
+                position[0] + viewPosition.x - currentTarget.x,
+                position[1] + viewPosition.y - currentTarget.y,
+                position[2] + viewPosition.z - currentTarget.z,
+            ];
 
             // Clean up preview
             cleanup();
@@ -255,8 +265,8 @@ export function useAnnotations({
                         position,
                         title: result.title,
                         description: result.description,
-                        cameraPosition: [cameraPosition.x, cameraPosition.y, cameraPosition.z],
-                        cameraTarget: [cameraTarget.x, cameraTarget.y, cameraTarget.z],
+                        cameraPosition,
+                        cameraTarget: position,
                         visible: true,
                         createdAt: new Date().toISOString(),
                     };
@@ -346,6 +356,12 @@ export function useAnnotations({
         refreshAnnotations();
     };
 
+    const importAnnotations = (imported: readonly StoredSectorAnnotation[]) => {
+        const result = mergeStoredAnnotations(imported);
+        refreshAnnotations();
+        return result.importedCount;
+    };
+
     return {
         annotations,
         isPanelOpen,
@@ -359,6 +375,7 @@ export function useAnnotations({
         navigateToAnnotation,
         deleteAnnotation,
         deleteAllAnnotations,
+        importAnnotations,
         allVisible,
         someVisible,
     };

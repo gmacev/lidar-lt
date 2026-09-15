@@ -24,6 +24,20 @@ const icons = {
         </>
     ),
     minus: () => <line x1="5" y1="12" x2="19" y2="12" />,
+    download: () => (
+        <>
+            <path d="M12 3v12" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M5 21h14" />
+        </>
+    ),
+    upload: () => (
+        <>
+            <path d="M12 21V9" />
+            <path d="m7 14 5-5 5 5" />
+            <path d="M5 3h14" />
+        </>
+    ),
     check: () => <polyline points="20 6 9 17 4 12" />,
     question: () => (
         <>

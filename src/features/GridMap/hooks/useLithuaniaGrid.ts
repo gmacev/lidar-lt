@@ -27,8 +27,15 @@ export function useLithuaniaGrid(mapStyleKey: string) {
         isCoordinateSearchQuery(localSearch.searchQuery) ||
         isGridIdSearchQuery(localSearch.searchQuery);
     const geographicSearch = useGeographicSearch(localSearch.searchQuery, !isDirectGridSearch);
-    const matchedIds = new Set(localSearch.matchedIds);
-    geographicSearch.matchedIds.forEach((id) => matchedIds.add(id));
+    const searchMatchedIds = new Set(localSearch.matchedIds);
+    geographicSearch.matchedIds.forEach((id) => searchMatchedIds.add(id));
+    const [highlightedAnnotationSectorId, setHighlightedAnnotationSectorId] = useState<
+        string | null
+    >(null);
+    const renderedMatchedIds = new Set(searchMatchedIds);
+    if (highlightedAnnotationSectorId) {
+        renderedMatchedIds.add(highlightedAnnotationSectorId.replace(/_/g, '/'));
+    }
 
     // Map Interaction State
     const [tooltip, setTooltip] = useState<TooltipData | null>(null);
@@ -37,11 +44,11 @@ export function useLithuaniaGrid(mapStyleKey: string) {
 
     // Sync matched state with map
     const prevMatchedIds = useRef<Set<string>>(new Set());
-    const matchedIdsRef = useRef(matchedIds);
+    const matchedIdsRef = useRef(renderedMatchedIds);
 
     useEffect(() => {
-        matchedIdsRef.current = matchedIds;
-    }, [matchedIds]);
+        matchedIdsRef.current = renderedMatchedIds;
+    }, [renderedMatchedIds]);
 
     useEffect(() => {
         const map = mapRef.current?.getMap();
@@ -49,20 +56,20 @@ export function useLithuaniaGrid(mapStyleKey: string) {
 
         // Clear old matches
         prevMatchedIds.current.forEach((id) => {
-            if (!matchedIds.has(id)) {
+            if (!renderedMatchedIds.has(id)) {
                 map.setFeatureState({ source: GRID_SOURCE_ID, id }, { matched: false });
             }
         });
 
         // Set new matches
-        matchedIds.forEach((id) => {
+        renderedMatchedIds.forEach((id) => {
             if (!prevMatchedIds.current.has(id)) {
                 map.setFeatureState({ source: GRID_SOURCE_ID, id }, { matched: true });
             }
         });
 
-        prevMatchedIds.current = matchedIds;
-    }, [matchedIds, data]);
+        prevMatchedIds.current = renderedMatchedIds;
+    }, [renderedMatchedIds, data]);
 
     useEffect(() => {
         const map = mapRef.current?.getMap();
@@ -176,9 +183,14 @@ export function useLithuaniaGrid(mapStyleKey: string) {
         search: {
             query: localSearch.searchQuery,
             setQuery: localSearch.setSearchQuery,
-            matchedIds,
+            matchedIds: searchMatchedIds,
             status: geographicSearch.status,
         },
+        annotationHighlight: {
+            sectorId: highlightedAnnotationSectorId,
+            setSectorId: setHighlightedAnnotationSectorId,
+        },
+        hasActiveSectorMatch: renderedMatchedIds.size > 0,
         handlers: {
             onClick: handleClick,
             onMouseMove: handleMouseMove,

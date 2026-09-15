@@ -144,6 +144,8 @@ export function MeasurementToolbar({ className = '', tools }: MeasurementToolbar
                         onNavigate={tools.annotations.onNavigate}
                         onDelete={tools.annotations.onDelete}
                         onDeleteAll={tools.annotations.onDeleteAll}
+                        onExport={tools.annotations.onExport}
+                        onImport={tools.annotations.onImport}
                         allVisible={tools.annotations.allVisible}
                         someVisible={tools.annotations.someVisible}
                     />

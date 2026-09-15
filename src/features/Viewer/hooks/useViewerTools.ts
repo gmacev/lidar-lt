@@ -1,4 +1,6 @@
 import { useState, type RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from '@/common/components';
 import type { PotreeViewer } from '@/common/types/potree';
 import { PROFILE_WIDTH_DEFAULTS, type ViewerState } from '@/features/Viewer/config/viewerConfig';
 import { useMarkers } from '@/features/Viewer/hooks/useMarkers';
@@ -30,6 +32,10 @@ import type {
 } from '@/features/Viewer/hooks/useProfileData';
 import type { ProfilePhase } from '@/features/Viewer/hooks/useProfileTool';
 import type { StoredAnnotation } from '@/features/Viewer/utils/annotationStorage';
+import {
+    downloadAnnotationGeoJson,
+    readAnnotationGeoJson,
+} from '@/features/Viewer/utils/annotationGeoJson';
 import type {
     KvrInspectState,
     KvrMatchFocusRequest,
@@ -61,6 +67,8 @@ export interface ViewerToolbarTools {
         onNavigate: (id: string) => void;
         onDelete: (id: string) => void;
         onDeleteAll: () => void;
+        onExport: () => void;
+        onImport: (file: File) => Promise<void>;
     };
     area: {
         isMeasuring: boolean;
@@ -160,6 +168,7 @@ export function useViewerTools({
     markerParam,
     onMarkerSearchChange,
 }: UseViewerToolsOptions) {
+    const { t } = useTranslation();
     const markers = useMarkers({
         viewerRef,
         markerParam,
@@ -228,6 +237,20 @@ export function useViewerTools({
     ];
     const { createHandler } = useExclusiveViewerTool(exclusiveTools);
 
+    const handleAnnotationImport = async (file: File) => {
+        try {
+            const imported = await readAnnotationGeoJson(file);
+            const importedCount = annotations.importAnnotations(imported);
+            toast.success(t('annotation.imported'), {
+                description: t('annotation.importedCount', { count: importedCount }),
+            });
+        } catch {
+            toast.error(t('annotation.importFailed'), {
+                description: t('annotation.importInvalidFile'),
+            });
+        }
+    };
+
     const handleProfileWidthChange = (width: number) => {
         setProfileWidthState(width);
         profileTool.setProfileWidth(width);
@@ -255,6 +278,12 @@ export function useViewerTools({
             onNavigate: annotations.navigateToAnnotation,
             onDelete: annotations.deleteAnnotation,
             onDeleteAll: annotations.deleteAllAnnotations,
+            onExport: () =>
+                downloadAnnotationGeoJson(
+                    annotations.annotations.map((annotation) => ({ sectorId: cellId, annotation })),
+                    { sectorId: cellId }
+                ),
+            onImport: handleAnnotationImport,
         },
         area: {
             isMeasuring: area.isMeasuring,

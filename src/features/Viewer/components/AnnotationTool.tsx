@@ -5,6 +5,9 @@ import type { StoredAnnotation } from '../utils/annotationStorage';
 import { ToolPopover } from './ToolPopover';
 import { ToolbarToolButton } from './ToolbarToolButton';
 
+const ACTION_BUTTON_CLASS =
+    'theme-tool-muted-button flex size-6 shrink-0 items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2';
+
 interface AnnotationToolProps {
     annotations: StoredAnnotation[];
     isPanelOpen: boolean;
@@ -16,6 +19,8 @@ interface AnnotationToolProps {
     onNavigate: (id: string) => void;
     onDelete: (id: string) => void;
     onDeleteAll: () => void;
+    onExport: () => void;
+    onImport: (file: File) => Promise<void>;
     allVisible: boolean;
     someVisible: boolean;
 }
@@ -34,11 +39,14 @@ export function AnnotationTool({
     onNavigate,
     onDelete,
     onDeleteAll,
+    onExport,
+    onImport,
     allVisible,
     someVisible,
 }: AnnotationToolProps) {
     const { t } = useTranslation();
     const buttonRef = useRef<HTMLButtonElement>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     const isIndeterminate = someVisible && !allVisible;
 
@@ -63,29 +71,70 @@ export function AnnotationTool({
                         {t('annotation.annotations')}
                     </span>
                     <button
+                        type="button"
+                        data-testid="viewer-annotation-close"
                         onClick={onTogglePanel}
-                        className="theme-tool-muted-button flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-plasma-red hover:bg-plasma-red/10 transition-all"
+                        className={`${ACTION_BUTTON_CLASS} text-white/40 hover:bg-plasma-red/10 hover:text-plasma-red focus-visible:ring-plasma-red/60`}
                         title={t('flood.close')}
                     >
                         <Icon name="close" size={12} strokeWidth={2.5} />
                     </button>
                 </div>
 
-                {/* Show All checkbox */}
-                {annotations.length > 0 && (
-                    <label className="theme-tool-body theme-tool-row flex items-center gap-2 text-xs text-white/80 hover:bg-white/5 rounded px-1 py-0.5 cursor-pointer select-none border-b border-white/10 pb-2">
+                {/* Visibility and export controls */}
+                <div className="flex min-h-7 items-center justify-between gap-2 border-b border-white/10 pb-2">
+                    {annotations.length > 0 ? (
+                        <label className="theme-tool-body theme-tool-row flex cursor-pointer select-none items-center gap-2 rounded px-1 py-0.5 text-xs text-white/80 hover:bg-white/5">
+                            <input
+                                type="checkbox"
+                                checked={allVisible}
+                                ref={(input) => {
+                                    if (input) input.indeterminate = isIndeterminate;
+                                }}
+                                onChange={onToggleAllVisibility}
+                                className="accent-neon-cyan cursor-pointer"
+                            />
+                            <span className="font-medium">{t('annotation.showAll')}</span>
+                        </label>
+                    ) : (
+                        <span />
+                    )}
+                    <div className="flex items-center">
                         <input
-                            type="checkbox"
-                            checked={allVisible}
-                            ref={(input) => {
-                                if (input) input.indeterminate = isIndeterminate;
+                            ref={importInputRef}
+                            type="file"
+                            data-testid="viewer-annotation-import-input"
+                            accept=".geojson,application/geo+json,application/json"
+                            className="sr-only"
+                            onChange={(event) => {
+                                const file = event.currentTarget.files?.[0];
+                                event.currentTarget.value = '';
+                                if (file) void onImport(file);
                             }}
-                            onChange={onToggleAllVisibility}
-                            className="accent-neon-cyan cursor-pointer"
                         />
-                        <span className="font-medium">{t('annotation.showAll')}</span>
-                    </label>
-                )}
+                        <button
+                            type="button"
+                            data-testid="viewer-annotation-import"
+                            aria-label={t('annotation.importGeoJson')}
+                            title={t('annotation.importGeoJson')}
+                            onClick={() => importInputRef.current?.click()}
+                            className={`${ACTION_BUTTON_CLASS} text-white/45 hover:bg-white/5 hover:text-neon-cyan focus-visible:ring-neon-cyan/60`}
+                        >
+                            <Icon name="upload" size={12} aria-hidden="true" />
+                        </button>
+                        <button
+                            type="button"
+                            data-testid="viewer-annotation-export"
+                            aria-label={t('annotation.exportGeoJson')}
+                            title={t('annotation.exportGeoJson')}
+                            onClick={onExport}
+                            disabled={annotations.length === 0}
+                            className={`${ACTION_BUTTON_CLASS} text-white/45 hover:bg-white/5 hover:text-neon-cyan focus-visible:ring-neon-cyan/60 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-white/45`}
+                        >
+                            <Icon name="download" size={12} aria-hidden="true" />
+                        </button>
+                    </div>
+                </div>
 
                 {/* Annotation list */}
                 {annotations.length === 0 ? (
@@ -118,11 +167,13 @@ export function AnnotationTool({
 
                                 {/* Delete button - always visible */}
                                 <button
+                                    type="button"
+                                    data-testid={`viewer-annotation-delete-${ann.id}`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onDelete(ann.id);
                                     }}
-                                    className="theme-tool-muted-button flex h-5 w-5 items-center justify-center rounded text-white/30 hover:text-plasma-red hover:bg-plasma-red/10 transition-all flex-shrink-0"
+                                    className={`${ACTION_BUTTON_CLASS} translate-x-1 text-white/30 hover:bg-plasma-red/10 hover:text-plasma-red focus-visible:ring-plasma-red/60`}
                                     title={t('annotation.delete')}
                                 >
                                     <Icon name="trash" size={12} />

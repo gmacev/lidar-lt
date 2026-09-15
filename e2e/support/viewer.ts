@@ -380,7 +380,26 @@ const MOCK_POTREE_SCRIPT = String.raw`
         removeAllMeasurements: () => {
           this.scene.measurements.length = 0;
         },
-        removeAnnotation: () => {},
+        addAnnotation: (position, options) => {
+          const annotation = {
+            position,
+            title: options.title,
+            description: options.description,
+            visible: true,
+            moveHere: () => {
+              if (!options.cameraPosition || !options.cameraTarget) return;
+              document.body.dataset.annotationCameraPosition = options.cameraPosition.join(',');
+              document.body.dataset.annotationCameraTarget = options.cameraTarget.join(',');
+            },
+          };
+          this.scene.annotations.children.push(annotation);
+          return annotation;
+        },
+        removeAnnotation: (annotation) => {
+          this.scene.annotations.children = this.scene.annotations.children.filter(
+            (item) => item !== annotation
+          );
+        },
         removeMeasurement: (measurement) => {
           this.scene.measurements = this.scene.measurements.filter((item) => item !== measurement);
         },
@@ -462,7 +481,9 @@ const MOCK_POTREE_SCRIPT = String.raw`
     PointSizeType: { FIXED: 1, ADAPTIVE: 2 },
     Utils: {
       createBackgroundTexture: () => document.createElement('canvas'),
-      getMousePointCloudIntersection: () => ({ location: { x: 581500.1234, y: 6060500.5678 } }),
+      getMousePointCloudIntersection: () => ({
+        location: { x: 581500.1234, y: 6060500.5678, z: 100 },
+      }),
       loadSkybox: () => ({}),
     },
     Viewer,

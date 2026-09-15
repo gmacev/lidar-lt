@@ -3,6 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTranslation } from 'react-i18next';
 import { useLithuaniaGrid } from '@/features/GridMap/hooks';
 import { GridSearchControl } from './GridSearchControl';
+import { GridAnnotationNavigator } from './GridAnnotationNavigator';
 import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
 import { ThemeSwitcher } from '@/common/components/ThemeSwitcher';
 import { useTheme } from '@/common/theme';
@@ -20,7 +21,8 @@ const EMPTY_MAP_STYLE = { version: 8 as const, sources: {}, layers: [] };
 export function GridVisualizer() {
     const { t } = useTranslation();
     const { resolvedTheme } = useTheme();
-    const { data, mapRef, tooltip, search, handlers } = useLithuaniaGrid(resolvedTheme);
+    const { data, mapRef, tooltip, search, annotationHighlight, hasActiveSectorMatch, handlers } =
+        useLithuaniaGrid(resolvedTheme);
 
     // Dynamic layer styles using feature state for hover
     const fillLayer: LayerProps = {
@@ -54,10 +56,10 @@ export function GridVisualizer() {
             'line-width': resolvedTheme === 'light' ? 1.15 : 1,
             'line-opacity':
                 resolvedTheme === 'light'
-                    ? search.matchedIds.size > 0
+                    ? hasActiveSectorMatch
                         ? 0.32
                         : 0.55
-                    : search.matchedIds.size > 0
+                    : hasActiveSectorMatch
                       ? 0.18
                       : 0.32,
         },
@@ -69,8 +71,7 @@ export function GridVisualizer() {
         paint: {
             'line-color': resolvedTheme === 'light' ? '#f7f4ec' : 'rgba(0, 0, 0, 0)',
             'line-width': resolvedTheme === 'light' ? 2.45 : 0,
-            'line-opacity':
-                resolvedTheme === 'light' ? (search.matchedIds.size > 0 ? 0.34 : 0.68) : 0,
+            'line-opacity': resolvedTheme === 'light' ? (hasActiveSectorMatch ? 0.34 : 0.68) : 0,
         },
     };
 
@@ -93,9 +94,18 @@ export function GridVisualizer() {
 
     const matchedCount = search.matchedIds.size;
     const totalCount = data.features.length;
+    const validSectorIds = new Set(
+        data.features.flatMap((feature) => {
+            const id = (feature.properties as { id?: unknown } | null)?.id;
+            return typeof id === 'string' ? [id.replace(/\//g, '_')] : [];
+        })
+    );
 
     return (
-        <div className="grid-map relative h-full w-full">
+        <div
+            className="grid-map relative h-full w-full"
+            data-annotation-highlight={annotationHighlight.sectorId ?? undefined}
+        >
             {/* Search: full-width bottom sheet above the footer on mobile,
                 top-left panel on sm+ screens. */}
             <GridSearchControl
@@ -106,10 +116,16 @@ export function GridVisualizer() {
                 searchStatus={search.status}
             />
 
-            {/* Appearance and language controls - top right */}
-            <div className="absolute right-2 top-2 z-10 flex items-start gap-2 sm:right-4 sm:top-4">
-                <ThemeSwitcher />
-                <LanguageSwitcher themed />
+            {/* Appearance, language, and saved annotations - top right */}
+            <div className="absolute right-2 top-2 z-10 flex flex-col items-end gap-2 sm:right-4 sm:top-4">
+                <div className="flex items-start gap-2">
+                    <ThemeSwitcher />
+                    <LanguageSwitcher themed />
+                </div>
+                <GridAnnotationNavigator
+                    validSectorIds={validSectorIds}
+                    onHighlightedSectorChange={annotationHighlight.setSectorId}
+                />
             </div>
 
             <Map
