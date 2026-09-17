@@ -67450,6 +67450,10 @@ void main() {
 		return true;
 	}
 
+	// Let demand-driven hierarchy pages refine the initial view before a large
+	// whole-file request starts competing for the same resource.
+	const HIERARCHY_PREFETCH_MIN_COMPLETED_RANGES = 4;
+
 	class NodeLoader {
 
 		constructor(url) {
@@ -67459,6 +67463,7 @@ void main() {
 			this.hierarchyBuffer = null;
 			this.hierarchyPrefetchPromise = null;
 			this.hierarchyRangeRequests = 0;
+			this.hierarchyRangeLoadsCompleted = 0;
 			this.hierarchyCacheHits = 0;
 			this.hierarchyPrefetchBytes = 0;
 		}
@@ -68010,7 +68015,9 @@ void main() {
 			if (this.disposed || node.octreeGeometry.disposed) {
 				return;
 			}
-			if (first === 0n) {
+
+			this.hierarchyRangeLoadsCompleted++;
+			if (this.hierarchyRangeLoadsCompleted >= HIERARCHY_PREFETCH_MIN_COMPLETED_RANGES) {
 				this.scheduleHierarchyPrefetch(hierarchyPath);
 			}
 
