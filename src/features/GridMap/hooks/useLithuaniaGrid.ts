@@ -1,8 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import type { MapLayerMouseEvent, MapRef } from '@vis.gl/react-maplibre';
-import type { FeatureCollection } from 'geojson';
 import gridData from '@/assets/grid.json';
+import type { GridSectorCollection } from '@/features/GridMap/components/GridSectorLinks';
 import { isCoordinateSearchQuery, isGridIdSearchQuery, useGridSearch } from './useGridSearch';
 import { useGeographicSearch } from './useGeographicSearch';
 
@@ -16,10 +15,8 @@ interface TooltipData {
 }
 
 export function useLithuaniaGrid(mapStyleKey: string) {
-    const navigate = useNavigate();
-
     // Data is now static import
-    const data = gridData as FeatureCollection;
+    const data = gridData as GridSectorCollection;
 
     // Search Logic
     const localSearch = useGridSearch(data);
@@ -100,26 +97,6 @@ export function useLithuaniaGrid(mapStyleKey: string) {
     }, [mapStyleKey]);
 
     // Handlers
-    const handleClick = (event: MapLayerMouseEvent) => {
-        const feature = event.features?.[0];
-
-        if (feature?.properties) {
-            const { id, name } = feature.properties as { id: string; name: string | null };
-            if (id) {
-                const normalizedId = id.replace(/\//g, '_');
-                void navigate({
-                    to: '/viewer/$cellId',
-                    params: { cellId: normalizedId },
-                    search: { sectorName: name ?? undefined },
-                });
-                return;
-            }
-        }
-
-        // If clicked on empty space, navigate to root
-        void navigate({ to: '/' });
-    };
-
     const handleMouseMove = (event: MapLayerMouseEvent) => {
         const feature = event.features?.[0];
         const map = event.target;
@@ -192,7 +169,6 @@ export function useLithuaniaGrid(mapStyleKey: string) {
         },
         hasActiveSectorMatch: renderedMatchedIds.size > 0,
         handlers: {
-            onClick: handleClick,
             onMouseMove: handleMouseMove,
             onMouseLeave: handleMouseLeave,
         },

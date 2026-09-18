@@ -324,7 +324,9 @@
         "geographicSearchError": "The local geographic search data could not be loaded."
     },
     "grid": {
-        "sectorId": "SECTOR ID"
+        "sectorId": "SECTOR ID",
+        "openSector": "Open sector {{name}}, {{id}}",
+        "unknownSector": "Unknown sector"
     },
     "sectorNavigation": {
         "label": "Adjacent sector navigation",

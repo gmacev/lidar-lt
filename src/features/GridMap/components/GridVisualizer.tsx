@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useLithuaniaGrid } from '@/features/GridMap/hooks';
 import { GridSearchControl } from './GridSearchControl';
 import { GridAnnotationNavigator } from './GridAnnotationNavigator';
+import { GridSectorLinks } from './GridSectorLinks';
 import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
 import { ThemeSwitcher } from '@/common/components/ThemeSwitcher';
 import { useTheme } from '@/common/theme';
@@ -140,7 +141,6 @@ export function GridVisualizer() {
                 style={{ width: '100%', height: '100%' }}
                 mapStyle={EMPTY_MAP_STYLE}
                 interactiveLayerIds={['grid-fill']}
-                onClick={handlers.onClick}
                 onMouseMove={handlers.onMouseMove}
                 onMouseLeave={handlers.onMouseLeave}
                 attributionControl={false}
@@ -169,6 +169,7 @@ export function GridVisualizer() {
                     <Layer {...lineLayer} />
                     <Layer {...matchedLineLayer} />
                 </Source>
+                <GridSectorLinks data={data} />
             </Map>
 
             {tooltip && (

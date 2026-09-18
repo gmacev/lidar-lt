@@ -324,7 +324,9 @@
         "geographicSearchError": "Nepavyko įkelti vietinės paieškos duomenų."
     },
     "grid": {
-        "sectorId": "SEKTORIAUS ID"
+        "sectorId": "SEKTORIAUS ID",
+        "openSector": "Atverti sektorių {{name}}, {{id}}",
+        "unknownSector": "Nežinomas sektorius"
     },
     "sectorNavigation": {
         "label": "Gretimų sektorių navigacija",
