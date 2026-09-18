@@ -36,110 +36,103 @@ const MOCK_SOURCE_MANIFEST = {
     },
 };
 
-const MOCK_KVR_ATTRIBUTES = {
-    ObjectId: '100',
-    Code: 'KVR-100',
-    Name: 'Gedimino kalno, pilies bokšto ir Aukštutinės pilies pastatų komplekso liekanos',
-    NameOfficial: 'Gedimino kalno, pilies bokšto ir Aukštutinės pilies pastatų komplekso liekanos',
-    ObjectName: 'bokštas',
-    Status: 'Registrinis',
-    Address: 'Arsenalo g. 5, Vilnius',
-};
+const MOCK_KVR_NAME =
+    'Gedimino kalno, pilies bokšto ir Aukštutinės pilies pastatų komplekso liekanos';
+
+function getMockKvrAttributes(
+    objectId: number,
+    code: string,
+    name: string,
+    additionalAttributes: Record<string, string> = {}
+) {
+    return {
+        OBJECTID: objectId,
+        Unikalus_kodas: code,
+        Pavadinimas: name,
+        Statusas: 'Registrinis',
+        URL: `http://kvr.kpd.lt/heritage/Pages/KVRDetail.aspx?lang=lt&MC=${code}`,
+        ...additionalAttributes,
+    };
+}
 
 function getMockKvrResponse(url: string) {
-    if (url.includes('/pub_kvr_objektai/MapServer/1/query')) {
-        return {
-            features: [
-                {
-                    attributes: MOCK_KVR_ATTRIBUTES,
-                    geometry: {
-                        rings: [
-                            [
-                                [581420, 6060420],
-                                [581480, 6060420],
-                                [581480, 6060480],
-                                [581420, 6060480],
-                                [581420, 6060420],
-                            ],
-                        ],
-                    },
-                },
-            ],
-        };
+    const { pathname } = new URL(url);
+    const pathMatch = pathname.match(/\/MapServer\/(\d+)(?:\/(\d+))?(?:\/query)?$/);
+    const layerId = Number(pathMatch?.[1]);
+    const featureId = pathMatch?.[2] ? Number(pathMatch[2]) : null;
+
+    if (pathname.endsWith('/query')) {
+        if (layerId === 0) return { objectIds: [31, 32, 33, 34] };
+        if (layerId === 1) return { objectIds: [11] };
+        if (layerId === 2) return { objectIds: [21, 22] };
+        return { objectIds: [] };
     }
 
-    if (url.includes('/pub_kvr_apsaugos_zonos/MapServer/0/query')) {
-        return {
-            features: [
-                {
-                    attributes: {
-                        ...MOCK_KVR_ATTRIBUTES,
-                        ShapeType: 'Apsaugos zona',
-                        Area: 4200,
-                    },
-                    geometry: {
-                        rings: [
-                            [
-                                [581350, 6060350],
-                                [581550, 6060350],
-                                [581550, 6060550],
-                                [581350, 6060550],
-                                [581350, 6060350],
-                            ],
-                        ],
-                    },
-                },
-            ],
-        };
-    }
-
-    if (url.includes('/pub_kvr_apsaugos_zonos/MapServer/1/query')) {
-        return { features: [] };
-    }
-
-    return {
-        features: [
-            {
-                attributes: MOCK_KVR_ATTRIBUTES,
-                geometry: { x: 581456, y: 6060682 },
+    const features: Record<number, { attributes: Record<string, unknown>; geometry?: object }> = {
+        11: {
+            attributes: getMockKvrAttributes(11, '100', MOCK_KVR_NAME),
+            geometry: {
+                rings: [
+                    [
+                        [581420, 6060420],
+                        [581480, 6060420],
+                        [581480, 6060480],
+                        [581420, 6060480],
+                        [581420, 6060420],
+                    ],
+                ],
             },
-            {
-                attributes: {
-                    ObjectId: '200',
-                    Code: 'KVR-200',
-                    Name: 'Aušros vartai',
-                    NameOfficial: 'Aušros vartai',
-                    ObjectName: 'vartai',
-                    Status: 'Registrinis',
-                    Address: 'Aušros Vartų g. 14, Vilnius',
-                },
-                geometry: { x: 581850, y: 6060800 },
+        },
+        21: {
+            attributes: getMockKvrAttributes(21, '100', MOCK_KVR_NAME, {
+                Pozonis: 'Apsaugos nuo fizinio poveikio pozonis',
+            }),
+            geometry: {
+                rings: [
+                    [
+                        [581350, 6060350],
+                        [581550, 6060350],
+                        [581550, 6060550],
+                        [581350, 6060550],
+                        [581350, 6060350],
+                    ],
+                ],
             },
-            {
-                attributes: {
-                    ObjectId: '300',
-                    Code: 'KVR-300',
-                    Name: '',
-                    NameOfficial: '',
-                    ObjectName: '',
-                    Status: 'Registrinis',
-                    Address: '',
-                },
-                geometry: { x: 581150, y: 6060200 },
+        },
+        22: {
+            attributes: getMockKvrAttributes(22, '100', MOCK_KVR_NAME, {
+                Pozonis: 'Vizualinės apsaugos pozonis',
+            }),
+            geometry: {
+                rings: [
+                    [
+                        [581300, 6060300],
+                        [581600, 6060300],
+                        [581600, 6060600],
+                        [581300, 6060600],
+                        [581300, 6060300],
+                    ],
+                ],
             },
-            {
-                attributes: {
-                    ObjectId: '400',
-                    Code: 'KVR-400',
-                    Name: 'Objektas be geometrijos',
-                    NameOfficial: 'Objektas be geometrijos',
-                    ObjectName: '',
-                    Status: 'Registrinis',
-                    Address: '',
-                },
-            },
-        ],
+        },
+        31: {
+            attributes: getMockKvrAttributes(31, '100', MOCK_KVR_NAME),
+            geometry: { x: 581456, y: 6060682 },
+        },
+        32: {
+            attributes: getMockKvrAttributes(32, '200', 'Aušros vartai'),
+            geometry: { x: 581850, y: 6060800 },
+        },
+        33: {
+            attributes: getMockKvrAttributes(33, '300', ''),
+            geometry: { x: 581150, y: 6060200 },
+        },
+        34: {
+            attributes: getMockKvrAttributes(34, '400', 'Objektas be geometrijos'),
+        },
     };
+
+    return { feature: featureId === null ? undefined : features[featureId] };
 }
 
 const MOCK_POTREE_SCRIPT = String.raw`
@@ -676,13 +669,16 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
         });
     });
 
-    await page.route('https://kvr.kpd.lt/arcgis/rest/services/KVR/**/query?**', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify(getMockKvrResponse(route.request().url())),
-        });
-    });
+    await page.route(
+        'https://www.geoportal.lt/mapproxy/rest/services/kpd_kvr/MapServer/**',
+        async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify(getMockKvrResponse(route.request().url())),
+            });
+        }
+    );
 
     await page.route('https://www.geoportal.lt/mapproxy/elasticsearch_gvdr', async (route) => {
         if (mapLabelsMode === 'unavailable') {

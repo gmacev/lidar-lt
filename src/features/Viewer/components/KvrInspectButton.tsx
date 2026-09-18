@@ -40,11 +40,6 @@ function getMatchTypeLabelKey(matchType: KvrMatchType, count: number) {
     return `kvrInspect.${count === 1 ? 'matchType' : 'matchTypePlural'}.${matchType}`;
 }
 
-function capitalizeDisplayText(value: string) {
-    if (!value) return '';
-    return value.charAt(0).toLocaleUpperCase('lt-LT') + value.slice(1);
-}
-
 export function KvrInspectButton({
     focusRequest,
     inspectState,
@@ -181,32 +176,11 @@ export function KvrInspectButton({
                                                                     t('kvrInspect.code', {
                                                                         code: match.code,
                                                                     }),
-                                                                capitalizeDisplayText(
-                                                                    match.objectName
-                                                                ),
                                                                 match.status,
                                                             ]
                                                                 .filter(Boolean)
                                                                 .join(' · ')}
                                                         </p>
-
-                                                        {match.address && (
-                                                            <p className="mt-1 text-xs leading-4 text-white/65">
-                                                                {match.address}
-                                                            </p>
-                                                        )}
-
-                                                        {(match.shapeType ||
-                                                            match.area !== undefined) && (
-                                                            <p className="mt-1 text-xs leading-4 text-white/45">
-                                                                {[
-                                                                    match.shapeType,
-                                                                    formatArea(match.area),
-                                                                ]
-                                                                    .filter(Boolean)
-                                                                    .join(' · ')}
-                                                            </p>
-                                                        )}
                                                     </a>
 
                                                     {match.center && (
@@ -276,9 +250,4 @@ export function KvrInspectButton({
             </ToolPopover>
         </>
     );
-}
-
-function formatArea(area?: number) {
-    if (area === undefined) return '';
-    return `${Math.round(area).toLocaleString()} m²`;
 }

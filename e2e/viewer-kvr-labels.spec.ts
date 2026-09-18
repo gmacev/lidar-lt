@@ -15,9 +15,15 @@ test.describe('viewer KVR labels', () => {
             'Gedimino kalno, pilies bokšto ir Aukštutinės pilies pastatų komplekso liekanos'
         );
         await expect(page.locator('[data-viewer-label-id="200"]')).toHaveText('Aušros vartai');
-        await expect(page.locator('[data-viewer-label-id="300"]')).toHaveText('KVR-300');
+        await expect(page.locator('[data-viewer-label-id="300"]')).toHaveText('300');
         await expect(page.locator('[data-viewer-label-id="400"]')).toHaveCount(0);
         await expect(page.getByTestId('viewer-map-labels')).toHaveCount(0);
+        await expect(
+            page.locator('[data-kvr-match-key="100:physical-protection-zone"]')
+        ).toHaveCount(1);
+        await expect(page.locator('[data-kvr-match-key="100:visual-protection-zone"]')).toHaveCount(
+            1
+        );
 
         const collapsedBounds = await longLabel.boundingBox();
         const collapsedBackground = await longLabel.evaluate(
@@ -44,6 +50,11 @@ test.describe('viewer KVR labels', () => {
         await longLabel.click();
         await expect(page).toHaveURL(/x=581456/);
         const focusedResult = page.locator('[data-kvr-match-key="100:object-territory"]');
+        await expect(focusedResult.locator('p').first()).toHaveText('Code 100 · Registrinis');
+        await expect(focusedResult).toHaveAttribute(
+            'href',
+            'https://kvr.kpd.lt/heritage/Pages/KVRDetail.aspx?lang=lt&MC=100'
+        );
         await expect(focusedResult).toBeFocused();
         await expect(focusedResult).toHaveAttribute('data-highlighted', 'true');
 
