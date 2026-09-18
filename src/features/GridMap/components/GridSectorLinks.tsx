@@ -5,7 +5,7 @@ import { useMap } from '@vis.gl/react-maplibre';
 import { useTranslation } from 'react-i18next';
 import type { FeatureCollection, Polygon, Position } from 'geojson';
 
-export interface GridSectorProperties {
+interface GridSectorProperties {
     id: string;
     name: string | null;
 }
