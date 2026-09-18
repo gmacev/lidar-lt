@@ -54,7 +54,7 @@ test('leaves new-tab behavior to the browser without calling window.open', async
     await sectorLink.click({ button: 'middle' });
     const newPage = await newPagePromise;
 
-    await newPage.waitForLoadState('domcontentloaded');
+    await newPage.waitForURL(/\/viewer\/76_32(?:\?|$)/);
     expect(new URL(newPage.url()).pathname).toBe('/viewer/76_32');
     await newPage.close();
 
@@ -62,7 +62,7 @@ test('leaves new-tab behavior to the browser without calling window.open', async
     await sectorLink.click({ modifiers: ['Control'] });
     const modifiedPage = await modifiedPagePromise;
 
-    await modifiedPage.waitForLoadState('domcontentloaded');
+    await modifiedPage.waitForURL(/\/viewer\/76_32(?:\?|$)/);
     expect(new URL(modifiedPage.url()).pathname).toBe('/viewer/76_32');
     await modifiedPage.close();
 });
