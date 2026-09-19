@@ -115,6 +115,8 @@ export function GridAnnotationNavigator({
         />
     );
 
+    if (storedAnnotations.length === 0) return null;
+
     return (
         <div ref={rootRef} className="relative flex flex-col items-end">
             {importInput}

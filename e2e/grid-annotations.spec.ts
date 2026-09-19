@@ -57,19 +57,15 @@ function createAnnotationImportFile() {
     };
 }
 
-test('shows the full annotation navigator when nothing is stored', async ({ page }) => {
+test('hides the annotation navigator when nothing is stored', async ({ page }) => {
     await page.goto('/');
-    const trigger = page.getByTestId('grid-annotation-trigger');
-    await expect(trigger).toBeVisible();
-    await expect(trigger).toContainText('0');
-
-    await trigger.click();
-    await expect(page.getByTestId('grid-annotation-import')).toBeVisible();
-    await expect(page.getByTestId('grid-annotation-export')).toBeDisabled();
-    await expect(page.getByText('No annotations yet')).toBeVisible();
+    await expect(page.getByTestId('grid-annotation-trigger')).toBeHidden();
 });
 
-test('imports a validated annotation backup from the empty grid state', async ({ page }) => {
+test('imports a validated annotation backup when saved annotations are present', async ({ page }) => {
+    await page.addInitScript((annotations) => {
+        localStorage.setItem('lidar:annotations:76_32', JSON.stringify(annotations));
+    }, [STORED_ANNOTATIONS[0]]);
     await page.goto('/');
     await page
         .getByTestId('grid-annotation-import-input')
@@ -77,11 +73,11 @@ test('imports a validated annotation backup from the empty grid state', async ({
 
     const trigger = page.getByTestId('grid-annotation-trigger');
     await expect(trigger).toBeVisible();
-    await expect(trigger).toContainText('1');
+    await expect(trigger).toContainText('2');
     const stored = await page.evaluate(() => localStorage.getItem('lidar:annotations:76_32'));
-    expect(z.array(z.object({ id: z.string() })).parse(JSON.parse(stored ?? 'null'))).toEqual([
-        { id: 'grid-import-current' },
-    ]);
+    expect(z.array(z.object({ id: z.string() })).parse(JSON.parse(stored ?? 'null'))).toEqual(
+        expect.arrayContaining([{ id: 'annotation-newer' }, { id: 'grid-import-current' }])
+    );
 });
 
 test.describe('grid annotation navigation', () => {
