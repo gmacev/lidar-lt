@@ -62,10 +62,15 @@ test('hides the annotation navigator when nothing is stored', async ({ page }) =
     await expect(page.getByTestId('grid-annotation-trigger')).toBeHidden();
 });
 
-test('imports a validated annotation backup when saved annotations are present', async ({ page }) => {
-    await page.addInitScript((annotations) => {
-        localStorage.setItem('lidar:annotations:76_32', JSON.stringify(annotations));
-    }, [STORED_ANNOTATIONS[0]]);
+test('imports a validated annotation backup when saved annotations are present', async ({
+    page,
+}) => {
+    await page.addInitScript(
+        (annotations) => {
+            localStorage.setItem('lidar:annotations:76_32', JSON.stringify(annotations));
+        },
+        [STORED_ANNOTATIONS[0]]
+    );
     await page.goto('/');
     await page
         .getByTestId('grid-annotation-import-input')
