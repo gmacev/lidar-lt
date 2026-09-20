@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { GEOPORTAL_HOME_URL } from '@/common/config/geoportal';
 
 interface SourceAttributionProps {
     dateRange: string;
@@ -17,7 +18,7 @@ export function SourceAttribution({ dateRange, showProvider = true }: SourceAttr
                         {'\u00b7'}
                     </span>
                     <a
-                        href="https://www.geoportal.lt/"
+                        href={GEOPORTAL_HOME_URL}
                         target="_blank"
                         rel="noreferrer"
                         className="theme-corner-link whitespace-nowrap text-white/75 underline-offset-2 transition-colors hover:text-white hover:underline focus-visible:text-white focus-visible:underline focus-visible:outline-none"

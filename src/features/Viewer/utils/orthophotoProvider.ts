@@ -1,7 +1,3 @@
-export const ORTHOPHOTO_ARCGIS_ROOT = 'https://www.geoportal.lt/arcgis/rest/services';
-
-export const ORTHOPHOTO_CATALOG_URL = `${ORTHOPHOTO_ARCGIS_ROOT}/NZT?f=pjson`;
-
 export interface OrthophotoLod {
     level: number;
     resolution: number;

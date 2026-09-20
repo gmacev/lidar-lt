@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { GEOPORTAL_HOME_URL } from '@/common/config/geoportal';
 
 const externalLinkClassName =
     'text-neon-amber underline-offset-2 transition-colors hover:underline focus-visible:underline focus-visible:outline-none';
@@ -13,7 +14,7 @@ export function AboutProjectModal() {
             <p>
                 {t('home.about.originPrefix')}
                 <a
-                    href="https://www.geoportal.lt/"
+                    href={GEOPORTAL_HOME_URL}
                     target="_blank"
                     rel="noreferrer"
                     className={externalLinkClassName}

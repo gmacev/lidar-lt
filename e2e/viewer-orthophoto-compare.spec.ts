@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 import {
+    GEOPORTAL_ORTHOPHOTO_CATALOG_URL,
+    getGeoportalOrthophotoMapServerUrl,
+} from '../src/common/config/geoportal';
+import {
     CANONICAL_VIEWER_PATH,
     expectNoSearchParam,
     expectSearchParam,
@@ -8,16 +12,24 @@ import {
     installMockViewer,
 } from './support/viewer';
 
+const RECENT_ORTHOPHOTO_URL = getGeoportalOrthophotoMapServerUrl('NZT/ORT_recent');
+const ORTHOPHOTO_2015_URL = getGeoportalOrthophotoMapServerUrl('NZT/ORT10LT_2015');
+
 test.describe('viewer orthophoto comparison', () => {
     test('defaults to the continuous mosaic, switches periods, and persists', async ({ page }) => {
         let orthophotoRequests = 0;
         const recentTileRequests: string[] = [];
+        const orthophotoProviderUrls: string[] = [];
         page.on('request', (request) => {
             const url = request.url();
-            if (url.includes('/arcgis/rest/services/NZT/ORT')) {
+            if (url.includes('/mapproxy/') && url.includes('/nzt_ort10lt_')) {
                 orthophotoRequests += 1;
+                orthophotoProviderUrls.push(url);
             }
-            if (url.includes('/NZT/ORT_recent/MapServer/tile/')) {
+            if (url === GEOPORTAL_ORTHOPHOTO_CATALOG_URL) {
+                orthophotoProviderUrls.push(url);
+            }
+            if (url.startsWith(`${RECENT_ORTHOPHOTO_URL}/tile/`)) {
                 recentTileRequests.push(url);
             }
         });
@@ -46,6 +58,10 @@ test.describe('viewer orthophoto comparison', () => {
         );
         await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toBeVisible();
         await expect(page.getByTestId('viewer-orthophoto-year-1995-1999')).toBeVisible();
+        expect(orthophotoProviderUrls.some((url) => url === `${ORTHOPHOTO_2015_URL}?f=pjson`)).toBe(
+            true
+        );
+        expect(orthophotoProviderUrls).toContain(GEOPORTAL_ORTHOPHOTO_CATALOG_URL);
         // The continuous mosaic is the default and is pinned for stable reloads.
         await expectSearchParam(page, 'orthoYear', 'recent');
 
@@ -266,26 +282,26 @@ test.describe('viewer orthophoto comparison', () => {
 
     test('recovers from rapid toggling while the catalog is slow', async ({ page }) => {
         await installMockViewer(page);
-        let releaseDirectory!: () => void;
-        const directoryGate = new Promise<void>((resolve) => {
-            releaseDirectory = resolve;
+        let releaseCatalog!: () => void;
+        const catalogGate = new Promise<void>((resolve) => {
+            releaseCatalog = resolve;
         });
         // Registered last so it runs before the default handlers.
-        await page.route(/\/services\/NZT\?f=pjson/, async (route) => {
-            await directoryGate;
+        await page.route(GEOPORTAL_ORTHOPHOTO_CATALOG_URL, async (route) => {
+            await catalogGate;
             await route.fallback();
         });
 
         await page.goto(CANONICAL_VIEWER_PATH);
         await expectViewerReady(page);
-        const directoryRequest = page.waitForRequest(/\/services\/NZT\?f=pjson/);
+        const catalogRequest = page.waitForRequest(GEOPORTAL_ORTHOPHOTO_CATALOG_URL);
         await page.getByTestId('viewer-orthophoto-compare-toggle').click();
-        await directoryRequest;
+        await catalogRequest;
 
         // Aborting one consumer must not wedge the next one in error.
         await page.getByTestId('viewer-orthophoto-disable').click();
         await page.getByTestId('viewer-orthophoto-compare-toggle').click();
-        releaseDirectory();
+        releaseCatalog();
 
         await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
             'data-service',
@@ -399,7 +415,7 @@ test.describe('viewer orthophoto comparison', () => {
         // recent imagery tiles until the continuous mosaic is observed, so
         // the runtime fallback cannot flip to dated imagery first and make
         // the initial assertion racy.
-        await page.route(/\/NZT\/ORT_recent\/MapServer\/tile\//, async (route) => {
+        await page.route(`${RECENT_ORTHOPHOTO_URL}/tile/**`, async (route) => {
             if (route.request().url().includes('/tile/5/')) {
                 await route.fallback();
                 return;
@@ -505,10 +521,7 @@ test.describe('viewer orthophoto comparison', () => {
         // Registered last so it runs before the default handlers: the
         // continuous mosaic metadata never settles, so dated discovery must
         // proceed on its own instead of leaving the picker loading forever.
-        await page.route(
-            /\/NZT\/ORT_recent\/MapServer\?f=pjson/,
-            () => new Promise<never>(() => {})
-        );
+        await page.route(`${RECENT_ORTHOPHOTO_URL}?f=pjson`, () => new Promise<never>(() => {}));
         await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
         await expectViewerReady(page);
 
@@ -534,14 +547,14 @@ test.describe('viewer orthophoto comparison', () => {
 
     test('shows dated options loading beneath the continuous option', async ({ page }) => {
         await installMockViewer(page);
-        let releaseDirectory!: () => void;
-        const directoryGate = new Promise<void>((resolve) => {
-            releaseDirectory = resolve;
+        let releaseCatalog!: () => void;
+        const catalogGate = new Promise<void>((resolve) => {
+            releaseCatalog = resolve;
         });
         // Registered last so it runs before the default handlers: dated
         // discovery waits while recent metadata resolves right away.
-        await page.route(/\/services\/NZT\?f=pjson/, async (route) => {
-            await directoryGate;
+        await page.route(GEOPORTAL_ORTHOPHOTO_CATALOG_URL, async (route) => {
+            await catalogGate;
             await route.fallback();
         });
 
@@ -559,7 +572,7 @@ test.describe('viewer orthophoto comparison', () => {
         await expect(page.getByTestId('viewer-orthophoto-picker-loading-more')).toBeVisible();
         await expect(page.getByTestId('viewer-orthophoto-picker-loading')).toHaveCount(0);
 
-        releaseDirectory();
+        releaseCatalog();
         await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toBeVisible();
         await expect(page.getByTestId('viewer-orthophoto-picker-loading-more')).toHaveCount(0);
     });

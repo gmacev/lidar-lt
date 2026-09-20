@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import {
-    fetchOrthophotoMetadata,
-    ORTHOPHOTO_ARCGIS_ROOT,
-    ORTHOPHOTO_CATALOG_URL,
-    type OrthophotoMetadata,
-} from './orthophotoProvider';
+    GEOPORTAL_ORTHOPHOTO_CATALOG_URL,
+    getGeoportalOrthophotoMapServerUrl,
+} from '@/common/config/geoportal';
+import { fetchOrthophotoMetadata, type OrthophotoMetadata } from './orthophotoProvider';
 import type { Lks94Bounds } from './orthophotoTiles';
 
 /** Continuously covering mixed-vintage mosaic: newest imagery per location. */
@@ -116,7 +115,7 @@ function parseYearRange(mapName: string, serviceName: string) {
 
 async function listSeriesServiceNames(): Promise<string[]> {
     try {
-        const response = await fetch(ORTHOPHOTO_CATALOG_URL, {
+        const response = await fetch(GEOPORTAL_ORTHOPHOTO_CATALOG_URL, {
             headers: { Accept: 'application/json' },
         });
         if (!response.ok) {
@@ -137,7 +136,7 @@ async function listSeriesServiceNames(): Promise<string[]> {
 
 async function describeService(serviceName: string): Promise<OrthophotoDatedService | null> {
     try {
-        const baseUrl = `${ORTHOPHOTO_ARCGIS_ROOT}/${serviceName}/MapServer`;
+        const baseUrl = getGeoportalOrthophotoMapServerUrl(serviceName);
         const metadata = await fetchOrthophotoMetadata(baseUrl);
         const range = parseYearRange(metadata.mapName, serviceName);
         if (!range) return null;
@@ -159,7 +158,7 @@ async function describeService(serviceName: string): Promise<OrthophotoDatedServ
 
 async function describeRecentService(): Promise<OrthophotoRecentService | null> {
     try {
-        const baseUrl = `${ORTHOPHOTO_ARCGIS_ROOT}/${ORTHOPHOTO_RECENT_SERVICE_NAME}/MapServer`;
+        const baseUrl = getGeoportalOrthophotoMapServerUrl(ORTHOPHOTO_RECENT_SERVICE_NAME);
         const metadata = await fetchOrthophotoMetadata(baseUrl);
         return {
             kind: 'recent',
@@ -300,8 +299,7 @@ export function clearOrthophotoProbeCache() {
 
 /**
  * Requests one coarse tile with the same URL pattern the renderer uses.
- * Missing coverage answers 404, which rejects (no CORS headers on ArcGIS
- * errors). Only definitive answers are cached: hits and 404 responses;
+ * Missing coverage answers 404. Only definitive answers are cached: hits and 404 responses;
  * transient failures stay uncached and are retried on the next check.
  */
 async function probeTile(

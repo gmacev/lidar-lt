@@ -1,8 +1,7 @@
 import maplibregl, { type AddProtocolAction } from 'maplibre-gl';
+import { GEOPORTAL_GRID_TILE_ROOT_URL } from '../../../common/config/geoportal';
 
 const GEOPORTAL_PROTOCOL = 'geoportal';
-const GEOPORTAL_TILE_BASE_URL =
-    'https://www.geoportal.lt/mapproxy/rest/services/gisc_pagrindinis_wm/MapServer/tile';
 
 export const GEOPORTAL_MIN_MAP_ZOOM = 6;
 export const GEOPORTAL_MAX_MAP_ZOOM = 17;
@@ -56,10 +55,10 @@ export function buildGeoportalTileUrls({ zoom, x, y }: GeoportalTileCoordinates)
     const firstRow = y * 2;
 
     return [
-        `${GEOPORTAL_TILE_BASE_URL}/${serviceLevel}/${firstRow}/${firstColumn}`,
-        `${GEOPORTAL_TILE_BASE_URL}/${serviceLevel}/${firstRow}/${firstColumn + 1}`,
-        `${GEOPORTAL_TILE_BASE_URL}/${serviceLevel}/${firstRow + 1}/${firstColumn}`,
-        `${GEOPORTAL_TILE_BASE_URL}/${serviceLevel}/${firstRow + 1}/${firstColumn + 1}`,
+        `${GEOPORTAL_GRID_TILE_ROOT_URL}/${serviceLevel}/${firstRow}/${firstColumn}`,
+        `${GEOPORTAL_GRID_TILE_ROOT_URL}/${serviceLevel}/${firstRow}/${firstColumn + 1}`,
+        `${GEOPORTAL_GRID_TILE_ROOT_URL}/${serviceLevel}/${firstRow + 1}/${firstColumn}`,
+        `${GEOPORTAL_GRID_TILE_ROOT_URL}/${serviceLevel}/${firstRow + 1}/${firstColumn + 1}`,
     ];
 }
 

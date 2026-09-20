@@ -1,4 +1,10 @@
 import { expect, type Page } from '@playwright/test';
+import {
+    GEOPORTAL_KVR_MAP_SERVER_URL,
+    GEOPORTAL_MAP_LABEL_SEARCH_URL,
+    GEOPORTAL_ORTHOPHOTO_CATALOG_URL,
+    GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT,
+} from '../../src/common/config/geoportal';
 
 export const CANONICAL_CELL_ID = '76_32';
 const CANONICAL_SECTOR_NAME = 'VILNIUS (centras)';
@@ -553,6 +559,18 @@ function getMockOrthophotoMapName(serviceName: string) {
     return `ORT10LT ${start}-${end}`;
 }
 
+function getMockOrthophotoServiceName(url: string) {
+    const match = /\/mapproxy\/(?:rest\/services\/)?([^/]+)\/MapServer/i.exec(url);
+    const slug = match?.[1]?.toLowerCase();
+    if (!slug) return '';
+    if (slug === 'nzt_ort10lt_recent' || slug === 'nzt_ort10lt_recent_public') {
+        return 'ORT_recent';
+    }
+    if (slug === 'nzt_ort10lt_2015_2017') return 'ORT10LT_2015';
+    if (!slug.startsWith('nzt_ort10lt_')) return '';
+    return slug.slice('nzt_'.length).toUpperCase();
+}
+
 interface MockViewerOptions {
     metadata?: MetadataMode;
     potree?: PotreeMode;
@@ -584,103 +602,108 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
     const firstTileBlocked = new Set<string>();
     let orthophotoTileRequest = 0;
 
-    await page.route('**/arcgis/rest/services/NZT**', async (route) => {
+    await page.route(GEOPORTAL_ORTHOPHOTO_CATALOG_URL, async (route) => {
         if (orthophotoMode === 'unavailable') {
             await route.fulfill({ status: 503, body: '' });
             return;
         }
 
-        const url = route.request().url();
-
-        if (url.includes('/services/NZT?f=pjson')) {
-            await route.fulfill({
-                status: 200,
-                contentType: 'application/json',
-                body: JSON.stringify({
-                    services: [...MOCK_ORTHOPHOTO_SERVICE_NAMES, ...extraServices].map((name) => ({
-                        name,
-                        type: 'MapServer',
-                    })),
-                }),
-            });
-            return;
-        }
-
-        if (url.includes('/tile/')) {
-            // Recent imagery tiles fail while its metadata (and dated
-            // services) stay healthy.
-            if (recentTilesUnavailable && url.includes('ORT_recent')) {
-                await route.fulfill({ status: 503, body: '' });
-                return;
-            }
-            // The first tile requested for the service 404s; neighbors succeed.
-            const firstTileService = missingFirstTileServices.find((service) =>
-                url.includes(service)
-            );
-            if (firstTileService && !firstTileBlocked.has(firstTileService)) {
-                firstTileBlocked.add(firstTileService);
-                await route.fulfill({ status: 404, body: '' });
-                return;
-            }
-            if (missingServices.some((service) => url.includes(service))) {
-                await route.fulfill({ status: 404, body: '' });
-                return;
-            }
-            orthophotoTileRequest += 1;
-            if (orthophotoMode === 'tiles-unavailable' && !url.includes('/tile/5/')) {
-                // L5 probes succeed so the overlay mounts; only renderer tiles fail.
-                await route.fulfill({ status: 503, body: '' });
-                return;
-            }
-            if (orthophotoMode === 'partial' && orthophotoTileRequest % 2 === 1) {
-                await route.fulfill({ status: 503, body: '' });
-                return;
-            }
-            await route.fulfill({
-                status: 200,
-                contentType: 'image/png',
-                body: Buffer.from(MOCK_ORTHOPHOTO_TILE_BASE64, 'base64'),
-            });
-            return;
-        }
-
-        const serviceMatch = url.match(/\/NZT\/([^/]+)\/MapServer/);
-        const bareServiceName = serviceMatch ? serviceMatch[1] : '';
-        if (recentUnavailable && bareServiceName === 'ORT_recent') {
-            await route.fulfill({ status: 503, body: '' });
-            return;
-        }
-        const metadataOverride = bareServiceName ? metadataOverrides[bareServiceName] : undefined;
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-                ...MOCK_ORTHOPHOTO_METADATA,
-                ...(metadataOverride
-                    ? {
-                          fullExtent: {
-                              ...MOCK_ORTHOPHOTO_METADATA.fullExtent,
-                              ...metadataOverride,
-                          },
-                      }
-                    : null),
-                mapName: serviceMatch ? getMockOrthophotoMapName(serviceMatch[1]) : '',
+                services: [...MOCK_ORTHOPHOTO_SERVICE_NAMES, ...extraServices].map((name) => ({
+                    name,
+                    type: 'MapServer',
+                })),
             }),
         });
     });
 
     await page.route(
-        'https://www.geoportal.lt/mapproxy/rest/services/kpd_kvr/MapServer/**',
+        `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_*/MapServer**`,
         async (route) => {
+            if (orthophotoMode === 'unavailable') {
+                await route.fulfill({ status: 503, body: '' });
+                return;
+            }
+
+            const url = route.request().url();
+            const bareServiceName = getMockOrthophotoServiceName(url);
+
+            if (url.includes('/tile/')) {
+                // Recent imagery tiles fail while its metadata (and dated
+                // services) stay healthy.
+                if (recentTilesUnavailable && bareServiceName === 'ORT_recent') {
+                    await route.fulfill({ status: 503, body: '' });
+                    return;
+                }
+                // The first tile requested for the service 404s; neighbors succeed.
+                const firstTileService = missingFirstTileServices.find(
+                    (service) => service === bareServiceName
+                );
+                if (firstTileService && !firstTileBlocked.has(firstTileService)) {
+                    firstTileBlocked.add(firstTileService);
+                    await route.fulfill({ status: 404, body: '' });
+                    return;
+                }
+                if (missingServices.includes(bareServiceName)) {
+                    await route.fulfill({ status: 404, body: '' });
+                    return;
+                }
+                orthophotoTileRequest += 1;
+                if (orthophotoMode === 'tiles-unavailable' && !url.includes('/tile/5/')) {
+                    // L5 probes succeed so the overlay mounts; only renderer tiles fail.
+                    await route.fulfill({ status: 503, body: '' });
+                    return;
+                }
+                if (orthophotoMode === 'partial' && orthophotoTileRequest % 2 === 1) {
+                    await route.fulfill({ status: 503, body: '' });
+                    return;
+                }
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'image/png',
+                    body: Buffer.from(MOCK_ORTHOPHOTO_TILE_BASE64, 'base64'),
+                });
+                return;
+            }
+
+            if (recentUnavailable && bareServiceName === 'ORT_recent') {
+                await route.fulfill({ status: 503, body: '' });
+                return;
+            }
+            const metadataOverride = bareServiceName
+                ? metadataOverrides[bareServiceName]
+                : undefined;
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
-                body: JSON.stringify(getMockKvrResponse(route.request().url())),
+                body: JSON.stringify({
+                    ...MOCK_ORTHOPHOTO_METADATA,
+                    ...(metadataOverride
+                        ? {
+                              fullExtent: {
+                                  ...MOCK_ORTHOPHOTO_METADATA.fullExtent,
+                                  ...metadataOverride,
+                              },
+                          }
+                        : null),
+                    mapName: getMockOrthophotoMapName(bareServiceName),
+                }),
             });
         }
     );
 
-    await page.route('https://www.geoportal.lt/mapproxy/elasticsearch_gvdr', async (route) => {
+    await page.route(`${GEOPORTAL_KVR_MAP_SERVER_URL}/**`, async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(getMockKvrResponse(route.request().url())),
+        });
+    });
+
+    await page.route(GEOPORTAL_MAP_LABEL_SEARCH_URL, async (route) => {
         if (mapLabelsMode === 'unavailable') {
             await route.fulfill({ status: 503, body: '' });
             return;

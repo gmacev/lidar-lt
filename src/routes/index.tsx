@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { SEOHead } from '@/common/components';
+import { GEOPORTAL_HOME_URL } from '@/common/config/geoportal';
 import { useModal } from '@/common/hooks';
 import { AboutProjectModal, GridVisualizer } from '@/features/GridMap';
 
@@ -55,7 +56,7 @@ function HomePage() {
                 <footer className="theme-grid-chrome shrink-0 border-t border-panel-border p-2 text-center text-xs text-panel-muted">
                     Žemėlapis:{' '}
                     <a
-                        href="https://www.geoportal.lt/"
+                        href={GEOPORTAL_HOME_URL}
                         target="_blank"
                         rel="noreferrer"
                         className={footerLinkClassName}

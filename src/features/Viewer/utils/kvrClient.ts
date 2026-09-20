@@ -1,3 +1,5 @@
+import { GEOPORTAL_KVR_MAP_SERVER_URL } from '@/common/config/geoportal';
+
 export type KvrMatchType =
     'object-territory' | 'physical-protection-zone' | 'visual-protection-zone' | 'nearby-object';
 
@@ -69,7 +71,6 @@ interface RejectedKvrQuery {
     reason: unknown;
 }
 
-const GEOPORTAL_KVR_URL = 'https://www.geoportal.lt/mapproxy/rest/services/kpd_kvr/MapServer';
 const KVR_DETAIL_URL = 'https://kvr.kpd.lt/heritage/Pages/KVRDetail.aspx?lang=lt&MC=';
 const NEARBY_ENVELOPE_HALF_SIZE_METERS = 100;
 const PHYSICAL_PROTECTION_ZONE = 'Apsaugos nuo fizinio poveikio pozonis';
@@ -105,7 +106,7 @@ function buildArcGisIdQueryUrl({ layerId, geometry, geometryType }: KvrLayerQuer
         spatialRel: 'esriSpatialRelIntersects',
     });
 
-    return `${GEOPORTAL_KVR_URL}/${layerId}/query?${params.toString()}`;
+    return `${GEOPORTAL_KVR_MAP_SERVER_URL}/${layerId}/query?${params.toString()}`;
 }
 
 function getString(attributes: Record<string, unknown>, key: string) {
@@ -180,9 +181,10 @@ async function fetchFeature(
     objectId: number,
     signal: AbortSignal
 ): Promise<KvrMatch | null> {
-    const response = await fetch(`${GEOPORTAL_KVR_URL}/${query.layerId}/${objectId}?f=json`, {
-        signal,
-    });
+    const response = await fetch(
+        `${GEOPORTAL_KVR_MAP_SERVER_URL}/${query.layerId}/${objectId}?f=json`,
+        { signal }
+    );
 
     if (!response.ok) {
         throw new Error(`KVR feature request failed with HTTP ${response.status}.`);

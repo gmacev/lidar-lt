@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { GEOPORTAL_PLACE_NAMES_URL } from '@/common/config/geoportal';
 import type { PotreeViewer } from '@/common/types/potree';
 import type { SourceManifest } from '@/features/Viewer/hooks/useSourceManifest';
 import { SourceAttribution } from './SourceAttribution';
@@ -82,7 +83,7 @@ export function ViewerCornerInfo({
                     </a>
                     <span aria-hidden="true">{'\u00b7'}</span>
                     <a
-                        href="https://www.geoportal.lt/vietovardziai/"
+                        href={GEOPORTAL_PLACE_NAMES_URL}
                         target="_blank"
                         rel="noreferrer"
                         className="theme-corner-link text-white/75 underline-offset-2 hover:text-white hover:underline"

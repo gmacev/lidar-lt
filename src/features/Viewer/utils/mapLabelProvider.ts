@@ -1,3 +1,5 @@
+import { GEOPORTAL_MAP_LABEL_SEARCH_URL } from '@/common/config/geoportal';
+
 type MapLabelCategory =
     | 'city'
     | 'town'
@@ -48,7 +50,6 @@ interface GeoportalLabelRecord {
     latitude: number;
 }
 
-const GEOPORTAL_SEARCH_URL = 'https://www.geoportal.lt/mapproxy/elasticsearch_gvdr';
 const GEOPORTAL_MAX_RESULTS = 1000;
 const LKS94_PROJ =
     '+proj=tmerc +lat_0=0 +lon_0=24 +k=0.9998 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs';
@@ -349,7 +350,7 @@ async function fetchGeoportalMapLabels(
     coverageBounds: readonly Lks94Bounds[],
     signal: AbortSignal
 ) {
-    const response = await fetch(GEOPORTAL_SEARCH_URL, {
+    const response = await fetch(GEOPORTAL_MAP_LABEL_SEARCH_URL, {
         method: 'POST',
         // Geoportal accepts JSON bodies as text/plain. Keeping this a CORS-simple
         // request avoids its incomplete OPTIONS response for custom headers.
