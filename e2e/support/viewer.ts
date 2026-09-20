@@ -652,8 +652,8 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
                     return;
                 }
                 orthophotoTileRequest += 1;
-                if (orthophotoMode === 'tiles-unavailable' && !url.includes('/tile/5/')) {
-                    // L5 probes succeed so the overlay mounts; only renderer tiles fail.
+                if (orthophotoMode === 'tiles-unavailable' && !url.includes('/tile/8/')) {
+                    // L8 probes succeed so the overlay mounts; only renderer tiles fail.
                     await route.fulfill({ status: 503, body: '' });
                     return;
                 }

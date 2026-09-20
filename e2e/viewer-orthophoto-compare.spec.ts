@@ -416,7 +416,7 @@ test.describe('viewer orthophoto comparison', () => {
         // the runtime fallback cannot flip to dated imagery first and make
         // the initial assertion racy.
         await page.route(`${RECENT_ORTHOPHOTO_URL}/tile/**`, async (route) => {
-            if (route.request().url().includes('/tile/5/')) {
+            if (route.request().url().includes('/tile/8/')) {
                 await route.fallback();
                 return;
             }

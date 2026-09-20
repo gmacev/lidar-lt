@@ -58,12 +58,12 @@ const KNOWN_ORTHOPHOTO_SERVICE_NAMES = [
     'NZT/ORT10LT_1995_2001',
 ];
 
-/** Coarse zoom used for coverage probes (~6.7 km tiles). */
-const PROBE_LEVEL = 5;
+/** Sector-scale zoom used for coverage probes (~677 m tiles). */
+const PROBE_LEVEL = 8;
 
 /**
  * Upper bound on tiles probed per service. A 1 km sector intersects at most
- * four L5 tiles; the cap only guards against degenerate bounds.
+ * nine L8 tiles; the cap only guards against degenerate bounds.
  */
 const MAX_PROBE_TILES = 16;
 
@@ -240,7 +240,7 @@ interface ProbeTile {
     column: number;
 }
 
-/** Coarse tiles intersecting the sector bounds, center-out, capped. */
+/** Sector-scale tiles intersecting the sector bounds, center-out, capped. */
 function getProbeTiles(metadata: OrthophotoMetadata, bounds: Lks94Bounds): ProbeTile[] {
     const lods = metadata.tileInfo.lods;
     const lod =
