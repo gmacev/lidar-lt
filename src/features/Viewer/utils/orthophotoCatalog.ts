@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import {
-    GEOPORTAL_ORTHOPHOTO_CATALOG_URL,
-    getGeoportalOrthophotoMapServerUrl,
+    GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL,
+    GEOPORTAL_ORTHOPHOTO_FALLBACK_ENDPOINTS,
+    type GeoportalOrthophotoEndpoint,
 } from '@/common/config/geoportal';
 import { fetchOrthophotoMetadata, type OrthophotoMetadata } from './orthophotoProvider';
 import type { Lks94Bounds } from './orthophotoTiles';
 
 /** Continuously covering mixed-vintage mosaic: newest imagery per location. */
-const ORTHOPHOTO_RECENT_SERVICE_NAME = 'NZT/ORT_recent';
+const ORTHOPHOTO_RECENT_SERVICE_NAME = 'nzt_ort10lt_recent';
 const ORTHOPHOTO_RECENT_ID = 'recent';
 
 interface OrthophotoDatedService {
@@ -29,7 +30,7 @@ interface OrthophotoRecentService {
     kind: 'recent';
     /** Stable key used in the URL: "recent". */
     id: typeof ORTHOPHOTO_RECENT_ID;
-    /** ArcGIS service name: "NZT/ORT_recent". */
+    /** Geoportal discovery key: "nzt_ort10lt_recent". */
     serviceName: typeof ORTHOPHOTO_RECENT_SERVICE_NAME;
     /** MapServer root URL used for metadata and tile requests. */
     baseUrl: string;
@@ -44,19 +45,7 @@ export type OrthophotoServiceInfo = OrthophotoDatedService | OrthophotoRecentSer
  * intentionally excluded from the year picker. ORT_recent is handled
  * separately as the continuous mixed-vintage option.
  */
-const ORTHOPHOTO_SERIES_PATTERN = /^NZT\/ORT10LT_\d{4}(?:_\d{4})?$/;
-
-/** Used when the ArcGIS service directory itself cannot be listed. */
-const KNOWN_ORTHOPHOTO_SERVICE_NAMES = [
-    'NZT/ORT10LT_2024_2026',
-    'NZT/ORT10LT_2021_2023',
-    'NZT/ORT10LT_2018_2020',
-    'NZT/ORT10LT_2015',
-    'NZT/ORT10LT_2012_2013',
-    'NZT/ORT10LT_2009_2010',
-    'NZT/ORT10LT_2005_2006',
-    'NZT/ORT10LT_1995_2001',
-];
+const ORTHOPHOTO_SERIES_PATTERN = /^nzt_ort10lt_\d{4}(?:_\d{4})?$/;
 
 /** Sector-scale zoom used for coverage probes (~677 m tiles). */
 const PROBE_LEVEL = 8;
@@ -67,25 +56,24 @@ const PROBE_LEVEL = 8;
  */
 const MAX_PROBE_TILES = 16;
 
-/** Service directory entries are validated one by one; malformed entries are skipped. */
-const ServiceDirectorySchema = z.object({
-    error: z.object({ message: z.string().optional() }).optional(),
-    services: z.array(z.unknown()).optional(),
+/** Discovery entries are validated one by one; unrelated or malformed results are skipped. */
+const DiscoverySchema = z.object({
+    status: z.string(),
+    searchServices: z.array(z.unknown()).optional(),
 });
 
-function isSeriesService(service: unknown): service is { name: string; type: string } {
-    if (typeof service !== 'object' || service === null) return false;
-    if (!('name' in service) || !('type' in service)) return false;
-    return (
-        service.type === 'MapServer' &&
-        typeof service.name === 'string' &&
-        ORTHOPHOTO_SERIES_PATTERN.test(service.name)
-    );
-}
+const DiscoveryServiceSchema = z.object({
+    key: z.string(),
+    url: z.string().url(),
+    serviceType: z.string(),
+});
+
+const ALLOWED_ORTHOPHOTO_KEY_PATTERN = /^nzt_ort10lt_(?:recent|\d{4}(?:_\d{4})?)$/;
 
 let datedCache: OrthophotoDatedService[] | null = null;
 let datedPromise: Promise<OrthophotoDatedService[]> | null = null;
 let recentPromise: Promise<OrthophotoRecentService | null> | null = null;
+let discoveryPromise: Promise<GeoportalOrthophotoEndpoint[]> | null = null;
 
 function parseYearRange(mapName: string, serviceName: string) {
     // Prefer the human range from mapName: "ORT10LT 2015-2017" even though the
@@ -113,38 +101,63 @@ function parseYearRange(mapName: string, serviceName: string) {
     return null;
 }
 
-async function listSeriesServiceNames(): Promise<string[]> {
-    try {
-        const response = await fetch(GEOPORTAL_ORTHOPHOTO_CATALOG_URL, {
-            headers: { Accept: 'application/json' },
-        });
-        if (!response.ok) {
-            throw new Error(`Orthophoto catalog request failed with HTTP ${response.status}`);
-        }
-        const directory = ServiceDirectorySchema.parse(await response.json());
-        if (directory.error) {
-            throw new Error(directory.error.message ?? 'Geoportal returned an ArcGIS error');
-        }
-        const names = (directory.services ?? [])
-            .filter(isSeriesService)
-            .map((service) => service.name);
-        return names.length > 0 ? names : [...KNOWN_ORTHOPHOTO_SERVICE_NAMES];
-    } catch {
-        return [...KNOWN_ORTHOPHOTO_SERVICE_NAMES];
+function parseDiscoveredEndpoint(value: unknown): GeoportalOrthophotoEndpoint | null {
+    const parsed = DiscoveryServiceSchema.safeParse(value);
+    if (!parsed.success) return null;
+    const { key, serviceType } = parsed.data;
+    if (!ALLOWED_ORTHOPHOTO_KEY_PATTERN.test(key) || !/arcgis rest/i.test(serviceType)) return null;
+
+    const url = new URL(parsed.data.url);
+    const expectedPath = new RegExp(`^/mapproxy/(?:rest/services/)?${key}/MapServer/?$`, 'i');
+    if (
+        url.protocol !== 'https:' ||
+        url.hostname !== 'www.geoportal.lt' ||
+        url.search !== '' ||
+        !expectedPath.test(url.pathname)
+    ) {
+        return null;
     }
+    return { key, url: url.href.replace(/\/$/, '') };
 }
 
-async function describeService(serviceName: string): Promise<OrthophotoDatedService | null> {
+async function discoverOrthophotoEndpoints(): Promise<GeoportalOrthophotoEndpoint[]> {
+    if (!discoveryPromise) {
+        discoveryPromise = (async () => {
+            try {
+                const response = await fetch(GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL, {
+                    headers: { Accept: 'application/json' },
+                });
+                if (!response.ok) {
+                    throw new Error(`Orthophoto discovery failed with HTTP ${response.status}`);
+                }
+                const discovery = DiscoverySchema.parse(await response.json());
+                if (discovery.status !== 'success') throw new Error('Geoportal discovery failed');
+
+                const endpoints = (discovery.searchServices ?? [])
+                    .map(parseDiscoveredEndpoint)
+                    .filter((item): item is GeoportalOrthophotoEndpoint => item !== null);
+                const unique = [...new Map(endpoints.map((item) => [item.key, item])).values()];
+                return unique.length > 0 ? unique : [...GEOPORTAL_ORTHOPHOTO_FALLBACK_ENDPOINTS];
+            } catch {
+                return [...GEOPORTAL_ORTHOPHOTO_FALLBACK_ENDPOINTS];
+            }
+        })();
+    }
+    return discoveryPromise;
+}
+
+async function describeService(
+    endpoint: GeoportalOrthophotoEndpoint
+): Promise<OrthophotoDatedService | null> {
     try {
-        const baseUrl = getGeoportalOrthophotoMapServerUrl(serviceName);
-        const metadata = await fetchOrthophotoMetadata(baseUrl);
-        const range = parseYearRange(metadata.mapName, serviceName);
+        const metadata = await fetchOrthophotoMetadata(endpoint.url);
+        const range = parseYearRange(metadata.mapName, endpoint.key);
         if (!range) return null;
         return {
             kind: 'dated',
             id: range.rangeLabel,
-            serviceName,
-            baseUrl,
+            serviceName: endpoint.key,
+            baseUrl: endpoint.url,
             rangeLabel: range.rangeLabel,
             startYear: range.startYear,
             endYear: range.endYear,
@@ -158,13 +171,15 @@ async function describeService(serviceName: string): Promise<OrthophotoDatedServ
 
 async function describeRecentService(): Promise<OrthophotoRecentService | null> {
     try {
-        const baseUrl = getGeoportalOrthophotoMapServerUrl(ORTHOPHOTO_RECENT_SERVICE_NAME);
-        const metadata = await fetchOrthophotoMetadata(baseUrl);
+        const endpoints = await discoverOrthophotoEndpoints();
+        const endpoint = endpoints.find((item) => item.key === ORTHOPHOTO_RECENT_SERVICE_NAME);
+        if (!endpoint) return null;
+        const metadata = await fetchOrthophotoMetadata(endpoint.url);
         return {
             kind: 'recent',
             id: ORTHOPHOTO_RECENT_ID,
             serviceName: ORTHOPHOTO_RECENT_SERVICE_NAME,
-            baseUrl,
+            baseUrl: endpoint.url,
             metadata,
         };
     } catch {
@@ -192,9 +207,11 @@ async function fetchDatedCatalog(): Promise<OrthophotoDatedService[]> {
     if (datedCache) return datedCache;
     if (!datedPromise) {
         datedPromise = (async () => {
-            const serviceNames = await listSeriesServiceNames();
+            const endpoints = (await discoverOrthophotoEndpoints()).filter((item) =>
+                ORTHOPHOTO_SERIES_PATTERN.test(item.key)
+            );
             const described = await Promise.all(
-                serviceNames.map((serviceName) => describeService(serviceName))
+                endpoints.map((endpoint) => describeService(endpoint))
             );
             const dated = described
                 .filter((service): service is OrthophotoDatedService => service !== null)

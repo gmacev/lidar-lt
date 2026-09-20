@@ -17,6 +17,9 @@ import {
 
 const GRID_SOURCE_ID = 'lidar-grid';
 const GEOPORTAL_SOURCE_ID = 'geoportal-basemap';
+const LITHUANIA_GRID_BOUNDS: [number, number, number, number] = [
+    21.027821, 53.866554, 26.914825, 56.470551,
+];
 const EMPTY_MAP_STYLE = { version: 8 as const, sources: {}, layers: [] };
 
 export function GridVisualizer() {
@@ -149,7 +152,7 @@ export function GridVisualizer() {
                     id="map-background"
                     type="background"
                     paint={{
-                        'background-color': resolvedTheme === 'light' ? '#e8e7df' : '#151b1e',
+                        'background-color': resolvedTheme === 'light' ? '#e8e7df' : '#131313',
                     }}
                 />
                 <Source
@@ -159,9 +162,14 @@ export function GridVisualizer() {
                     tileSize={GEOPORTAL_LOGICAL_TILE_SIZE}
                     minzoom={GEOPORTAL_MIN_MAP_ZOOM}
                     maxzoom={GEOPORTAL_MAX_MAP_ZOOM}
+                    bounds={LITHUANIA_GRID_BOUNDS}
                     attribution="Žemėlapis: geoportal.lt © Aplinkos ministerija, © SSVA, 2026"
                 >
-                    <Layer id="geoportal-basemap-layer" type="raster" />
+                    <Layer
+                        id="geoportal-basemap-layer"
+                        type="raster"
+                        paint={{ 'raster-fade-duration': 0 }}
+                    />
                 </Source>
                 <Source id={GRID_SOURCE_ID} type="geojson" data={data} promoteId="id">
                     <Layer {...fillLayer} />

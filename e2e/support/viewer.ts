@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import {
     GEOPORTAL_KVR_MAP_SERVER_URL,
     GEOPORTAL_MAP_LABEL_SEARCH_URL,
-    GEOPORTAL_ORTHOPHOTO_CATALOG_URL,
+    GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL,
     GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT,
 } from '../../src/common/config/geoportal';
 
@@ -545,6 +545,22 @@ const MOCK_ORTHOPHOTO_SERVICE_NAMES = [
     'NZT/ORT10LT_1995_2001',
 ];
 
+function getMockOrthophotoEndpoint(serviceName: string) {
+    const bareName = serviceName.replace(/^NZT\//, '');
+    const key =
+        bareName === 'ORT_recent'
+            ? 'nzt_ort10lt_recent'
+            : bareName === 'ORT10LT_2015'
+              ? 'nzt_ort10lt_2015_2017'
+              : `nzt_${bareName.toLowerCase()}`;
+    return {
+        key,
+        title: getMockOrthophotoMapName(serviceName),
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/${key}/MapServer`,
+        serviceType: 'ArcGIS REST Service',
+    };
+}
+
 function getMockOrthophotoMapName(serviceName: string) {
     // Mirrors production quirks: the 2015 service is named ORT10LT_2015 while
     // its mapName covers 2015-2017, and the 1995 service spans 1995-1999.
@@ -602,7 +618,7 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
     const firstTileBlocked = new Set<string>();
     let orthophotoTileRequest = 0;
 
-    await page.route(GEOPORTAL_ORTHOPHOTO_CATALOG_URL, async (route) => {
+    await page.route(GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL, async (route) => {
         if (orthophotoMode === 'unavailable') {
             await route.fulfill({ status: 503, body: '' });
             return;
@@ -612,10 +628,10 @@ export async function installMockViewer(page: Page, options: MockViewerOptions =
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-                services: [...MOCK_ORTHOPHOTO_SERVICE_NAMES, ...extraServices].map((name) => ({
-                    name,
-                    type: 'MapServer',
-                })),
+                status: 'success',
+                searchServices: [...MOCK_ORTHOPHOTO_SERVICE_NAMES, ...extraServices].map(
+                    getMockOrthophotoEndpoint
+                ),
             }),
         });
     });

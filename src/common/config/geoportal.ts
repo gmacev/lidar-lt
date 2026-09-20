@@ -6,21 +6,50 @@ export const GEOPORTAL_KVR_MAP_SERVER_URL = `${GEOPORTAL_BASE_URL}/mapproxy/rest
 export const GEOPORTAL_MAP_LABEL_SEARCH_URL = `${GEOPORTAL_BASE_URL}/mapproxy/elasticsearch_gvdr`;
 export const GEOPORTAL_GRID_TILE_ROOT_URL = `${GEOPORTAL_BASE_URL}/mapproxy/rest/services/gisc_pagrindinis_wm/MapServer/tile`;
 
-export const GEOPORTAL_ORTHOPHOTO_CATALOG_URL = `${GEOPORTAL_BASE_URL}/arcgis/rest/services/NZT?f=pjson`;
-
+export const GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL = `${GEOPORTAL_BASE_URL}/TreeApi/api/Service/search/Ortofoto`;
 export const GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT = `${GEOPORTAL_BASE_URL}/mapproxy`;
-const GEOPORTAL_ORTHOPHOTO_ALIASES: Readonly<Record<string, string>> = {
-    'NZT/ORT_recent': 'nzt_ort10lt_recent',
-    'NZT/ORT10LT_2015': 'nzt_ort10lt_2015_2017',
-};
 
-/** Resolves an ArcGIS catalog service name to its public Geoportal MapProxy endpoint. */
-export function getGeoportalOrthophotoMapServerUrl(serviceName: string) {
-    const alias = GEOPORTAL_ORTHOPHOTO_ALIASES[serviceName];
-    if (alias) return `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/${alias}/MapServer`;
-
-    const match = /^NZT\/(ORT10LT_\d{4}(?:_\d{4})?)$/.exec(serviceName);
-    if (!match) throw new Error(`Unsupported Geoportal orthophoto service: ${serviceName}`);
-
-    return `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_${match[1].toLowerCase()}/MapServer`;
+export interface GeoportalOrthophotoEndpoint {
+    key: string;
+    url: string;
 }
+
+/** Last-known-good MapProxy services used only when TreeApi discovery is unavailable. */
+export const GEOPORTAL_ORTHOPHOTO_FALLBACK_ENDPOINTS: readonly GeoportalOrthophotoEndpoint[] = [
+    {
+        key: 'nzt_ort10lt_recent',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_recent/MapServer`,
+    },
+    {
+        key: 'nzt_ort10lt_2024_2026',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_2024_2026/MapServer`,
+    },
+    {
+        key: 'nzt_ort10lt_2021_2023',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_2021_2023/MapServer`,
+    },
+    {
+        key: 'nzt_ort10lt_2018_2020',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_2018_2020/MapServer`,
+    },
+    {
+        key: 'nzt_ort10lt_2015_2017',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_2015_2017/MapServer`,
+    },
+    {
+        key: 'nzt_ort10lt_2012_2013',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_2012_2013/MapServer`,
+    },
+    {
+        key: 'nzt_ort10lt_2009_2010',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_2009_2010/MapServer`,
+    },
+    {
+        key: 'nzt_ort10lt_2005_2006',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_2005_2006/MapServer`,
+    },
+    {
+        key: 'nzt_ort10lt_1995_2001',
+        url: `${GEOPORTAL_ORTHOPHOTO_MAP_PROXY_ROOT}/nzt_ort10lt_1995_2001/MapServer`,
+    },
+];

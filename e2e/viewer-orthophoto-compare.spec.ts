@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
-    GEOPORTAL_ORTHOPHOTO_CATALOG_URL,
-    getGeoportalOrthophotoMapServerUrl,
+    GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL,
+    GEOPORTAL_ORTHOPHOTO_FALLBACK_ENDPOINTS,
 } from '../src/common/config/geoportal';
 import {
     CANONICAL_VIEWER_PATH,
@@ -12,8 +12,10 @@ import {
     installMockViewer,
 } from './support/viewer';
 
-const RECENT_ORTHOPHOTO_URL = getGeoportalOrthophotoMapServerUrl('NZT/ORT_recent');
-const ORTHOPHOTO_2015_URL = getGeoportalOrthophotoMapServerUrl('NZT/ORT10LT_2015');
+const getFallbackUrl = (key: string) =>
+    GEOPORTAL_ORTHOPHOTO_FALLBACK_ENDPOINTS.find((endpoint) => endpoint.key === key)?.url ?? '';
+const RECENT_ORTHOPHOTO_URL = getFallbackUrl('nzt_ort10lt_recent');
+const ORTHOPHOTO_2015_URL = getFallbackUrl('nzt_ort10lt_2015_2017');
 
 test.describe('viewer orthophoto comparison', () => {
     test('defaults to the continuous mosaic, switches periods, and persists', async ({ page }) => {
@@ -26,7 +28,7 @@ test.describe('viewer orthophoto comparison', () => {
                 orthophotoRequests += 1;
                 orthophotoProviderUrls.push(url);
             }
-            if (url === GEOPORTAL_ORTHOPHOTO_CATALOG_URL) {
+            if (url === GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL) {
                 orthophotoProviderUrls.push(url);
             }
             if (url.startsWith(`${RECENT_ORTHOPHOTO_URL}/tile/`)) {
@@ -61,7 +63,7 @@ test.describe('viewer orthophoto comparison', () => {
         expect(orthophotoProviderUrls.some((url) => url === `${ORTHOPHOTO_2015_URL}?f=pjson`)).toBe(
             true
         );
-        expect(orthophotoProviderUrls).toContain(GEOPORTAL_ORTHOPHOTO_CATALOG_URL);
+        expect(orthophotoProviderUrls).toContain(GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL);
         // The continuous mosaic is the default and is pinned for stable reloads.
         await expectSearchParam(page, 'orthoYear', 'recent');
 
@@ -287,14 +289,14 @@ test.describe('viewer orthophoto comparison', () => {
             releaseCatalog = resolve;
         });
         // Registered last so it runs before the default handlers.
-        await page.route(GEOPORTAL_ORTHOPHOTO_CATALOG_URL, async (route) => {
+        await page.route(GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL, async (route) => {
             await catalogGate;
             await route.fallback();
         });
 
         await page.goto(CANONICAL_VIEWER_PATH);
         await expectViewerReady(page);
-        const catalogRequest = page.waitForRequest(GEOPORTAL_ORTHOPHOTO_CATALOG_URL);
+        const catalogRequest = page.waitForRequest(GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL);
         await page.getByTestId('viewer-orthophoto-compare-toggle').click();
         await catalogRequest;
 
@@ -545,35 +547,28 @@ test.describe('viewer orthophoto comparison', () => {
         await expect(page.getByText('Orthophoto unavailable')).toHaveCount(0);
     });
 
-    test('shows dated options loading beneath the continuous option', async ({ page }) => {
+    test('shows loading while shared discovery is pending', async ({ page }) => {
         await installMockViewer(page);
         let releaseCatalog!: () => void;
         const catalogGate = new Promise<void>((resolve) => {
             releaseCatalog = resolve;
         });
-        // Registered last so it runs before the default handlers: dated
-        // discovery waits while recent metadata resolves right away.
-        await page.route(GEOPORTAL_ORTHOPHOTO_CATALOG_URL, async (route) => {
+        // Registered last so it runs before the default handler: both recent
+        // and dated services share this one discovery request.
+        await page.route(GEOPORTAL_ORTHOPHOTO_DISCOVERY_URL, async (route) => {
             await catalogGate;
             await route.fallback();
         });
 
         await page.goto(`${CANONICAL_VIEWER_PATH}&orthophotoCompare=true`);
         await expectViewerReady(page);
-        await expect(page.getByTestId('viewer-orthophoto-compare')).toHaveAttribute(
-            'data-service',
-            'recent'
-        );
-
-        // The picker is usable with the continuous option while dated
-        // options disclose their loading state instead of appearing silently.
         await page.getByTestId('viewer-orthophoto-compare-toggle').click();
-        await expect(page.getByTestId('viewer-orthophoto-year-recent')).toBeVisible();
-        await expect(page.getByTestId('viewer-orthophoto-picker-loading-more')).toBeVisible();
-        await expect(page.getByTestId('viewer-orthophoto-picker-loading')).toHaveCount(0);
+        await expect(page.getByTestId('viewer-orthophoto-picker-loading')).toBeVisible();
+        await expect(page.getByTestId('viewer-orthophoto-year-recent')).toHaveCount(0);
 
         releaseCatalog();
+        await expect(page.getByTestId('viewer-orthophoto-year-recent')).toBeVisible();
         await expect(page.getByTestId('viewer-orthophoto-year-2024-2026')).toBeVisible();
-        await expect(page.getByTestId('viewer-orthophoto-picker-loading-more')).toHaveCount(0);
+        await expect(page.getByTestId('viewer-orthophoto-picker-loading')).toHaveCount(0);
     });
 });
