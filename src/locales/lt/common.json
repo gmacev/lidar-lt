@@ -336,7 +336,7 @@
     },
     "sourceAttribution": {
         "label": "LiDAR šaltinis: {{dateRange}}",
-        "provider": "GeoPortal.lt"
+        "provider": "geoportal.lt"
     },
     "viewerMapStatus": {
         "copyCoordinates": "Kopijuoti LKS94 ir WGS84 koordinates",

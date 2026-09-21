@@ -336,7 +336,7 @@
     },
     "sourceAttribution": {
         "label": "LiDAR source: {{dateRange}}",
-        "provider": "GeoPortal.lt"
+        "provider": "geoportal.lt"
     },
     "viewerMapStatus": {
         "copyCoordinates": "Copy LKS94 and WGS84 coordinates",
