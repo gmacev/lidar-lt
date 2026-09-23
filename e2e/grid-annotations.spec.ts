@@ -137,7 +137,7 @@ test.describe('grid annotation navigation', () => {
         await expect(trigger).toBeFocused();
     });
 
-    test('opens the annotation sector with its saved camera centered on the target', async ({
+    test('opens the annotation sector centered on the target in the normal top view', async ({
         page,
     }) => {
         await page.goto('/');
@@ -148,11 +148,11 @@ test.describe('grid annotation navigation', () => {
         await expectViewerReady(page);
 
         const url = new URL(page.url());
-        expect(url.searchParams.get('x')).toBe('581450');
-        expect(url.searchParams.get('y')).toBe('6060450');
-        expect(url.searchParams.get('z')).toBe('160');
-        expect(Number(url.searchParams.get('yaw'))).toBeCloseTo(-Math.PI / 4);
-        expect(Number(url.searchParams.get('pitch'))).toBeCloseTo(-0.703638951);
+        expect(url.searchParams.get('x')).toBe('581500');
+        expect(url.searchParams.get('y')).toBe('6060500');
+        expect(Number(url.searchParams.get('z'))).toBeCloseTo(192.736184955);
+        expect(url.searchParams.get('yaw')).toBe('0');
+        expect(Number(url.searchParams.get('pitch'))).toBeCloseTo(-Math.PI / 2);
         expect(Number(url.searchParams.get('radius'))).toBeCloseTo(92.736184955);
     });
 

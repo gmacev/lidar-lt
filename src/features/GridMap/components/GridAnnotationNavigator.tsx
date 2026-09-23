@@ -39,7 +39,22 @@ export function GridAnnotationNavigator({
     );
     const annotations = storedAnnotations.flatMap<NavigableStoredAnnotation>((storedAnnotation) => {
         const cameraState = getAnnotationCameraState(storedAnnotation.annotation);
-        return cameraState ? [{ ...storedAnnotation, cameraState }] : [];
+        if (!cameraState) return [];
+
+        const [x, y, z] = storedAnnotation.annotation.position;
+        return [
+            {
+                ...storedAnnotation,
+                cameraState: {
+                    x,
+                    y,
+                    z: z + cameraState.radius,
+                    yaw: 0,
+                    pitch: -Math.PI / 2,
+                    radius: cameraState.radius,
+                },
+            },
+        ];
     });
 
     useEffect(() => {
