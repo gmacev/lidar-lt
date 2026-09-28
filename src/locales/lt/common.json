@@ -326,7 +326,8 @@
     "grid": {
         "sectorId": "SEKTORIAUS ID",
         "openSector": "Atverti sektorių {{name}}, {{id}}",
-        "unknownSector": "Nežinomas sektorius"
+        "unknownSector": "Nežinomas sektorius",
+        "resetView": "Grąžinti žemėlapį į pradinį Lietuvos vaizdą ir atsukti į šiaurę"
     },
     "sectorNavigation": {
         "label": "Gretimų sektorių navigacija",

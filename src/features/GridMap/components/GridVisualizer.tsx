@@ -8,6 +8,7 @@ import { GridSectorLinks } from './GridSectorLinks';
 import { LanguageSwitcher } from '@/common/components/LanguageSwitcher';
 import { ThemeSwitcher } from '@/common/components/ThemeSwitcher';
 import { useTheme } from '@/common/theme';
+import { Icon } from '@/common/components/Icon';
 import {
     GEOPORTAL_MAX_MAP_ZOOM,
     GEOPORTAL_MIN_MAP_ZOOM,
@@ -20,6 +21,9 @@ const GEOPORTAL_SOURCE_ID = 'geoportal-basemap';
 const LITHUANIA_GRID_BOUNDS: [number, number, number, number] = [
     21.027821, 53.866554, 26.914825, 56.470551,
 ];
+// Keep the viewport close to Lithuania while leaving room around the grid edges.
+const MAP_PAN_BOUNDS: [number, number, number, number] = [18, 52, 30, 59];
+const INITIAL_VIEW = { longitude: 23.8813, latitude: 55.1694, zoom: 6.8, bearing: 0, pitch: 0 };
 const EMPTY_MAP_STYLE = { version: 8 as const, sources: {}, layers: [] };
 
 export function GridVisualizer() {
@@ -132,13 +136,29 @@ export function GridVisualizer() {
                 />
             </div>
 
+            <button
+                type="button"
+                onClick={() =>
+                    mapRef.current?.getMap().easeTo({
+                        center: [INITIAL_VIEW.longitude, INITIAL_VIEW.latitude],
+                        zoom: INITIAL_VIEW.zoom,
+                        bearing: INITIAL_VIEW.bearing,
+                        pitch: INITIAL_VIEW.pitch,
+                        duration: 500,
+                    })
+                }
+                aria-label={t('grid.resetView')}
+                title={t('grid.resetView')}
+                className={`absolute right-2 z-10 flex size-10 items-center justify-center rounded-lg border border-panel-border bg-panel-bg text-panel-text shadow-lg transition-colors hover:border-theme-brand/55 hover:bg-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-brand/70 motion-reduce:transition-none sm:bottom-4 sm:right-4 ${search.status === 'error' ? 'bottom-[calc(9rem+env(safe-area-inset-bottom))]' : 'bottom-[calc(6rem+env(safe-area-inset-bottom))]'}`}
+            >
+                <Icon name="crosshair" size={19} aria-hidden="true" />
+            </button>
+
             <Map
                 ref={mapRef}
-                initialViewState={{
-                    longitude: 23.8813,
-                    latitude: 55.1694,
-                    zoom: 6.8,
-                }}
+                initialViewState={INITIAL_VIEW}
+                maxBounds={MAP_PAN_BOUNDS}
+                renderWorldCopies={false}
                 minZoom={GEOPORTAL_MIN_MAP_ZOOM}
                 maxZoom={GEOPORTAL_MAX_MAP_ZOOM}
                 style={{ width: '100%', height: '100%' }}
@@ -152,7 +172,7 @@ export function GridVisualizer() {
                     id="map-background"
                     type="background"
                     paint={{
-                        'background-color': resolvedTheme === 'light' ? '#e8e7df' : '#131313',
+                        'background-color': resolvedTheme === 'light' ? '#fdfdfd' : '#131313',
                     }}
                 />
                 <Source
