@@ -16,6 +16,7 @@ import {
     useProfileTool,
 } from '@/features/Viewer/hooks';
 import { useVolumeMeasurementTool } from '@/features/Viewer/hooks/useVolumeMeasurementTool';
+import { usePointMeasurementTool } from '@/features/Viewer/hooks/usePointMeasurementTool';
 import { useVolumeMeasurementData } from '@/features/Viewer/hooks/useVolumeMeasurementData';
 import { useDistanceMeasurementData } from '@/features/Viewer/hooks/useDistanceMeasurementData';
 import { useAreaMeasurementData } from '@/features/Viewer/hooks/useAreaMeasurementData';
@@ -54,6 +55,10 @@ interface UseViewerToolsOptions {
 export type ViewerMarkersModel = ReturnType<typeof useMarkers>;
 
 export interface ViewerToolbarTools {
+    point: {
+        isMeasuring: boolean;
+        onToggle: () => void;
+    };
     annotations: {
         annotations: StoredAnnotation[];
         isPanelOpen: boolean;
@@ -175,6 +180,7 @@ export function useViewerTools({
         onSearchChange: onMarkerSearchChange,
     });
 
+    const point = usePointMeasurementTool({ viewerRef });
     const distance = useDistanceMeasurementTool({ viewerRef });
     const area = useAreaMeasurementTool({ viewerRef });
     const angle = useAngleMeasurementTool({ viewerRef });
@@ -200,6 +206,7 @@ export function useViewerTools({
     const kvr = useKvrInspectTool({ viewerRef });
 
     const exclusiveTools: ExclusiveViewerTool[] = [
+        { id: 'point', isActive: point.isMeasuring, deactivate: point.togglePointMeasurement },
         {
             id: 'distance',
             isActive: distance.isMeasuring,
@@ -265,6 +272,10 @@ export function useViewerTools({
     });
 
     const toolbar: ViewerToolbarTools = {
+        point: {
+            isMeasuring: point.isMeasuring,
+            onToggle: createHandler('point', point.togglePointMeasurement),
+        },
         annotations: {
             annotations: annotations.annotations,
             isPanelOpen: annotations.isPanelOpen,
@@ -330,6 +341,17 @@ export function useViewerTools({
     };
 
     const contextMenus: MeasurementContextMenuModel[] = [];
+    if (point.menuPosition) {
+        contextMenus.push({
+            id: 'point',
+            position: point.menuPosition,
+            onClose: () => point.setMenuPosition(null),
+            onDeleteLast: point.deleteLastPoint,
+            onDeleteAll: point.deleteAll,
+            onExportCsv: () => point.exportToCsv(cellId),
+            disableExport: point.pointCount === 0,
+        });
+    }
     if (distance.menuPosition) {
         contextMenus.push({
             id: 'distance',

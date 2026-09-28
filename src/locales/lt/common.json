@@ -244,6 +244,7 @@
         "errorDescription": "Nepavyko įkelti Geoportal ortofoto vaizdų. Išjunkite ir vėl įjunkite palyginimą."
     },
     "measurement": {
+        "point": "Identifikuoti tašką (X / Y / Z)",
         "distance": "Matuoti atstumą",
         "area": "Matuoti plotą",
         "volume": "Matuoti tūrį",

@@ -194,6 +194,7 @@ const MOCK_POTREE_SCRIPT = String.raw`
   });
 
   const makeMeasurement = (options) => ({
+    ...eventTarget(),
     name: options.name,
     showArea: Boolean(options.showArea),
     points: [],
@@ -327,6 +328,7 @@ const MOCK_POTREE_SCRIPT = String.raw`
   class Viewer {
     constructor(container) {
       Object.assign(this, eventTarget());
+      window.__mockPotreeViewer = this;
       this.renderer = {
         domElement: document.createElement('canvas'),
         dispose() {},
@@ -421,9 +423,22 @@ const MOCK_POTREE_SCRIPT = String.raw`
         startInsertion: (options) => {
           const measurement = makeMeasurement(options);
           this.scene.measurements.push(measurement);
+          if (options.name === 'Point') {
+            measurement.addMarker(makeVector());
+            this.inputHandler.drag = { object: measurement };
+            this.renderer.domElement.addEventListener('mouseup', () => {
+              if (!this.scene.measurements.includes(measurement)) return;
+              const point = measurement.points[0];
+              point.position = makeVector(581500.1234, 6060500.5678, 100);
+              measurement.dispatchEvent({ type: 'marker_moved' });
+              measurement.dispatchEvent({ type: 'marker_dropped' });
+              if (this.inputHandler.drag?.object === measurement) this.inputHandler.drag = null;
+            }, { once: true });
+          }
           return measurement;
         },
       };
+      this.inputHandler = { drag: null };
       this.profileTool = {
         startInsertion: (options) => {
           const profile = makeProfile(options);

@@ -244,6 +244,7 @@
         "errorDescription": "Geoportal orthophoto imagery could not be loaded. Turn comparison off and on to retry."
     },
     "measurement": {
+        "point": "Identify point (X / Y / Z)",
         "distance": "Measure Distance",
         "area": "Measure Area",
         "volume": "Measure Volume",

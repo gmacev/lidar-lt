@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { expectSearchParam, gotoMockedViewer, setRangeValue } from './support/viewer';
 
 const DESKTOP_TOOL_IDS = [
+    'viewer-tool-point',
     'viewer-tool-distance',
     'viewer-tool-area',
     'viewer-tool-volume',
@@ -65,7 +66,11 @@ test.describe('viewer right-side tools', () => {
     test('toggles measurement tools and enforces exclusive active state', async ({ page }) => {
         await gotoMockedViewer(page);
 
+        await page.getByTestId('viewer-tool-point').click();
+        await expect(page.getByTestId('viewer-tool-point')).toHaveAttribute('data-active', 'true');
+
         await page.getByTestId('viewer-tool-distance').click();
+        await expect(page.getByTestId('viewer-tool-point')).toHaveAttribute('data-active', 'false');
         await expect(page.getByTestId('viewer-tool-distance')).toHaveAttribute(
             'data-active',
             'true'
@@ -91,6 +96,65 @@ test.describe('viewer right-side tools', () => {
             await page.getByTestId(testId).click();
             await expect(page.getByTestId(testId)).toHaveAttribute('data-active', 'true');
         }
+    });
+
+    test('keeps point identification active and opens its right-click menu', async ({ page }) => {
+        await gotoMockedViewer(page);
+
+        const pointTool = page.getByTestId('viewer-tool-point');
+        await pointTool.click();
+        const canvas = page.getByTestId('viewer-container').locator('canvas');
+        await canvas.click({ position: { x: 500, y: 200 } });
+        await expect(pointTool).toHaveAttribute('data-active', 'true');
+        await canvas.click({ position: { x: 520, y: 220 } });
+        await expect(pointTool).toHaveAttribute('data-active', 'true');
+
+        await canvas.click({ button: 'right', position: { x: 520, y: 220 } });
+        await expect(page.getByRole('button', { name: 'Delete last' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Delete all' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Export CSV' })).toBeEnabled();
+
+        await page.getByRole('button', { name: 'Delete last' }).click();
+        await expect(pointTool).toHaveAttribute('data-active', 'true');
+        await canvas.click({ button: 'right', position: { x: 520, y: 220 } });
+        await page.getByRole('button', { name: 'Delete all' }).click();
+        await expect(pointTool).toHaveAttribute('data-active', 'true');
+        await canvas.click({ button: 'right', position: { x: 520, y: 220 } });
+        await expect(page.getByRole('button', { name: 'Export CSV' })).toBeDisabled();
+    });
+
+    test('removes point markers when the tool is deactivated', async ({ page }) => {
+        await gotoMockedViewer(page);
+
+        const pointMeasurements = () =>
+            page.evaluate(() => {
+                const viewer = (
+                    window as typeof window & {
+                        __mockPotreeViewer?: {
+                            scene: { measurements: { name: string }[] };
+                        };
+                    }
+                ).__mockPotreeViewer;
+                return (
+                    viewer?.scene.measurements.filter(({ name }) => name === 'Point').length ?? 0
+                );
+            });
+
+        const pointTool = page.getByTestId('viewer-tool-point');
+        const canvas = page.getByTestId('viewer-container').locator('canvas');
+        await pointTool.click();
+        await canvas.click({ position: { x: 500, y: 200 } });
+        await canvas.click({ position: { x: 520, y: 220 } });
+        await expect.poll(pointMeasurements).toBe(3);
+
+        await pointTool.click();
+        await expect.poll(pointMeasurements).toBe(0);
+
+        await pointTool.click();
+        await canvas.click({ position: { x: 500, y: 200 } });
+        await expect.poll(pointMeasurements).toBe(2);
+        await page.getByTestId('viewer-tool-distance').click();
+        await expect.poll(pointMeasurements).toBe(0);
     });
 
     test('opens flood controls, updates water level, and resets', async ({ page }) => {

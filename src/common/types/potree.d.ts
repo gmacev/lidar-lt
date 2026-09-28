@@ -266,6 +266,7 @@ export interface PotreeViewer {
     /** Enables Potree's high-quality splat renderer. */
     useHQ: boolean;
     measuringTool: MeasuringTool;
+    inputHandler: { drag: unknown };
     profileTool: ProfileTool;
     volumeTool: VolumeTool;
     annotationTool: AnnotationTool;
@@ -349,6 +350,8 @@ export interface Measure {
     removeMarker(index: number): void;
     getArea(): number;
     update(): void;
+    addEventListener(type: 'marker_moved' | 'marker_dropped', listener: () => void): void;
+    removeEventListener(type: 'marker_moved' | 'marker_dropped', listener: () => void): void;
     /** Edge labels shown on measurement lines (e.g., distance labels) */
     edgeLabels?: MeasureEdgeLabel[];
 }

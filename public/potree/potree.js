@@ -51901,12 +51901,12 @@
 			let context = canvas.getContext('2d');
 			context.font = 'Bold ' + this.fontsize + 'px ' + this.fontface;
 
-			// get size data (height depends only on font size)
-			let metrics = context.measureText(this.text);
-			let textWidth = metrics.width;
+			let lines = String(this.text ?? '').split('\n');
+			let textWidth = Math.max(...lines.map(line => context.measureText(line).width));
 			let margin = 3;
+			let lineHeight = this.fontsize * 1.4;
 			let spriteWidth = 2 * margin + textWidth + 2 * this.borderThickness;
-			let spriteHeight = this.fontsize * 1.4 + 2 * this.borderThickness;
+			let spriteHeight = lineHeight * lines.length + 2 * this.borderThickness;
 
 			context.canvas.width = spriteWidth;
 			context.canvas.height = spriteHeight;
@@ -51921,15 +51921,19 @@
 
 			context.lineWidth = this.borderThickness;
 			this.roundRect(context, this.borderThickness / 2, this.borderThickness / 2,
-				textWidth + this.borderThickness + 2 * margin, this.fontsize * 1.4 + this.borderThickness, 4);
+				textWidth + this.borderThickness + 2 * margin, lineHeight * lines.length + this.borderThickness, 4);
 
 			// text color
 			context.strokeStyle = 'rgba(0, 0, 0, 1.0)';
-			context.strokeText(this.text, this.borderThickness + margin, this.fontsize + this.borderThickness);
 
 			context.fillStyle = 'rgba(' + this.textColor.r + ',' + this.textColor.g + ',' +
 				this.textColor.b + ',' + this.textColor.a + ')';
-			context.fillText(this.text, this.borderThickness + margin, this.fontsize + this.borderThickness);
+			for (let i = 0; i < lines.length; i++) {
+				let x = this.borderThickness + margin;
+				let y = this.fontsize + this.borderThickness + i * lineHeight;
+				context.strokeText(lines[i], x, y);
+				context.fillText(lines[i], x, y);
+			}
 
 			let texture = new Texture(canvas);
 			texture.minFilter = LinearFilter;
@@ -54216,7 +54220,8 @@
 				{ // coordinate labels
 					let coordinateLabel = this.coordinateLabels[0];
 
-					let msg = position.toArray().map(p => Utils.addCommas(p.toFixed(2))).join(" / ");
+					let [x, y, z] = position.toArray().map(p => Utils.addCommas(p.toFixed(2)));
+					let msg = `X: ${x}\nY: ${y}\nZ: ${z} m`;
 					coordinateLabel.setText(msg);
 
 					coordinateLabel.visible = this.showCoordinates;
@@ -69994,7 +69999,7 @@ void main() {
 					screenPos.x = Math.round((screenPos.x + 1) * clientWidth / 2);
 					screenPos.y = Math.round((-screenPos.y + 1) * clientHeight / 2);
 					screenPos.z = 0;
-					screenPos.y -= 30;
+					screenPos.y -= 35;
 
 					let labelPos = new Vector3(
 						(screenPos.x / clientWidth) * 2 - 1,

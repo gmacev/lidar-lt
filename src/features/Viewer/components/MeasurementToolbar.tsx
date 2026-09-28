@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { DistanceMeasurement } from './DistanceMeasurement';
+import { PointMeasurement } from './PointMeasurement';
 import { AreaMeasurement } from './AreaMeasurement';
 import { VolumeMeasurement } from './VolumeMeasurement';
 import { CircleMeasurement } from './CircleMeasurement';
@@ -88,6 +89,10 @@ export function MeasurementToolbar({ className = '', tools }: MeasurementToolbar
                 }}
             >
                 <div ref={contentRef} className="flex flex-col items-end gap-1 pb-3">
+                    <PointMeasurement
+                        onClick={tools.point.onToggle}
+                        isActive={tools.point.isMeasuring}
+                    />
                     <DistanceMeasurement
                         onClick={tools.distance.onToggle}
                         isActive={tools.distance.isMeasuring}
