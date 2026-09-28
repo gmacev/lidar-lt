@@ -58225,8 +58225,13 @@ vec3 getColor(){
 float getPointSize(){
 	float pointSize = 1.0;
 	
-	float slope = tan(fov / 2.0);
-	float projFactor = -0.5 * uScreenHeight / (slope * vViewPosition.z);
+	float projFactor;
+	if(uUseOrthographicCamera){
+		projFactor = uScreenWidth / uOrthoWidth;
+	}else{
+		float slope = tan(fov / 2.0);
+		projFactor = -0.5 * uScreenHeight / (slope * vViewPosition.z);
+	}
 
 	float scale = length(
 		modelViewMatrix * vec4(0, 0, 0, 1) - 
@@ -58248,7 +58253,7 @@ float getPointSize(){
 	#elif defined adaptive_point_size
 		if(uUseOrthographicCamera) {
 			float worldSpaceSize = 1.0 * size * r / getPointSizeAttenuation();
-			pointSize = (worldSpaceSize / uOrthoWidth) * uScreenWidth;
+			pointSize = worldSpaceSize * projFactor;
 		} else {
 			float worldSpaceSize = 1.0 * size * r / getPointSizeAttenuation();
 			pointSize = worldSpaceSize * projFactor;
