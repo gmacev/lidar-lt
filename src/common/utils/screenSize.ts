@@ -25,6 +25,12 @@ export function isMobile(): boolean {
     return isBelowBreakpoint('sm');
 }
 
+/** Include short landscape phone viewports without treating scaled laptop displays as phones. */
+export function isPhoneSizedViewport(): boolean {
+    if (typeof window === 'undefined') return false;
+    return isMobile() || (window.innerWidth < BREAKPOINTS.lg && window.innerHeight <= 480);
+}
+
 /**
  * Check if the device has touch capability.
  * Uses multiple detection methods for broader browser support.

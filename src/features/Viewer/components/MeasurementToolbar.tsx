@@ -9,7 +9,7 @@ import { AzimuthMeasurement } from './AzimuthMeasurement';
 import { HeightProfileMeasurement } from './HeightProfileMeasurement';
 import { FloodSimulationTool } from './FloodSimulationTool';
 import { AnnotationTool } from './AnnotationTool';
-import { isTouchDevice } from '@/common/utils/screenSize';
+import { isPhoneSizedViewport } from '@/common/utils/screenSize';
 import type { ViewerToolbarTools } from '@/features/Viewer/hooks/useViewerTools';
 
 interface MeasurementToolbarProps {
@@ -18,7 +18,7 @@ interface MeasurementToolbarProps {
 }
 
 export function MeasurementToolbar({ className = '', tools }: MeasurementToolbarProps) {
-    const isTouch = isTouchDevice();
+    const isPhoneViewport = isPhoneSizedViewport();
     const scrollRef = useRef<HTMLDivElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
     const [scrollState, setScrollState] = useState({
@@ -74,9 +74,8 @@ export function MeasurementToolbar({ className = '', tools }: MeasurementToolbar
               })`
             : undefined;
 
-    // All toolbar tools (measurements, flood simulation, annotations) require
-    // precise pointer input - hidden on touch/mobile devices.
-    if (isTouch) return null;
+    // Keep the toolbar available on touchscreen laptops; hide it on phone-sized viewports.
+    if (isPhoneViewport) return null;
 
     return (
         <div data-testid="viewer-measurement-toolbar" className={`relative ${className}`}>
