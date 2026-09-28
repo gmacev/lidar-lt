@@ -1,5 +1,6 @@
 import Map, { Source, Layer, type LayerProps } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import '@/features/GridMap/utils/setupGeoportalMap';
 import { useTranslation } from 'react-i18next';
 import { useLithuaniaGrid } from '@/features/GridMap/hooks';
 import { GridSearchControl } from './GridSearchControl';

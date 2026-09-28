@@ -1,6 +1,5 @@
 import * as maplibregl from 'maplibre-gl';
 import type { AddProtocolAction } from 'maplibre-gl';
-import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { GEOPORTAL_GRID_TILE_ROOT_URL } from '../../../common/config/geoportal';
 
 const GEOPORTAL_PROTOCOL = 'geoportal';
@@ -72,7 +71,7 @@ export function getGeoportalCanvasFilter(theme: GeoportalTheme): string {
     return theme === 'dark' ? GEOPORTAL_DARK_TILE_FILTER : 'none';
 }
 
-function registerGeoportalProtocol(): void {
+export function registerGeoportalProtocol(): void {
     if (protocolRegistered) return;
 
     maplibregl.addProtocol(GEOPORTAL_PROTOCOL, loadGeoportalTile);
@@ -312,6 +311,3 @@ function throwAbortError(): never {
 function createAbortError(): DOMException {
     return new DOMException('The tile request was cancelled', 'AbortError');
 }
-
-maplibregl.setWorkerUrl(maplibreWorkerUrl);
-registerGeoportalProtocol();
