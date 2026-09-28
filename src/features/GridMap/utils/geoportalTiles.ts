@@ -1,4 +1,6 @@
-import maplibregl, { type AddProtocolAction } from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
+import type { AddProtocolAction } from 'maplibre-gl';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { GEOPORTAL_GRID_TILE_ROOT_URL } from '../../../common/config/geoportal';
 
 const GEOPORTAL_PROTOCOL = 'geoportal';
@@ -311,4 +313,5 @@ function createAbortError(): DOMException {
     return new DOMException('The tile request was cancelled', 'AbortError');
 }
 
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 registerGeoportalProtocol();

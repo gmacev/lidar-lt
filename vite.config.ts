@@ -24,7 +24,8 @@ export default defineConfig({
 
     // Optimize dependency pre-bundling for faster dev startup
     optimizeDeps: {
-        include: ['maplibre-gl', 'three', 'lodash'],
+        include: ['three', 'lodash'],
+        exclude: ['maplibre-gl'],
     },
 
     // Allow access from other devices on the network

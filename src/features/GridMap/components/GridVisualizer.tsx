@@ -18,8 +18,9 @@ import {
 
 const GRID_SOURCE_ID = 'lidar-grid';
 const GEOPORTAL_SOURCE_ID = 'geoportal-basemap';
-const LITHUANIA_GRID_BOUNDS: [number, number, number, number] = [
-    21.027821, 53.866554, 26.914825, 56.470551,
+// Include the Baltic Sea coverage in Geoportal's published western extent.
+const GEOPORTAL_RASTER_BOUNDS: [number, number, number, number] = [
+    18.9665, 53.866554, 26.914825, 56.470551,
 ];
 // Keep the viewport close to Lithuania while leaving room around the grid edges.
 const MAP_PAN_BOUNDS: [number, number, number, number] = [18, 52, 30, 59];
@@ -182,7 +183,7 @@ export function GridVisualizer() {
                     tileSize={GEOPORTAL_LOGICAL_TILE_SIZE}
                     minzoom={GEOPORTAL_MIN_MAP_ZOOM}
                     maxzoom={GEOPORTAL_MAX_MAP_ZOOM}
-                    bounds={LITHUANIA_GRID_BOUNDS}
+                    bounds={GEOPORTAL_RASTER_BOUNDS}
                     attribution="Žemėlapis: geoportal.lt © Aplinkos ministerija, © SSVA, 2026"
                 >
                     <Layer
