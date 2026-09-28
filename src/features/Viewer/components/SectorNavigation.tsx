@@ -178,10 +178,10 @@ export function SectorNavigation({ cellId, onNavigate, onRecenter }: SectorNavig
                 role="tooltip"
                 side="top"
                 trigger={
-                    <span className="h-2 w-2 rounded-full bg-neon-amber shadow-[0_0_8px_rgba(255,184,0,0.62)] transition-transform group-hover/sector-center:scale-125 group-focus-visible/sector-center:scale-125 motion-reduce:transition-none" />
+                    <span className="theme-sector-center-dot h-2 w-2 rounded-full bg-neon-amber shadow-[0_0_8px_rgba(255,184,0,0.62)] transition-transform group-hover/sector-center:scale-125 group-focus-visible/sector-center:scale-125 motion-reduce:transition-none" />
                 }
                 triggerAriaLabel={t('viewer.recenter')}
-                triggerClassName="group/sector-center col-start-2 row-start-2 flex h-full w-full items-center justify-center border-b border-r border-glass-border bg-black/35 shadow-[inset_0_1px_5px_rgba(0,0,0,0.7)] transition-colors hover:bg-neon-amber/[0.12] focus-visible:z-10 focus-visible:bg-neon-amber/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-amber/60 active:bg-neon-amber/[0.18]"
+                triggerClassName="theme-sector-center group/sector-center col-start-2 row-start-2 flex h-full w-full items-center justify-center border-b border-r border-glass-border bg-black/35 shadow-[inset_0_1px_5px_rgba(0,0,0,0.7)] transition-colors hover:bg-neon-amber/[0.12] focus-visible:z-10 focus-visible:bg-neon-amber/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-amber/60 active:bg-neon-amber/[0.18]"
                 triggerTestId="viewer-recenter"
                 width={190}
             >
