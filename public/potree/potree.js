@@ -84530,6 +84530,8 @@ ENDSEC
 			this.wheelDelta = 0;
 			this.zoomDelta.set(0, 0, 0);
 			this.orthographicZoomTarget = null;
+			this.tweens.forEach(tween => tween.stop());
+			this.tweens = [];
 		}
 
 		zoomToLocation(mouse) {
