@@ -82389,12 +82389,16 @@ ENDSEC
 			this.speed = 1;
 
 			this.logMessages = false;
+			this.activeTouchCount = 0;
+			this.lastPointerType = null;
+			this.lastTouchTime = 0;
 
 			if (this.domElement.tabIndex === -1) {
 				this.domElement.tabIndex = 2222;
 			}
 
 			this.domElement.addEventListener('contextmenu', (event) => { event.preventDefault(); }, false);
+			this.domElement.addEventListener('pointerdown', this.onPointerDown.bind(this), false);
 			this.domElement.addEventListener('click', this.onMouseClick.bind(this), false);
 			this.domElement.addEventListener('mousedown', this.onMouseDown.bind(this), false);
 			this.domElement.addEventListener('mouseup', this.onMouseUp.bind(this), false);
@@ -82427,10 +82431,33 @@ ENDSEC
 			});
 		}
 
+		selectControlsForInput(controls) {
+			if (!this.viewer.hybridInputControls || this.viewer.controls === controls ||
+				(this.viewer.controls !== this.viewer.mobileMapControls &&
+					this.viewer.controls !== this.viewer.earthControls)) {
+				return;
+			}
+
+			this.viewer.controls?.stop?.();
+			this.viewer.setControls(controls);
+		}
+
+		onPointerDown(e) {
+			this.lastPointerType = e.pointerType;
+			if (e.pointerType === 'touch') {
+				this.selectControlsForInput(this.viewer.mobileMapControls);
+			} else if (this.activeTouchCount === 0) {
+				this.selectControlsForInput(this.viewer.earthControls);
+			}
+		}
+
 		onTouchStart(e) {
 			if (this.logMessages) console.log(this.constructor.name + ': onTouchStart');
 
 			e.preventDefault();
+			this.activeTouchCount = e.touches.length;
+			this.lastTouchTime = Date.now();
+			this.selectControlsForInput(this.viewer.mobileMapControls);
 
 			if (e.touches.length === 1) {
 				let rect = this.domElement.getBoundingClientRect();
@@ -82455,6 +82482,8 @@ ENDSEC
 			if (this.logMessages) console.log(this.constructor.name + ': onTouchEnd');
 
 			e.preventDefault();
+			this.activeTouchCount = e.touches.length;
+			this.lastTouchTime = Date.now();
 
 			for (let inputListener of this.getSortedListeners()) {
 				inputListener.dispatchEvent({
@@ -82479,6 +82508,8 @@ ENDSEC
 			if (this.logMessages) console.log(this.constructor.name + ': onTouchCancel');
 
 			e.preventDefault();
+			this.activeTouchCount = e.touches.length;
+			this.lastTouchTime = Date.now();
 
 			for (let inputListener of this.getSortedListeners()) {
 				inputListener.dispatchEvent({
@@ -82629,6 +82660,15 @@ ENDSEC
 			if (this.logMessages) console.log(this.constructor.name + ': onMouseDown');
 
 			e.preventDefault();
+
+			// Touch browsers may emit a compatibility mouse event after a tap.
+			// A real mouse or pen pointerdown clears lastPointerType first.
+			let compatibilityMouse = e.sourceCapabilities?.firesTouchEvents ||
+				(this.lastPointerType === 'touch' && Date.now() - this.lastTouchTime < 500) ||
+				(typeof PointerEvent === 'undefined' && Date.now() - this.lastTouchTime < 500);
+			if (this.activeTouchCount === 0 && !compatibilityMouse) {
+				this.selectControlsForInput(this.viewer.earthControls);
+			}
 
 			let consumed = false;
 			let consume = () => { return consumed = true; };
@@ -82869,6 +82909,9 @@ ENDSEC
 			if (this.logMessages) console.log(this.constructor.name + ": onMouseWheel");
 
 			e.preventDefault();
+			if (this.activeTouchCount === 0) {
+				this.selectControlsForInput(this.viewer.earthControls);
+			}
 
 			let ndelta = 0;
 			if (e.deltaY !== undefined) {

@@ -511,8 +511,9 @@ export function usePotree(options: UsePotreeOptions): UsePotreeResult {
 
             viewer.setDescription('');
 
-            // Use map-style direct manipulation on touch devices.
+            // Select controls from each interaction on touch-capable devices.
             if (isTouchDevice()) {
+                viewer.hybridInputControls = true;
                 viewer.setControls(viewer.mobileMapControls);
             } else {
                 viewer.setControls(viewer.earthControls);

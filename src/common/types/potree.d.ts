@@ -263,6 +263,7 @@ export interface PotreeViewer {
     orbitControls: OrbitControls;
     earthControls: EarthControls;
     mobileMapControls: MobileMapControls;
+    hybridInputControls?: boolean;
     /** Enables Potree's high-quality splat renderer. */
     useHQ: boolean;
     measuringTool: MeasuringTool;
