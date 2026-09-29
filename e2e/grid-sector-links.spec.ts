@@ -50,17 +50,23 @@ test('leaves new-tab behavior to the browser without calling window.open', async
     await page.reload();
 
     const sectorLink = page.locator('[data-sector-id="76_32"]');
-    const newPagePromise = context.waitForEvent('page');
-    await sectorLink.click({ button: 'middle' });
-    const newPage = await newPagePromise;
+    // Let actionability checks finish before starting the popup timeout: the
+    // SVG overlay can still be hidden/reprojected while the map initializes.
+    await sectorLink.click({ button: 'middle', trial: true });
+    const [newPage] = await Promise.all([
+        context.waitForEvent('page'),
+        sectorLink.click({ button: 'middle' }),
+    ]);
 
     await newPage.waitForURL(/\/viewer\/76_32(?:\?|$)/);
     expect(new URL(newPage.url()).pathname).toBe('/viewer/76_32');
     await newPage.close();
 
-    const modifiedPagePromise = context.waitForEvent('page');
-    await sectorLink.click({ modifiers: ['Control'] });
-    const modifiedPage = await modifiedPagePromise;
+    await sectorLink.click({ modifiers: ['Control'], trial: true });
+    const [modifiedPage] = await Promise.all([
+        context.waitForEvent('page'),
+        sectorLink.click({ modifiers: ['Control'] }),
+    ]);
 
     await modifiedPage.waitForURL(/\/viewer\/76_32(?:\?|$)/);
     expect(new URL(modifiedPage.url()).pathname).toBe('/viewer/76_32');
