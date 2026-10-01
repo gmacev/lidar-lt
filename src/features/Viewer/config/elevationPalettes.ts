@@ -318,9 +318,11 @@ const TERRAIN_STOPS: [number, string][] = [
 ];
 
 const GRAYSCALE_STOPS: [number, string][] = [
-    [0, '#625c59'],
-    [0.5, '#b9b3af'],
-    [1, '#ded9d5'],
+    [0, '#465b60'],
+    [0.25, '#82999e'],
+    [0.5, '#b1c1c3'],
+    [0.75, '#d2ddde'],
+    [1, '#eef2f1'],
 ];
 
 function createGradientFromStops(

@@ -24,7 +24,8 @@ const ELEVATION_PALETTE_GRADIENTS: Record<ElevationPalette, string> = {
     custom: 'linear-gradient(to right,#440154 0%,#31688e 30%,#35b779 58%,#fde725 78%,#ff9800 90%,#ff2600 100%)',
     terrain:
         'linear-gradient(to right,#123524 0%,#2d6a4f 20%,#74c69d 40%,#d6c96f 58%,#b08968 72%,#7f5539 86%,#f2f2f2 100%)',
-    grayscale: 'linear-gradient(to right,#111111 0%,#f2f2f2 100%)',
+    grayscale:
+        'linear-gradient(to right,#465b60 0%,#82999e 25%,#b1c1c3 50%,#d2ddde 75%,#eef2f1 100%)',
 };
 
 interface ElevationRangeState {
