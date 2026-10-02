@@ -63676,7 +63676,20 @@ void main() {
 		}
 
 		resetContext() {
+			if (this.classificationIndexWorker) {
+				this.classificationIndexWorker.terminate();
+			}
+			this.classificationIndexWorker = null;
+			this.classificationIndexJob = null;
+			this.classificationIndexQueue = [];
+			this.classificationIndexDisabled = false;
+			this.classificationIndexMinHiddenRatio = 0.2;
+			this.classificationMasks = new WeakMap();
+
 			for (let [geometry, webglBuffer] of this.buffers) {
+				if (webglBuffer.classificationIndices && webglBuffer.classificationIndices.buffer) {
+					this.gl.deleteBuffer(webglBuffer.classificationIndices.buffer);
+				}
 				if (webglBuffer.disposeHandler) {
 					geometry.removeEventListener("dispose", webglBuffer.disposeHandler);
 				}
@@ -63691,6 +63704,8 @@ void main() {
 			this.glTypeMapping.set(Float32Array, this.gl.FLOAT);
 			this.glTypeMapping.set(Uint8Array, this.gl.UNSIGNED_BYTE);
 			this.glTypeMapping.set(Uint16Array, this.gl.UNSIGNED_SHORT);
+			this.classificationIndexUint32 = !!this.gl.getExtension("OES_element_index_uint")
+				|| typeof this.gl.texStorage2D === "function";
 		}
 
 		deleteBuffer(geometry) {
@@ -63698,12 +63713,126 @@ void main() {
 			let gl = this.gl;
 			let webglBuffer = this.buffers.get(geometry);
 			if (webglBuffer != null) {
+				if (webglBuffer.classificationIndices && webglBuffer.classificationIndices.buffer) {
+					gl.deleteBuffer(webglBuffer.classificationIndices.buffer);
+				}
 				for (let vbo of webglBuffer.vbos.values()) {
 					gl.deleteBuffer(vbo.handle);
 				}
 				gl.deleteVertexArray(webglBuffer.vao);
 				this.buffers.delete(geometry);
 			}
+		}
+
+		getClassificationMask(material) {
+			// EDL and relief retain their existing point submission path.
+			if (material.useEDL || material.weighted || (material.defines && material.defines.has("use_edl"))) return null;
+			const texture = material.uniforms.classificationLUT && material.uniforms.classificationLUT.value;
+			if (!texture || !texture.image || !(texture.image.data instanceof Uint8Array)
+				|| texture.image.width !== 256 || texture.image.height !== 1) return null;
+
+			let cached = this.classificationMasks.get(texture);
+			if (!cached || cached.version !== texture.version) {
+				const hidden = new Uint8Array(256);
+				const codes = [];
+				for (let i = 0; i < 256; i++) {
+					if (texture.image.data[4 * i + 3] === 0) {
+						hidden[i] = 1;
+						codes.push(i);
+					}
+				}
+				cached = { version: texture.version, hidden, key: codes.join(",") };
+				this.classificationMasks.set(texture, cached);
+			}
+			return cached;
+		}
+
+		pumpClassificationIndices() {
+			if (this.classificationIndexJob || this.classificationIndexDisabled) return;
+			let job;
+			while ((job = this.classificationIndexQueue.shift())) {
+				const attribute = job.geometry.attributes.classification;
+				if (this.buffers.get(job.geometry) !== job.webglBuffer
+					|| job.webglBuffer.classificationIndices !== job.state
+					|| attribute !== job.state.attribute || attribute.version !== job.state.version) continue;
+
+				try {
+					if (!this.classificationIndexWorker) {
+						const worker = new Worker(`${exports.scriptPath}/workers/ClassificationIndexWorker.js`);
+						this.classificationIndexWorker = worker;
+						worker.onmessage = (event) => {
+							const completed = this.classificationIndexJob;
+							this.classificationIndexJob = null;
+							if (completed && this.buffers.get(completed.geometry) === completed.webglBuffer
+								&& completed.webglBuffer.classificationIndices === completed.state
+								&& completed.geometry.attributes.classification === completed.state.attribute
+								&& completed.state.attribute.version === completed.state.version) {
+								completed.state.histogram = event.data.histogram;
+								completed.state.indices = event.data.indices;
+								completed.state.count = event.data.count;
+								completed.state.ready = true;
+							}
+							this.pumpClassificationIndices();
+						};
+						worker.onerror = () => this.disableClassificationIndices();
+						worker.onmessageerror = () => this.disableClassificationIndices();
+					}
+					this.classificationIndexJob = job;
+					// Transfer a copy; geometry attributes must remain available to rendering and picking.
+					const classification = attribute.array.slice().buffer;
+					this.classificationIndexWorker.postMessage({
+						classification, hidden: job.hidden, minHiddenRatio: this.classificationIndexMinHiddenRatio,
+					}, [classification]);
+				} catch (error) {
+					this.disableClassificationIndices();
+				}
+				return;
+			}
+		}
+
+		disableClassificationIndices() {
+			if (this.classificationIndexWorker) this.classificationIndexWorker.terminate();
+			this.classificationIndexWorker = null;
+			this.classificationIndexJob = null;
+			this.classificationIndexQueue = [];
+			this.classificationIndexDisabled = true;
+		}
+
+		getClassificationIndices(geometry, webglBuffer, mask) {
+			if (!mask || this.classificationIndexDisabled) return null;
+			const attribute = geometry.attributes.classification;
+			if (!attribute || !(attribute.array instanceof Uint8Array) || attribute.normalized
+				|| attribute.itemSize !== 1 || attribute.count !== webglBuffer.numElements
+				|| (!this.classificationIndexUint32 && attribute.count > 65536)) return null;
+
+			let state = webglBuffer.classificationIndices;
+			if (!state || state.key !== mask.key || state.attribute !== attribute || state.version !== attribute.version) {
+				const histogram = state && state.attribute === attribute && state.version === attribute.version
+					? state.histogram : null;
+				if (state && state.buffer) this.gl.deleteBuffer(state.buffer);
+				state = { key: mask.key, attribute, version: attribute.version, histogram, ready: false };
+				webglBuffer.classificationIndices = state;
+				let hiddenCount = 0;
+				if (histogram) {
+					for (let i = 0; i < 256; i++) hiddenCount += histogram[i] * mask.hidden[i];
+				}
+				if (!mask.key || (histogram && hiddenCount < attribute.count * this.classificationIndexMinHiddenRatio)) {
+					state.ready = true;
+				} else {
+					this.classificationIndexQueue.push({ geometry, webglBuffer, state, hidden: mask.hidden });
+					this.pumpClassificationIndices();
+				}
+			}
+			if (!state.ready || (!state.indices && !state.buffer)) return null;
+			if (state.count === 0) return state;
+			if (!state.buffer) {
+				state.buffer = this.gl.createBuffer();
+				state.type = state.indices instanceof Uint16Array ? this.gl.UNSIGNED_SHORT : this.gl.UNSIGNED_INT;
+				this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, state.buffer);
+				this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, state.indices, this.gl.STATIC_DRAW);
+				state.indices = null;
+			}
+			return state;
 		}
 
 		createBuffer(geometry) {
@@ -63839,6 +63968,7 @@ void main() {
 			let gl = this.gl;
 
 			let material = params.material ? params.material : octree.material;
+			const classificationMask = this.getClassificationMask(material);
 			let shadowMaps = params.shadowMaps == null ? [] : params.shadowMaps;
 			let view = camera.matrixWorldInverse;
 
@@ -64146,7 +64276,16 @@ void main() {
 				}
 
 				let numPoints = webglBuffer.numElements;
-				gl.drawArrays(gl.POINTS, 0, numPoints);
+				// Exclude only points already rejected by the classification shader; retain the point budget and IDs.
+				const classificationIndices = this.getClassificationIndices(geometry, webglBuffer, classificationMask);
+				if (classificationIndices) {
+					if (classificationIndices.count > 0) {
+						gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, classificationIndices.buffer);
+						gl.drawElements(gl.POINTS, classificationIndices.count, classificationIndices.type, 0);
+					}
+				} else {
+					gl.drawArrays(gl.POINTS, 0, numPoints);
+				}
 
 				i++;
 			}
@@ -90485,6 +90624,7 @@ ENDSEC
 			}
 
 			this._disposed = true;
+			if (this.pRenderer) this.pRenderer.disableClassificationIndices();
 			this.renderer.setAnimationLoop(null);
 
 			const canvas = this.renderer.domElement;
