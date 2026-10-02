@@ -123,3 +123,9 @@ export function lks94ToWgs84(coordinates: Lks94Coordinates): Wgs84Coordinates {
     const [longitude, latitude] = proj4(LKS94_PROJ, 'EPSG:4326', [coordinates.x, coordinates.y]);
     return { type: 'wgs84', longitude, latitude };
 }
+
+export function formatCoordinateForClipboard(coordinate: Pick<Lks94Coordinates, 'x' | 'y'>) {
+    const { latitude, longitude } = lks94ToWgs84({ type: 'lks94', ...coordinate });
+
+    return `LKS94 / EPSG:3346: X=${coordinate.x}, Y=${coordinate.y}\nWGS84 / EPSG:4326: ${latitude.toFixed(7)}, ${longitude.toFixed(7)}`;
+}

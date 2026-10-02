@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Vector3 } from 'three';
 import type { Camera } from 'three';
+import { useCopyCoordinates } from '@/common/hooks/useCopyCoordinates';
 import type { PotreeViewer } from '@/common/types/potree';
 
 interface ViewerMapStatusProps {
@@ -32,8 +33,6 @@ const COORDINATE_PRECISION = 0;
 const SCALE_SAMPLE_RIGHT_OFFSET_PX = 64;
 const SCALE_SAMPLE_BOTTOM_OFFSET_PX = 10;
 const NICE_STEPS = [1, 2, 5];
-const LKS94_PROJ =
-    '+proj=tmerc +lat_0=0 +lon_0=24 +k=0.9998 +x_0=500000 +y_0=0 +ellps=GRS80 +units=m +no_defs';
 
 function roundCoordinate(value: number) {
     return Number(value.toFixed(COORDINATE_PRECISION));
@@ -235,30 +234,11 @@ function formatCoordinateText(coordinate: Coordinate) {
     return `X: ${coordinate.x} Y: ${coordinate.y}`;
 }
 
-function transformCoordinateToWgs84(coordinate: Coordinate) {
-    const proj4 = window.proj4;
-
-    if (!proj4.defs('EPSG:3346')) {
-        proj4.defs('EPSG:3346', LKS94_PROJ);
-    }
-
-    const [lon, lat] = proj4('EPSG:3346', 'EPSG:4326', [coordinate.x, coordinate.y]);
-
-    return { lat, lon };
-}
-
-function formatCoordinateForClipboard(coordinate: Coordinate) {
-    const { lat, lon } = transformCoordinateToWgs84(coordinate);
-
-    return `LKS94 / EPSG:3346: X=${coordinate.x}, Y=${coordinate.y}\nWGS84 / EPSG:4326: ${lat.toFixed(7)}, ${lon.toFixed(7)}`;
-}
-
 export function ViewerMapStatus({ viewerRef }: ViewerMapStatusProps) {
     const { t } = useTranslation();
     const [status, setStatus] = useState<StatusState>({ coordinate: null, scale: null });
-    const [copied, setCopied] = useState(false);
+    const { copied, copyCoordinates } = useCopyCoordinates();
     const pointerRef = useRef<{ x: number; y: number } | null>(null);
-    const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         let frameId = 0;
@@ -351,22 +331,6 @@ export function ViewerMapStatus({ viewerRef }: ViewerMapStatusProps) {
         };
     }, [viewerRef]);
 
-    useEffect(() => {
-        return () => {
-            if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-        };
-    }, []);
-
-    const copyCoordinates = async () => {
-        if (!status.coordinate) return;
-
-        await navigator.clipboard.writeText(formatCoordinateForClipboard(status.coordinate));
-        setCopied(true);
-
-        if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-        copiedTimeoutRef.current = setTimeout(() => setCopied(false), 1200);
-    };
-
     if (!status.scale && !status.coordinate) return null;
 
     return (
@@ -389,9 +353,11 @@ export function ViewerMapStatus({ viewerRef }: ViewerMapStatusProps) {
             {status.coordinate && (
                 <button
                     type="button"
-                    onClick={() => void copyCoordinates()}
+                    onClick={() => {
+                        if (status.coordinate) void copyCoordinates(status.coordinate);
+                    }}
                     className={`inline-flex items-center rounded font-mono text-[10px] leading-none transition-colors hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none ${
-                        copied ? 'text-neon-green' : 'theme-map-status text-white/75'
+                        copied ? 'text-laser-green' : 'theme-map-status text-white/75'
                     }`}
                     aria-label={t('viewerMapStatus.copyCoordinates')}
                     title={
