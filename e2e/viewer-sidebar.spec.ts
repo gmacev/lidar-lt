@@ -159,10 +159,10 @@ test.describe('viewer sidebar settings', () => {
         await expectSearchParam(page, 'reliefStrength', '2.5');
         await expectSearchParam(page, 'reliefRadius', '1');
         await expectSearchParam(page, 'reliefAzimuth', '315');
-        await expectSearchParam(page, 'ps', '2.5');
+        await expectSearchParam(page, 'ps', '5');
         await expectSearchParam(page, 'psm', 'adaptive');
         await expectSearchParam(page, 'mns', '5');
-        await expectSearchParam(page, 'psh', 'circle');
+        await expectSearchParam(page, 'psh', 'paraboloid');
         await expectSearchParam(page, 'zScale', '1');
         await expectSearchParam(page, 'pb', '8000000');
         await expectSearchParam(page, 'fov', '60');
